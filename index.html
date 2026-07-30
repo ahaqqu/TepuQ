@@ -818,12 +818,6 @@
           </div>
 
           <div class="form-group">
-            <label for="setRepeat">Ulangi Sama (kali)</label>
-            <span class="field-desc">Berapa kali objek yang sama muncul berturut-turut sebelum berganti objek.</span>
-            <input type="number" id="setRepeat" min="1" max="10" step="1">
-          </div>
-
-          <div class="form-group">
             <label for="setDebounce">Debounce (ms)</label>
             <span class="field-desc">Jeda minimum antar ketukan agar tidak terlalu banyak kartu.</span>
             <input type="number" id="setDebounce" min="20" max="1000" step="10">
@@ -890,7 +884,6 @@
       cardSize: 'medium',
       playMode: 'random',
       burstWindow: 1.5,
-      repeatThreshold: 3,
       debounceMs: 300,
       speechRate: 0.8,
       speechPitch: 1.0,
@@ -1437,9 +1430,6 @@
     }
 
     function chooseNext(active, current) {
-      repeatCount++;
-      if (repeatCount < settings.repeatThreshold && current) return current;
-      repeatCount = 0;
       if (settings.playMode === 'sequential') {
         const idx = active.findIndex(o => o.id === current?.id);
         return active[(idx + 1) % active.length];
@@ -1984,7 +1974,6 @@
         settings.cardSize = document.getElementById('setCardSize').value;
         settings.playMode = document.getElementById('setPlayMode').value;
         settings.burstWindow = Number(document.getElementById('setBurstWindow').value);
-        settings.repeatThreshold = Number(document.getElementById('setRepeat').value);
         settings.debounceMs = Number(document.getElementById('setDebounce').value);
         settings.speechRate = Number(document.getElementById('setRate').value);
         settings.speechPitch = Number(document.getElementById('setPitch').value);
@@ -2014,7 +2003,6 @@
       document.getElementById('setCardSize').value = settings.cardSize || 'medium';
       document.getElementById('setPlayMode').value = settings.playMode || 'random';
       document.getElementById('setBurstWindow').value = settings.burstWindow ?? 1.5;
-      document.getElementById('setRepeat').value = settings.repeatThreshold ?? 3;
       document.getElementById('setDebounce').value = settings.debounceMs ?? 300;
       document.getElementById('setRate').value = settings.speechRate ?? 0.8;
       document.getElementById('setPitch').value = settings.speechPitch ?? 1.0;
