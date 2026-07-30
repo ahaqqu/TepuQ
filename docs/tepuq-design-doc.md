@@ -84,6 +84,9 @@ Admin Mode → IndexedDB → Export ZIP → local project folder
   - Rounded corners, thick colored border, soft shadow.
   - Random position every time for surprise.
   - `object-fit: contain` — full photo visible, no crop/stretch.
+  - When a photo is set, the card is sized proportionally to the photo's
+    natural aspect ratio so the full image is shown without clipping.
+    The largest dimension is capped at the user's chosen card size.
   - Background behind photo: transparent so the animated background shows through.
 - **No visible text, buttons, menus, or UI chrome** on the main screen.
 - **Celebration effects:** particle burst / confetti explosion at card location on every successful interaction.
@@ -123,10 +126,9 @@ Both modes:
    - Card stays visible until next interaction.
 5. Repeat threshold: same object shown 3 times by default, then switch to a new random object.
 
-### 4.5 Auto-Cycle / Screensaver
-- If no interaction for 6 seconds (configurable), the game gently auto-advances to the next card.
-- Auto-cycle uses slower animations and plays audio to re-engage a watching child.
-- Disabled by default in Target mode, or optional in settings.
+### 4.5 Auto-Smash / Screensaver
+- If no interaction for 6 seconds (configurable) in **Bebas** mode, the game simulates a rapid keyboard smash: cards pop in and out in quick succession and audio plays.
+- In **Target** mode the screen stays idle so the child must intentionally tap the card.
 
 ### 4.6 Animation System
 
@@ -197,7 +199,7 @@ Both modes:
 | Speech Rate | 0.5x–1.5x | 0.8x |
 | Speech Pitch | 0.5–2.0 | 1.0 |
 | Volume | 0–100% | 80% |
-| Auto-Cycle Delay | 0s (off), 3s, 6s, 10s | 6s |
+| Auto-Smash Delay | 0s (off), 3s, 6s, 10s | 6s |
 | Enabled Game Modes | Bebas, Target, Both | Both |
 
 ### 5.6 Export/Import ZIP
@@ -224,7 +226,7 @@ Both modes:
     "speechRate": 0.8,
     "speechPitch": 1.0,
     "volume": 0.8,
-    "autoCycleDelay": 6,
+    "autoSmashDelay": 6,
     "enabledModes": ["bebas", "target"]
   },
   "objects": [
