@@ -803,10 +803,11 @@
 
           <div class="form-group">
             <label for="setPlayMode">Mode Putar</label>
-            <span class="field-desc">Acak atau berurutan saat memilih objek baru.</span>
+            <span class="field-desc">Acak, berurutan, atau putar semua tanpa pengulangan sampai semua objek tampil.</span>
             <select id="setPlayMode">
               <option value="random">Acak</option>
               <option value="sequential">Berurutan</option>
+              <option value="round-robin">Putar Semua</option>
             </select>
           </div>
 
@@ -814,12 +815,6 @@
             <label for="setBurstWindow">Jendela Burst — TepuQ Bebas (detik)</label>
             <span class="field-desc">Waktu setelah ketukan pertama di TepuQ Bebas di mana objek yang sama terus muncul tanpa memotong suara. 0 = mati. Tidak berlaku untuk TepuQ Target.</span>
             <input type="number" id="setBurstWindow" min="0" max="5" step="0.1">
-          </div>
-
-          <div class="form-group">
-            <label for="setRepeat">Ulangi Sama (kali)</label>
-            <span class="field-desc">Berapa kali objek yang sama muncul berturut-turut sebelum berganti objek.</span>
-            <input type="number" id="setRepeat" min="1" max="10" step="1">
           </div>
 
           <div class="form-group">
@@ -889,7 +884,6 @@
       cardSize: 'medium',
       playMode: 'random',
       burstWindow: 1.5,
-      repeatThreshold: 3,
       debounceMs: 300,
       speechRate: 0.8,
       speechPitch: 1.0,
@@ -941,6 +935,7 @@
     let autoCycleCard = null;
     let targetTransitionTimer = null;
     let selectedObjectId = null;
+    let shufflePool = [];
     let idVoice = null;
     let audioUnlocked = false;
     let placeholderCache = {};
@@ -1333,8 +1328,8 @@
       if (active.length === 0) return;
 
       const current = active.find(o => o.id === currentObjectId) || active[0];
-      // In target mode, always advance to a different object (no repeat burst)
-      const next = chooseNextSequentialOrRandom(active, current);
+      // In target mode, advance according to play mode
+      const next = chooseNext(active, current);
       currentObjectId = next.id;
       speak(next.ttsText || next.name);
 
@@ -1435,12 +1430,16 @@
     }
 
     function chooseNext(active, current) {
-      repeatCount++;
-      if (repeatCount < settings.repeatThreshold && current) return current;
-      repeatCount = 0;
       if (settings.playMode === 'sequential') {
         const idx = active.findIndex(o => o.id === current?.id);
         return active[(idx + 1) % active.length];
+      }
+      if (settings.playMode === 'round-robin') {
+        if (shufflePool.length === 0) {
+          shufflePool = active.filter(o => o.id !== current?.id).sort(() => Math.random() - 0.5);
+          if (shufflePool.length === 0) return current || active[0];
+        }
+        return shufflePool.shift();
       }
       if (active.length === 1) return active[0];
       let next;
@@ -1692,9 +1691,17 @@
     }
 
     function chooseNextSequentialOrRandom(active, current) {
+      // Auto-cycle always advances, never repeats current
       if (settings.playMode === 'sequential') {
         const idx = active.findIndex(o => o.id === current?.id);
         return active[(idx + 1) % active.length];
+      }
+      if (settings.playMode === 'round-robin') {
+        if (shufflePool.length === 0) {
+          shufflePool = active.filter(o => o.id !== current?.id).sort(() => Math.random() - 0.5);
+          if (shufflePool.length === 0) return current || active[0];
+        }
+        return shufflePool.shift();
       }
       if (active.length === 1) return active[0];
       let next;
@@ -1967,7 +1974,6 @@
         settings.cardSize = document.getElementById('setCardSize').value;
         settings.playMode = document.getElementById('setPlayMode').value;
         settings.burstWindow = Number(document.getElementById('setBurstWindow').value);
-        settings.repeatThreshold = Number(document.getElementById('setRepeat').value);
         settings.debounceMs = Number(document.getElementById('setDebounce').value);
         settings.speechRate = Number(document.getElementById('setRate').value);
         settings.speechPitch = Number(document.getElementById('setPitch').value);
@@ -1997,7 +2003,6 @@
       document.getElementById('setCardSize').value = settings.cardSize || 'medium';
       document.getElementById('setPlayMode').value = settings.playMode || 'random';
       document.getElementById('setBurstWindow').value = settings.burstWindow ?? 1.5;
-      document.getElementById('setRepeat').value = settings.repeatThreshold ?? 3;
       document.getElementById('setDebounce').value = settings.debounceMs ?? 300;
       document.getElementById('setRate').value = settings.speechRate ?? 0.8;
       document.getElementById('setPitch').value = settings.speechPitch ?? 1.0;
