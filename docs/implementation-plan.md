@@ -42,7 +42,7 @@ Build a working local version of TepuQ: a single-file browser game for a 15-mont
 - Two-panel layout.
 - Object list: thumbnails, name, active toggle, edit/delete/test buttons, drag-and-drop reorder.
 - Object editor: name, TTS text, photo upload/preview, color picker, animation dropdown, active toggle.
-- Settings panel: background, animations, card size, play mode, repeat threshold, debounce, speech rate/pitch/volume, auto-cycle delay, enabled game modes.
+- Settings panel: background, animations, card size, play mode, repeat threshold, debounce, speech rate/pitch/volume, auto-smash delay, enabled game modes.
 - Test TTS button.
 - Export ZIP button.
 - Import ZIP file input.

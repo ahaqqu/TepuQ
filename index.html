@@ -842,9 +842,9 @@
           </div>
 
           <div class="form-group">
-            <label for="setAutoCycle">Auto-Cycle (detik, 0 = mati)</label>
-            <span class="field-desc">Layar otomatis berganti foto jika tidak ada ketukan.</span>
-            <input type="number" id="setAutoCycle" min="0" max="20" step="1">
+            <label for="setAutoSmash">Auto-Smash (detik, 0 = mati)</label>
+            <span class="field-desc">Di mode Bebas, layar otomatis heboh seperti keyboard diketuk kalau tidak ada interaksi. Di mode Target tetap diam.</span>
+            <input type="number" id="setAutoSmash" min="0" max="20" step="1">
           </div>
 
           <div class="form-group">
@@ -888,7 +888,7 @@
       speechRate: 0.8,
       speechPitch: 1.0,
       volume: 0.8,
-      autoCycleDelay: 6,
+      autoSmashDelay: 6,
       enabledModes: ['bebas', 'target']
     };
 
@@ -931,8 +931,7 @@
     let currentObjectId = null;
     let repeatCount = 0;
     let lastInteractionTime = 0;
-    let autoCycleTimer = null;
-    let autoCycleCard = null;
+    let autoSmashTimer = null;
     let targetTransitionTimer = null;
     let selectedObjectId = null;
     let shufflePool = [];
@@ -962,7 +961,7 @@
         renderAdmin();
       } else {
         document.body.classList.remove('admin');
-        initGame();
+        initGame().catch(() => {});
       }
     });
 
@@ -1058,10 +1057,10 @@
     /* =====================================================
        GAME
        ===================================================== */
-    function initGame() {
+    async function initGame() {
       applyBackground();
       applyCardSize();
-      setupModeSelection();
+      await setupModeSelection();
     }
 
     function applyBackground() {
@@ -1112,19 +1111,19 @@
       document.documentElement.style.setProperty('--card-size', map[settings.cardSize] || map.medium);
     }
 
-    function setupModeSelection() {
+    async function setupModeSelection() {
       const enabled = settings.enabledModes || ['bebas','target'];
       const saved = sessionStorage.getItem('tepuq-mode');
 
       if (saved && enabled.includes(saved)) {
-        startMode(saved);
+        await startMode(saved);
         return;
       }
 
       showModePicker();
       startDemoCards();
       if (enabled.length === 1) {
-        startMode(enabled[0]);
+        await startMode(enabled[0]);
         return;
       }
     }
@@ -1136,13 +1135,12 @@
       const active = objects.filter(o => o.active);
       if (active.length === 0) return;
 
-      const showDemo = () => {
+      const showDemo = async () => {
         if (!elModePicker.classList.contains('hidden')) {
           const obj = active[Math.floor(Math.random() * active.length)];
-          const card = createCard(obj);
+          const card = await createCard(obj);
           card.className = 'demo-card';
           document.getElementById('game').appendChild(card);
-          positionAndPopulateCard(card, obj);
           const anim = resolveEntryAnimation(obj);
           card.classList.add('anim-' + anim);
           if (anim === 'slide') {
@@ -1168,7 +1166,7 @@
       document.querySelectorAll('.demo-card').forEach(c => c.remove());
     }
 
-    function startMode(mode) {
+    async function startMode(mode) {
       currentMode = mode;
       sessionStorage.setItem('tepuq-mode', mode);
       elModePicker.classList.add('hidden');
@@ -1183,10 +1181,10 @@
         currentObjectId = active[0].id;
         removeAllPopCards();
         if (mode === 'target') {
-          showSingleCard(active[0]);
-          resetAutoCycle();
+          await showSingleCard(active[0]);
+          resetAutoSmash();
         } else {
-          resetAutoCycle(true);
+          resetAutoSmash();
         }
       }
     }
@@ -1209,10 +1207,31 @@
       e.preventDefault();
       if (currentMode === 'target') {
         // In target mode, any key acts like tapping the current card
-        handleTargetSuccess();
+        handleTargetSuccess().catch(() => {});
       } else {
-        handleSuccess('keyboard');
+        handleSuccess('keyboard').catch(() => {});
       }
+    }
+
+    function onTouchStart(e) {
+      if (document.body.classList.contains('admin')) return;
+      e.preventDefault();
+      if (!elModePicker.classList.contains('hidden')) return;
+
+      const targetCard = document.querySelector('.card-pop.target-card');
+      const card = targetCard || elCard;
+      const isCard = e.target === card || card.contains(e.target);
+
+      if (currentMode === 'target') {
+        if (!isCard) {
+          hintCard(card);
+          return;
+        }
+        handleTargetSuccess().catch(() => {});
+        return;
+      }
+
+      handleSuccess('touch').catch(() => {});
     }
 
     function onPointerDown(e) {
@@ -1222,8 +1241,8 @@
       const modeBtn = e.target.closest('.mode-btn');
       if (modeBtn) {
         e.preventDefault();
-        if (modeBtn.id === 'btnBebas') startMode('bebas');
-        if (modeBtn.id === 'btnTarget') startMode('target');
+        if (modeBtn.id === 'btnBebas') startMode('bebas').catch(() => {});
+        if (modeBtn.id === 'btnTarget') startMode('target').catch(() => {});
         return;
       }
 
@@ -1239,16 +1258,11 @@
           hintCard(clickedCard);
           return;
         }
-        handleTargetSuccess();
+        handleTargetSuccess().catch(() => {});
         return;
       }
 
-      handleSuccess('pointer');
-    }
-
-    function onTouchStart(e) {
-      if (document.body.classList.contains('admin')) return;
-      e.preventDefault();
+      handleSuccess('pointer').catch(() => {});
     }
 
     function bindBackTrigger() {
@@ -1289,15 +1303,15 @@
     }
 
     function showModePicker() {
-      clearAutoCycle();
+      stopAutoSmash();
       elCard.className = 'hidden';
       removeAllPopCards();
       elModePicker.classList.remove('hidden');
       currentMode = null;
       sessionStorage.removeItem('tepuq-mode');
       const enabled = settings.enabledModes || ['bebas','target'];
-      document.getElementById('btnBebas').onclick = () => startMode('bebas');
-      document.getElementById('btnTarget').onclick = () => startMode('target');
+      document.getElementById('btnBebas').onclick = () => startMode('bebas').catch(() => {});
+      document.getElementById('btnTarget').onclick = () => startMode('target').catch(() => {});
       document.getElementById('btnBebas').classList.toggle('hidden', enabled.length === 1 && !enabled.includes('bebas'));
       document.getElementById('btnTarget').classList.toggle('hidden', enabled.length === 1 && !enabled.includes('target'));
       startDemoCards();
@@ -1314,14 +1328,14 @@
     let burstTimer = null;
     let burstActive = false;
     let burstObjectId = null;
-      const DEBOUNCE_MS = 80; // ms for rapid pops
+    const DEBOUNCE_MS = 80; // ms for rapid pops
 
-    function handleTargetSuccess() {
+    async function handleTargetSuccess() {
       const now = Date.now();
       if (now - lastInteractionTime < settings.debounceMs) return;
       lastInteractionTime = now;
 
-      clearAutoCycle();
+      stopAutoSmash();
       if (targetTransitionTimer) { clearTimeout(targetTransitionTimer); targetTransitionTimer = null; }
 
       const active = objects.filter(o => o.active);
@@ -1339,27 +1353,27 @@
         card.classList.add('exit-fade');
         const onEnd = () => {
           card.remove();
-          showSingleCard(next);
+          showSingleCard(next).catch(() => {});
         };
         card.addEventListener('animationend', onEnd, { once: true });
         targetTransitionTimer = setTimeout(() => {
           card.removeEventListener('animationend', onEnd);
           if (card.parentNode) {
             card.remove();
-            showSingleCard(next);
+            showSingleCard(next).catch(() => {});
           }
           targetTransitionTimer = null;
         }, 500);
       } else {
-        showSingleCard(next);
+        await showSingleCard(next);
       }
 
-      resetAutoCycle();
+      resetAutoSmash();
     }
 
-    function showSingleCard(obj) {
+    async function showSingleCard(obj) {
       removeAllPopCards();
-      const card = createCard(obj);
+      const card = await createCard(obj);
       card.classList.add('target-card');
       document.getElementById('game').appendChild(card);
       positionAndAnimateCard(card);
@@ -1370,24 +1384,23 @@
       document.querySelectorAll('.card-pop').forEach(c => c.remove());
     }
 
-    function handleSuccess(source) {
+    async function handleSuccess(source) {
       const now = Date.now();
       if (now - lastInteractionTime < DEBOUNCE_MS) return;
       lastInteractionTime = now;
 
-      clearAutoCycle();
+      stopAutoSmash();
 
       const active = objects.filter(o => o.active);
       if (active.length === 0) return;
 
-      let current;
-
       // In target mode, treat every smash as single-card advance (no burst)
       if (currentMode === 'target') {
-        handleTargetSuccess();
+        handleTargetSuccess().catch(() => {});
         return;
       }
 
+      let current;
       // If within burst window, keep same object
       if (burstActive && burstObjectId) {
         current = active.find(o => o.id === burstObjectId) || active[0];
@@ -1401,13 +1414,22 @@
         speak(current.ttsText || current.name);
       }
 
+      // Limit the number of simultaneous pop cards so rapid smashes don't pile up.
+      const game = document.getElementById('game');
+      const popCards = [...game.querySelectorAll('.card-pop:not(.target-card)')];
+      const MAX_POP_CARDS = 6;
+      if (popCards.length >= MAX_POP_CARDS) {
+        popCards.slice(0, popCards.length - MAX_POP_CARDS + 1).forEach(c => c.remove());
+      }
+
       // Pop a new card every smash, but keep the current object
-      const card = createCard(current);
-      document.getElementById('game').appendChild(card);
+      const card = await createCard(current);
+      game.appendChild(card);
       positionAndAnimateCard(card);
       celebrateAtCard(card, current.color);
 
-      resetAutoCycle();
+      // Only restart the auto-smash timer for user-initiated smashes, not the auto-smash itself.
+      if (source !== 'auto-smash') resetAutoSmash();
     }
 
     function getBurstWindowMs() {
@@ -1467,10 +1489,10 @@
       }, 500);
     }
 
-    function showCard(obj) {
+    async function showCard(obj) {
       currentObjectId = obj.id;
       elCard.className = 'hidden';
-      positionAndPopulateCard(elCard, obj);
+      await positionAndPopulateCard(elCard, obj);
       const anim = resolveEntryAnimation(obj);
       elCard.classList.remove('hidden');
       void elCard.offsetWidth;
@@ -1485,7 +1507,7 @@
       setTimeout(() => cleanup(), 1000);
     }
 
-    function createCard(obj) {
+    async function createCard(obj) {
       const card = document.createElement('div');
       card.className = 'card-pop';
       card.style.position = 'absolute';
@@ -1500,12 +1522,21 @@
       card.style.overflow = 'hidden';
       card.style.zIndex = '10';
       card.style.pointerEvents = 'auto';
-      positionAndPopulateCard(card, obj);
+      await positionAndPopulateCard(card, obj);
       return card;
     }
 
-    function positionAndPopulateCard(card, obj) {
-      const rectSize = parseCardSize();
+    async function positionAndPopulateCard(card, obj) {
+      let rectSize = parseCardSize();
+      if (obj.imageBlob) {
+        const aspect = await getImageAspectRatio(obj.imageBlob);
+        if (aspect > 0) {
+          const base = Math.min(rectSize.width, rectSize.height);
+          // Fit the image inside a box that is as close as possible to the user's card-size setting
+          // while preserving the image's natural aspect ratio.
+          rectSize = fitAspectRatio(aspect, base);
+        }
+      }
       const maxLeft = Math.max(0, window.innerWidth - rectSize.width);
       const maxTop = Math.max(0, window.innerHeight - rectSize.height);
       const pad = 16;
@@ -1518,7 +1549,9 @@
       if (obj.imageBlob) {
         const imgSrc = URL.createObjectURL(obj.imageBlob);
         card.style.background = obj.color || '#4A90D9';
-        card.innerHTML = `<img src="${imgSrc}" alt="${obj.name}" draggable="false" style="width:100%;height:100%;object-fit:cover;pointer-events:none;display:block;">`;
+        card.style.width = rectSize.width + 'px';
+        card.style.height = rectSize.height + 'px';
+        card.innerHTML = `<img src="${imgSrc}" alt="${obj.name}" draggable="false" style="max-width:100%;max-height:100%;object-fit:contain;pointer-events:none;display:block;">`;
         objectURLs.push(imgSrc);
       } else {
         // When no image, use the theme color as card background
@@ -1558,6 +1591,41 @@
       const vmin = Math.min(window.innerWidth, window.innerHeight);
       const px = unit === 'vmin' ? num/100 * vmin : num;
       return { width: px, height: px };
+    }
+
+    function getImageAspectRatio(blob) {
+      return new Promise((resolve) => {
+        if (!blob) { resolve(0); return; }
+        const img = new Image();
+        const url = URL.createObjectURL(blob);
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          resolve(img.naturalWidth / img.naturalHeight || 1);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(0);
+        };
+        img.src = url;
+      });
+    }
+
+    function fitAspectRatio(aspect, base) {
+      // Make the card proportional to the image while staying as close as
+      // possible to the user's chosen card-size square.
+      // A square image keeps exactly the base size. Wide images grow
+      // horizontally; tall images grow vertically, but neither dimension
+      // exceeds the square base (so the card is never larger than the
+      // requested setting).
+      let width, height;
+      if (aspect >= 1) {
+        width = base;
+        height = base / aspect;
+      } else {
+        height = base;
+        width = base * aspect;
+      }
+      return { width, height };
     }
 
     function resolveEntryAnimation(obj) {
@@ -1635,93 +1703,25 @@
       }
     }
 
-    function resetAutoCycle(immediate = false) {
-      clearAutoCycle();
-      const delay = Number(settings.autoCycleDelay) || 0;
-      if (delay <= 0) return;
-
-      const showNext = () => {
-        const active = objects.filter(o => o.active);
-        if (active.length === 0) return;
-        const current = active.find(o => o.id === currentObjectId) || active[active.length - 1];
-        // Auto-cycle always advances to the next object and plays audio
-        const next = chooseNextSequentialOrRandom(active, current);
-        currentObjectId = next.id;
-
-        if (currentMode === 'target') {
-          // Target mode: single card, no pop-down
-          removeAllPopCards();
-          const card = createCard(next);
-          card.classList.add('target-card');
-          document.getElementById('game').appendChild(card);
-          positionAndAnimateCard(card);
-          celebrateAtCard(card, next.color);
-          speak(next.ttsText || next.name);
-          resetAutoCycle();
-          return;
-        }
-
-        // Create a temporary auto-cycle card that pops down automatically
-        removeAutoCycleCard();
-        autoCycleCard = createCard(next);
-        document.getElementById('game').appendChild(autoCycleCard);
-        positionAndAnimateCard(autoCycleCard);
-        celebrateAtCard(autoCycleCard, next.color);
-        speak(next.ttsText || next.name);
-
-        // Schedule pop-down (fade out and remove)
-        const displayMs = Math.max(1500, delay * 700);
-        autoCycleCard.popDownTimer = setTimeout(() => {
-          if (autoCycleCard) {
-            autoCycleCard.animate([
-              { opacity: 1, transform: 'scale(1)' },
-              { opacity: 0, transform: 'scale(0.6)' }
-            ], { duration: 400, easing: 'ease-in' }).onfinish = () => removeAutoCycleCard();
-          }
-        }, displayMs);
-
-        resetAutoCycle();
-      };
-
-      if (immediate) {
-        showNext();
-      } else {
-        autoCycleTimer = setTimeout(showNext, delay * 1000);
-      }
+    function resetAutoSmash() {
+      stopAutoSmash();
+      const delay = Number(settings.autoSmashDelay) || 0;
+      if (delay <= 0 || currentMode === 'target') return;
+      autoSmashTimer = setTimeout(autoSmashLoop, delay * 1000);
     }
 
-    function chooseNextSequentialOrRandom(active, current) {
-      // Auto-cycle always advances, never repeats current
-      if (settings.playMode === 'sequential') {
-        const idx = active.findIndex(o => o.id === current?.id);
-        return active[(idx + 1) % active.length];
-      }
-      if (settings.playMode === 'round-robin') {
-        if (shufflePool.length === 0) {
-          shufflePool = active.filter(o => o.id !== current?.id).sort(() => Math.random() - 0.5);
-          if (shufflePool.length === 0) return current || active[0];
-        }
-        return shufflePool.shift();
-      }
-      if (active.length === 1) return active[0];
-      let next;
-      do { next = active[Math.floor(Math.random() * active.length)]; }
-      while (next.id === current?.id);
-      return next;
+    function stopAutoSmash() {
+      if (autoSmashTimer) clearTimeout(autoSmashTimer);
+      autoSmashTimer = null;
     }
 
-    function removeAutoCycleCard() {
-      if (autoCycleCard) {
-        if (autoCycleCard.popDownTimer) clearTimeout(autoCycleCard.popDownTimer);
-        autoCycleCard.remove();
-        autoCycleCard = null;
+    function autoSmashLoop() {
+      if (currentMode !== 'bebas') return;
+      handleSuccess('auto-smash').catch(() => {});
+      const delay = Number(settings.autoSmashDelay) || 0;
+      if (delay > 0) {
+        autoSmashTimer = setTimeout(autoSmashLoop, delay * 1000);
       }
-    }
-
-    function clearAutoCycle() {
-      if (autoCycleTimer) clearTimeout(autoCycleTimer);
-      autoCycleTimer = null;
-      removeAutoCycleCard();
     }
 
     /* =====================================================
@@ -1978,7 +1978,7 @@
         settings.speechRate = Number(document.getElementById('setRate').value);
         settings.speechPitch = Number(document.getElementById('setPitch').value);
         settings.volume = Number(document.getElementById('setVolume').value) / 100;
-        settings.autoCycleDelay = Number(document.getElementById('setAutoCycle').value);
+        settings.autoSmashDelay = Number(document.getElementById('setAutoSmash').value);
         const modes = [];
         if (document.getElementById('setModeBebas').checked) modes.push('bebas');
         if (document.getElementById('setModeTarget').checked) modes.push('target');
@@ -2007,7 +2007,7 @@
       document.getElementById('setRate').value = settings.speechRate ?? 0.8;
       document.getElementById('setPitch').value = settings.speechPitch ?? 1.0;
       document.getElementById('setVolume').value = Math.round((settings.volume ?? 0.8) * 100);
-      document.getElementById('setAutoCycle').value = settings.autoCycleDelay ?? 6;
+      document.getElementById('setAutoSmash').value = settings.autoSmashDelay ?? 6;
       document.getElementById('setModeBebas').checked = (settings.enabledModes || []).includes('bebas');
       document.getElementById('setModeTarget').checked = (settings.enabledModes || []).includes('target');
     }
