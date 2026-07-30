@@ -533,8 +533,9 @@
     }
 
     .preview-box {
-      width: 160px;
-      height: 160px;
+      width: 220px;
+      height: 220px;
+      max-width: 100%;
       border-radius: 12px;
       border: 3px solid var(--preview-color, #4A90D9);
       background: #fff;
@@ -542,12 +543,7 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
-    }
-
-    .preview-box img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
+      position: relative;
     }
 
     .toggle-row {
@@ -1498,7 +1494,6 @@
       card.style.height = card.style.width;
       card.style.borderRadius = '4vmin';
       card.style.border = 'var(--card-border) solid ' + (obj.color || '#4A90D9');
-      card.style.background = 'rgba(255,255,255,0.95)';
       card.style.boxShadow = 'var(--shadow)';
       card.style.display = 'flex';
       card.style.alignItems = 'center';
@@ -1521,9 +1516,20 @@
       card.style.top = top + 'px';
       card.style.setProperty('--card-color', obj.color || '#4A90D9');
 
-      const imgSrc = obj.imageBlob ? URL.createObjectURL(obj.imageBlob) : getPlaceholder(obj);
-      card.innerHTML = `<img src="${imgSrc}" alt="${obj.name}" draggable="false" style="max-width:100%;max-height:100%;object-fit:contain;pointer-events:none;display:block;">`;
-      if (obj.imageBlob) objectURLs.push(imgSrc);
+      if (obj.imageBlob) {
+        const imgSrc = URL.createObjectURL(obj.imageBlob);
+        card.style.background = obj.color || '#4A90D9';
+        card.innerHTML = `<img src="${imgSrc}" alt="${obj.name}" draggable="false" style="width:100%;height:100%;object-fit:cover;pointer-events:none;display:block;">`;
+        objectURLs.push(imgSrc);
+      } else {
+        // When no image, use the theme color as card background
+        card.style.background = obj.color || '#4A90D9';
+        card.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1vmin;width:100%;height:100%;padding:3vmin;text-align:center;">
+            <span style="font-size:16vmin;font-weight:800;color:rgba(255,255,255,0.95);text-shadow:0 0.5vmin 1.5vmin rgba(0,0,0,0.2);">${(obj.name || '?').charAt(0).toUpperCase()}</span>
+            <span style="font-size:5vmin;font-weight:700;color:rgba(255,255,255,0.95);text-shadow:0 0.3vmin 0.8vmin rgba(0,0,0,0.2);">${escapeHtml(obj.name || '')}</span>
+          </div>`;
+      }
     }
 
     function positionAndAnimateCard(card) {
@@ -1833,8 +1839,31 @@
     function renderPreview(obj) {
       const box = document.getElementById('photoPreview');
       box.style.setProperty('--preview-color', obj.color || '#4A90D9');
-      const src = obj.imageBlob ? URL.createObjectURL(obj.imageBlob) : getPlaceholder(obj);
-      box.innerHTML = `<img src="${src}" alt="${obj.name}">`;
+      box.innerHTML = '';
+      const card = document.createElement('div');
+      card.style.width = '100%';
+      card.style.height = '100%';
+      card.style.borderRadius = '12px';
+      card.style.display = 'flex';
+      card.style.alignItems = 'center';
+      card.style.justifyContent = 'center';
+      card.style.overflow = 'hidden';
+      card.style.pointerEvents = 'none';
+
+      if (obj.imageBlob) {
+        const imgSrc = URL.createObjectURL(obj.imageBlob);
+        card.style.background = obj.color || '#4A90D9';
+        card.innerHTML = `<img src="${imgSrc}" alt="${obj.name}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+        objectURLs.push(imgSrc);
+      } else {
+        card.style.background = obj.color || '#4A90D9';
+        card.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;height:100%;padding:16px;text-align:center;">
+            <span style="font-size:72px;font-weight:800;color:rgba(255,255,255,0.95);text-shadow:0 2px 6px rgba(0,0,0,0.2);">${(obj.name || '?').charAt(0).toUpperCase()}</span>
+            <span style="font-size:18px;font-weight:700;color:rgba(255,255,255,0.95);text-shadow:0 1px 4px rgba(0,0,0,0.2);">${escapeHtml(obj.name || '')}</span>
+          </div>`;
+      }
+      box.appendChild(card);
     }
 
     function bindObjectForm() {
@@ -1859,11 +1888,20 @@
         const file = e.target.files[0];
         if (!file) return;
         const url = URL.createObjectURL(file);
-        document.getElementById('photoPreview').innerHTML = `<img src="${url}" alt="preview">`;
+        document.getElementById('photoPreview').innerHTML = `<img src="${url}" alt="preview" style="max-width:100%;max-height:100%;object-fit:contain;">`;
       });
 
       document.getElementById('inpColor').addEventListener('input', (e) => {
-        document.getElementById('photoPreview').style.setProperty('--preview-color', e.target.value);
+        const color = e.target.value;
+        document.getElementById('photoPreview').style.setProperty('--preview-color', color);
+        if (selectedObjectId) {
+          const obj = objects.find(o => o.id === selectedObjectId);
+          if (obj) {
+            // Update a temporary object for preview without saving yet
+            const previewObj = { ...obj, color };
+            renderPreview(previewObj);
+          }
+        }
       });
 
       document.getElementById('objectForm').addEventListener('submit', async (e) => {
