@@ -12,8 +12,9 @@ export const DEFAULT_SETTINGS = {
   speechRate: 0.95,
   speechPitch: 1.25,
   volume: 0.8,
-  autoSmashDelay: 6,
+  autoSmashDelay: 0,
   enabledModes: ['bebas', 'target'],
+  fullscreen: true,
 };
 
 export const STARTER_OBJECTS = [

@@ -45,6 +45,7 @@ function readSettingsForm() {
     volume: Number(document.getElementById('setVolume').value) / 100,
     autoSmashDelay: Number(document.getElementById('setAutoSmash').value),
     enabledModes: modes.length ? modes : ['bebas'],
+    fullscreen: document.getElementById('setFullscreen').checked,
   };
 }
 
@@ -62,4 +63,5 @@ export function refreshSettingsForm(settings) {
   document.getElementById('setAutoSmash').value = settings.autoSmashDelay ?? 6;
   document.getElementById('setModeBebas').checked = (settings.enabledModes || []).includes('bebas');
   document.getElementById('setModeTarget').checked = (settings.enabledModes || []).includes('target');
+  document.getElementById('setFullscreen').checked = settings.fullscreen !== false;
 }
