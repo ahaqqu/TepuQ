@@ -5,6 +5,17 @@ import { exportZip, importZip } from './import-export.js';
 import { showToast } from '../utils.js';
 import { getMeta, putMeta } from '../db.js';
 
+function renderAdminBuildInfo() {
+  const footer = document.getElementById('adminFooter');
+  if (!footer || typeof __TEPUQ_BUILD_TIME__ === 'undefined') return;
+  const d = new Date(__TEPUQ_BUILD_TIME__);
+  const fmt = d.toLocaleString('id-ID', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+  footer.textContent += ` · Versi ${fmt}`;
+}
+
 export async function renderAdmin(objects, settings) {
   renderObjectList(objects, (id) => selectObject(id, objects));
   bindAdminTabs();
@@ -14,6 +25,7 @@ export async function renderAdmin(objects, settings) {
   bindSettingsForm(settings);
   refreshSettingsForm(settings);
   await renderBackupReminder();
+  renderAdminBuildInfo();
 }
 
 export function reRenderAdmin() {

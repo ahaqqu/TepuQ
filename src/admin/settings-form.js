@@ -8,14 +8,14 @@ export function bindSettingsForm(settings) {
   document.getElementById('btnSaveSettings').onclick = async () => {
     const newSettings = readSettingsForm();
     Object.assign(settings, newSettings);
-    await putSettings(settings);
+    await putSettings({ ...settings, _source: 'user' });
     showToast('Pengaturan disimpan');
   };
 
   document.getElementById('btnResetSettings').onclick = async () => {
     if (!confirm('Kembalikan pengaturan default?')) return;
     Object.assign(settings, DEFAULT_SETTINGS);
-    await putSettings(settings);
+    await putSettings({ ...settings, _source: 'default' });
     refreshSettingsForm(settings);
     showToast('Pengaturan direset');
   };
@@ -45,6 +45,7 @@ function readSettingsForm() {
     volume: Number(document.getElementById('setVolume').value) / 100,
     autoSmashDelay: Number(document.getElementById('setAutoSmash').value),
     enabledModes: modes.length ? modes : ['bebas'],
+    fullscreen: document.getElementById('setFullscreen').checked,
   };
 }
 
@@ -62,4 +63,5 @@ export function refreshSettingsForm(settings) {
   document.getElementById('setAutoSmash').value = settings.autoSmashDelay ?? 6;
   document.getElementById('setModeBebas').checked = (settings.enabledModes || []).includes('bebas');
   document.getElementById('setModeTarget').checked = (settings.enabledModes || []).includes('target');
+  document.getElementById('setFullscreen').checked = settings.fullscreen !== false;
 }

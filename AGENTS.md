@@ -114,6 +114,15 @@ Before creating a PR, the agent must:
 3. Verify the PR is mergeable via `gh pr view` before declaring it ready.
 4. If a replacement branch is created, close the old PR immediately and explain why.
 5. Never create a second PR for the same fix unless the first one was already closed or merged.
+6. **Write the PR title and description in English.** The project uses English for commit messages and PR descriptions so they are readable for all contributors. Indonesian is fine for user-facing copy inside the app.
+7. **Use `gh api` to update PR title/description.** Avoid `gh pr edit`; it can fail silently due to GraphQL issues. Example:
+   ```bash
+   gh api repos/<owner>/<repo>/pulls/<number> \
+     --method PATCH \
+     --field title="feat: ..." \
+     --field body="### What changed\n- ...\n\n### Tests\n- [x] bun run test:unit"
+   ```
+   Always verify with `gh pr view <number> --json title,body`.
 
 ---
 

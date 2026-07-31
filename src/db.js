@@ -54,7 +54,7 @@ export async function seedDefaults() {
       source: s.source || 'starter',
     });
   });
-  tx.objectStore('settings').put({ key: 'settings', ...DEFAULT_SETTINGS });
+  tx.objectStore('settings').put({ key: 'settings', ...DEFAULT_SETTINGS, _source: 'default' });
   tx.objectStore('meta').put({ key: 'meta', version: '3.0', lastModified: Date.now() });
   await txComplete(tx);
 
@@ -88,8 +88,19 @@ export async function loadData() {
     await seedDefaults();
     return loadData();
   }
-  const settings = { ...DEFAULT_SETTINGS, ...sets };
+  const settings = await reconcileSettings(sets);
   return { objects: objs, settings };
+}
+
+async function reconcileSettings(stored) {
+  // If the user has never customized settings, keep them on the latest defaults.
+  // Once the user saves settings explicitly, we respect their choices and stop overwriting.
+  if (stored._source !== 'user') {
+    const fresh = { ...DEFAULT_SETTINGS, _source: 'default' };
+    await putSettings(fresh);
+    return fresh;
+  }
+  return { ...DEFAULT_SETTINGS, ...stored };
 }
 
 function txComplete(tx) {

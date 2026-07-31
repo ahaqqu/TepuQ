@@ -16,7 +16,7 @@
 
     <div id="modePicker">
       <h1>🌟 TepuQ 🌟</h1>
-      <div class="mode-subtitle">Ketuk mode untuk mulai bermain!</div>
+      <div class="mode-subtitle">Ketuk mode untuk mulai bermain layar penuh!</div>
       <div class="mode-buttons">
         <button class="mode-btn" id="btnBebas" aria-label="TepuQ Bebas">
           <span class="mode-icon">✋</span>
@@ -29,10 +29,17 @@
           <small style="font-size:2.2vmin;font-weight:400;opacity:.9">Ketuk fotonya!</small>
         </button>
       </div>
+      <div id="fsNote" class="fs-note">Tekan lama pojok kiri atas untuk keluar dari layar penuh.</div>
+      <div id="buildInfo" class="build-info"></div>
+      <a href="?mode=admin" class="admin-link" aria-label="Buka Admin">⚙️ Admin</a>
     </div>
 
     <div id="backTrigger"></div>
-    <div id="backHint">Tekan lama pojok kiri atas untuk kembali ke menu</div>
+    <div id="backHint">Tahan lama pojok kiri atas untuk kembali ke menu</div>
+    <div id="fsExitHint" class="fs-exit-hint">
+      <span class="fs-exit-hint__dot"></span>
+      Layar penuh aktif — tahan pojok kiri atas untuk keluar
+    </div>
 
     <div id="card" class="hidden"></div>
     <div id="particles"></div>
@@ -81,7 +88,7 @@
         <p style="color:#666">Pilih objek untuk mengeditnya.</p>
       </div>
 
-      <div class="admin-footer">
+      <div class="admin-footer" id="adminFooter">
         Mode admin: <code>?mode=admin</code>
       </div>
     </div>
@@ -279,6 +286,10 @@
             <div class="toggle-row">
               <input type="checkbox" id="setModeTarget" checked>
               <label for="setModeTarget" style="margin:0">TepuQ Target</label>
+            </div>
+            <div class="toggle-row">
+              <input type="checkbox" id="setFullscreen" checked>
+              <label for="setFullscreen" style="margin:0">Layar Penuh</label>
             </div>
           </div>
         </div>

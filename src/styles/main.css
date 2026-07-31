@@ -96,7 +96,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4vmin;
+  gap: 3vmin;
   z-index: 20;
   background: rgba(0,0,0,0.35);
   backdrop-filter: blur(0.5vmin);
@@ -118,7 +118,7 @@ html, body {
   font-size: 3vmin;
   opacity: 0.95;
   text-shadow: 0 0.2vmin 0.6vmin rgba(0,0,0,0.3);
-  margin-top: -2vmin;
+  margin-top: -1vmin;
 }
 
 .mode-buttons {
@@ -164,6 +164,72 @@ html, body {
 .mode-btn:active { transform: scale(0.95); }
 
 .mode-icon { font-size: 10vmin; line-height: 1; }
+
+.fs-note {
+  font-size: 2.4vmin;
+  opacity: 0.85;
+  text-shadow: 0 0.2vmin 0.6vmin rgba(0,0,0,0.3);
+  text-align: center;
+  max-width: 80vmin;
+}
+
+.build-info {
+  position: absolute;
+  bottom: 3.2vmin;
+  font-size: 1.8vmin;
+  opacity: 0.7;
+  text-shadow: 0 0.1vmin 0.4vmin rgba(0,0,0,0.3);
+}
+
+.admin-link {
+  position: absolute;
+  bottom: 1vmin;
+  font-size: 1.6vmin;
+  color: rgba(255,255,255,0.65);
+  text-decoration: none;
+  text-shadow: 0 0.1vmin 0.4vmin rgba(0,0,0,0.3);
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.admin-link:hover, .admin-link:focus {
+  color: #fff;
+  opacity: 1;
+  outline: none;
+}
+
+.fs-exit-hint {
+  position: absolute;
+  top: 1vmin;
+  right: 1vmin;
+  display: flex;
+  align-items: center;
+  gap: 1.2vmin;
+  padding: 0.8vmin 1.4vmin;
+  border-radius: 1vmin;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 2vmin;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 26;
+}
+
+.fs-exit-hint.show { opacity: 1; }
+
+.fs-exit-hint__dot {
+  width: 1.2vmin;
+  height: 1.2vmin;
+  border-radius: 50%;
+  background: #27ae60;
+  box-shadow: 0 0 0.8vmin #27ae60;
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+}
 
 .demo-card {
   position: absolute;
