@@ -8,7 +8,7 @@ describe('DEFAULT_SETTINGS', () => {
       globalEntryAnimation: 'random',
       globalExitAnimation: 'random',
       cardSize: 'medium',
-      playMode: 'random',
+      playMode: 'round-robin',
       enabledModes: ['bebas', 'target'],
     });
   });

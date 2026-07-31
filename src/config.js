@@ -6,7 +6,7 @@ export const DEFAULT_SETTINGS = {
   globalEntryAnimation: 'random',
   globalExitAnimation: 'random',
   cardSize: 'medium',
-  playMode: 'random',
+  playMode: 'round-robin',
   burstWindow: 1.5,
   cardVisibleSeconds: 1,
   debounceMs: 300,
