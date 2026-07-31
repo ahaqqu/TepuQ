@@ -20,8 +20,8 @@ export function speak(text, settings = {}) {
   if (!text) return;
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'id-ID';
-  u.rate = settings.speechRate ?? 0.8;
-  u.pitch = settings.speechPitch ?? 1.0;
+  u.rate = settings.speechRate ?? 0.95;
+  u.pitch = settings.speechPitch ?? 1.25;
   u.volume = settings.volume ?? 0.8;
   if (idVoice) u.voice = idVoice;
   synth.speak(u);

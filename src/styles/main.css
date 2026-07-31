@@ -464,6 +464,19 @@ h1, h2, h3 { margin: 0 0 12px; }
 
 .obj-info { min-width: 0; }
 .obj-name { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.obj-source {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 999px;
+  margin-left: 6px;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+.obj-source.starter { background: #e3f2fd; color: #1976d2; }
+.obj-source.custom { background: #e8f5e9; color: #388e3c; }
 .obj-actions { display: flex; gap: 4px; flex-wrap: wrap; }
 
 .form-group {
@@ -564,6 +577,17 @@ h1, h2, h3 { margin: 0 0 12px; }
   color: #777;
   margin-top: auto;
   padding-top: 12px;
+}
+
+.privacy-note {
+  padding: 10px 12px;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 8px;
+  color: #795548;
+  font-size: 12px;
+  margin-bottom: 12px;
+  line-height: 1.4;
 }
 
 .backup-reminder {

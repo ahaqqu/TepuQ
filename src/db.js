@@ -22,7 +22,18 @@ export async function initDB() {
   });
 }
 
+async function fetchAssetBlob(path) {
+  try {
+    const res = await fetch(path);
+    if (!res.ok) return null;
+    return await res.blob();
+  } catch {
+    return null;
+  }
+}
+
 export async function seedDefaults() {
+  // Seed objects immediately so the UI can bootstrap without waiting for assets.
   const tx = db.transaction(['objects', 'settings', 'meta'], 'readwrite');
   const objStore = tx.objectStore('objects');
   STARTER_OBJECTS.forEach((s, i) => {
@@ -40,11 +51,35 @@ export async function seedDefaults() {
       active: true,
       order: i,
       keyBindings: [],
+      source: s.source || 'starter',
     });
   });
   tx.objectStore('settings').put({ key: 'settings', ...DEFAULT_SETTINGS });
   tx.objectStore('meta').put({ key: 'meta', version: '3.0', lastModified: Date.now() });
-  return txComplete(tx);
+  await txComplete(tx);
+
+  // Fetch bundled assets in the background and update each object.
+  // This keeps first paint fast while still giving real photos/sounds OOTB.
+  loadStarterAssets();
+  return;
+}
+
+async function loadStarterAssets() {
+  const objects = await getAllObjects();
+  await Promise.all(
+    STARTER_OBJECTS.map(async (s, i) => {
+      const id = 'obj_' + String(i + 1).padStart(3, '0');
+      const existing = objects.find((o) => o.id === id);
+      if (!existing) return;
+      const imageBlob = s.image ? await fetchAssetBlob(s.image) : null;
+      if (imageBlob) {
+        await putObject({
+          ...existing,
+          imageBlob,
+        });
+      }
+    })
+  );
 }
 
 export async function loadData() {
@@ -61,6 +96,19 @@ function txComplete(tx) {
   return new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
+  });
+}
+
+export function resetDatabase() {
+  return new Promise((resolve, reject) => {
+    if (db) {
+      db.close();
+      db = null;
+    }
+    const req = indexedDB.deleteDatabase(DB_NAME);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+    req.onblocked = () => reject(new Error('Database reset blocked by another tab'));
   });
 }
 

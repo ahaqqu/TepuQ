@@ -14,7 +14,7 @@ export function renderObjectList(objects, selectFn) {
     item.innerHTML = `
       <img class="obj-thumb" src="${obj.imageBlob ? URL.createObjectURL(obj.imageBlob) : getPlaceholder(obj)}" alt="">
       <div class="obj-info">
-        <div class="obj-name">${escapeHtml(obj.name)}</div>
+        <div class="obj-name">${escapeHtml(obj.name)} <span class="obj-source ${obj.source === 'custom' ? 'custom' : 'starter'}">${obj.source === 'custom' ? 'custom' : 'default'}</span></div>
         <div style="font-size:11px;color:#666">${escapeHtml(obj.ttsText || obj.name)}${(obj.keyBindings || []).length ? ' · keys: ' + obj.keyBindings.join(', ') : ''}</div>
       </div>
       <div class="obj-actions">

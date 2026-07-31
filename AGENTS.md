@@ -37,6 +37,9 @@ TepuQ/
 │   ├── speech.js           # TTS + recorded audio
 │   ├── game/               # game logic modules
 │   └── admin/              # admin logic modules
+├── public/
+│   ├── assets/             # bundled CC0 starter images + audio
+│   └── vendor/             # third-party JS libraries
 ├── tests/
 │   ├── unit/               # Vitest tests
 │   └── e2e/                # Playwright tests
@@ -76,7 +79,7 @@ After any change, verify at least these default-setting flows:
 6. Click **TepuQ Target** → tap the card → it advances.
 7. Open `http://localhost:5173?mode=admin`
 8. Add a new object, save, and see it in the list.
-9. Export ZIP and confirm `config.json` + `images/` exist.
+9. Export ZIP and confirm `config.json` only contains custom objects/recordings; import merges them with defaults.
 10. Build passes: `bun run build`.
 11. Unit tests pass: `bun run test:unit`.
 
@@ -123,6 +126,16 @@ The GitHub Action in `.github/workflows/deploy.yml` deploys the `dist/` folder t
 - `CLOUDFLARE_PROJECT_NAME` — optional, defaults to `tepuq`.
 
 Wrangler is a pinned dev dependency (`wrangler` in `package.json`). Data stays in the browser; the cloud deployment only serves static files.
+
+## Starter Assets
+
+Default images and audio are bundled in `public/assets/` and seeded into IndexedDB on first run.
+
+- **Images:** bright real photographs from Unsplash and CC0 sources.
+- **Audio:** default uses browser Text-to-Speech; parents can record their own voice per object in admin mode.
+- Parents can replace any starter object’s photo or recording in admin mode.
+
+See `docs/assets-sources.md` for the full list of files, URLs, and licenses.
 
 ---
 
