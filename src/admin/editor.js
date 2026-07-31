@@ -234,6 +234,7 @@ function bindObjectForm(objects, settings, refreshList, refreshMeta) {
       color: document.getElementById('inpColor').value,
       animation: document.getElementById('inpAnimation').value,
       imageBlob: pendingImageBlob || (existing?.imageBlob || null),
+      imageSource: pendingImageBlob ? 'custom' : (existing?.imageSource || 'custom'),
       audioBlob: existing?.audioBlob || null,
       useRecording: existing?.audioBlob ? useRecording : false,
       audioType: existing?.audioBlob && useRecording ? 'recording' : 'tts',
