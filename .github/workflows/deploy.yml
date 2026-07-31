@@ -35,10 +35,4 @@ jobs:
         run: |
           set -e
           PROJECT_NAME="${{ secrets.CLOUDFLARE_PROJECT_NAME || 'tepuq' }}"
-
-          if ! bunx wrangler pages project list 2>/dev/null | grep -q "^${PROJECT_NAME}\b"; then
-            echo "Pages project '${PROJECT_NAME}' not found. Creating it..."
-            bunx wrangler pages project create "${PROJECT_NAME}" --production-branch=main
-          fi
-
           bunx wrangler pages deploy dist --project-name="${PROJECT_NAME}"
