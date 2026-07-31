@@ -3,8 +3,6 @@ name: Deploy to Cloudflare Pages
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
   test-and-deploy:
@@ -30,10 +28,11 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Install Wrangler
+        run: bun add -d wrangler
+
       - name: Deploy to Cloudflare Pages
-        if: github.ref == 'refs/heads/main'
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME || 'tepuq' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: bunx wrangler pages deploy dist --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME || 'tepuq' }}
