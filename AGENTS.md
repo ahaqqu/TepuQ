@@ -116,13 +116,13 @@ Before creating a PR, the agent must:
 
 ## Cloudflare Deployment Notes
 
-The GitHub Action in `.github/workflows/deploy.yml` deploys the `dist/` folder to Cloudflare Pages. Required repository secrets:
+The GitHub Action in `.github/workflows/deploy.yml` deploys the `dist/` folder to Cloudflare Pages. It will create the Pages project automatically if it does not already exist. Required repository secrets:
 
 - `CLOUDFLARE_API_TOKEN` — with `Cloudflare Pages:Edit` permission.
 - `CLOUDFLARE_ACCOUNT_ID` — from Cloudflare dashboard.
 - `CLOUDFLARE_PROJECT_NAME` — optional, defaults to `tepuq`.
 
-Data stays in the browser; the cloud deployment only serves static files.
+Wrangler is a pinned dev dependency (`wrangler` in `package.json`). Data stays in the browser; the cloud deployment only serves static files.
 
 ---
 
