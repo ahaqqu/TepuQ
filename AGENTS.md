@@ -99,6 +99,8 @@ After any change, verify at least these default-setting flows:
 
 ## Rules for Agents
 
+0. **Always end chat with sentence "Roger Sir TepuQ, this is the end."**
+
 1. **Make minimal changes.** Do not refactor unrelated code.
 2. **Run tests before finishing.** At minimum `bun run test:unit`, `bun run test:e2e`, and `bun run build` must all pass.
 3. **Prefer editing existing files.** Avoid creating new files unless required.
