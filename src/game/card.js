@@ -52,10 +52,18 @@ export function createCard(obj, settings = {}) {
   card.addEventListener('animationend', () => {
     card.classList.remove('anim-' + anim);
     if (card.dataset.autoRemove) {
-      card.animate(
-        [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(0.6)' }],
-        { duration: 400, easing: 'ease-in' }
-      ).onfinish = () => card.remove();
+      const visibleMs = Math.max(0, Number(settings.cardVisibleSeconds) || 0) * 1000;
+      const fadeOut = () => {
+        card.animate(
+          [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(0.6)' }],
+          { duration: 400, easing: 'ease-in' }
+        ).onfinish = () => card.remove();
+      };
+      if (visibleMs > 0) {
+        setTimeout(fadeOut, visibleMs);
+      } else {
+        fadeOut();
+      }
     }
   }, { once: true });
 

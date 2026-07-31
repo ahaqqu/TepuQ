@@ -15,6 +15,7 @@ describe('DEFAULT_SETTINGS', () => {
 
   it('has numeric ranges within expected bounds', () => {
     expect(DEFAULT_SETTINGS.burstWindow).toBeGreaterThanOrEqual(0);
+    expect(DEFAULT_SETTINGS.cardVisibleSeconds).toBeGreaterThanOrEqual(0);
     expect(DEFAULT_SETTINGS.debounceMs).toBeGreaterThanOrEqual(0);
     expect(DEFAULT_SETTINGS.volume).toBeGreaterThanOrEqual(0);
     expect(DEFAULT_SETTINGS.volume).toBeLessThanOrEqual(1);

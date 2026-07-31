@@ -39,6 +39,7 @@ function readSettingsForm() {
     cardSize: document.getElementById('setCardSize').value,
     playMode: document.getElementById('setPlayMode').value,
     burstWindow: Number(document.getElementById('setBurstWindow').value),
+    cardVisibleSeconds: Number(document.getElementById('setCardVisible').value),
     debounceMs: Number(document.getElementById('setDebounce').value),
     speechRate: Number(document.getElementById('setRate').value),
     speechPitch: Number(document.getElementById('setPitch').value),
@@ -56,6 +57,7 @@ export function refreshSettingsForm(settings) {
   document.getElementById('setCardSize').value = settings.cardSize || 'medium';
   document.getElementById('setPlayMode').value = settings.playMode || 'random';
   document.getElementById('setBurstWindow').value = settings.burstWindow ?? 1.5;
+  document.getElementById('setCardVisible').value = settings.cardVisibleSeconds ?? 1;
   document.getElementById('setDebounce').value = settings.debounceMs ?? 300;
   document.getElementById('setRate').value = settings.speechRate ?? 0.8;
   document.getElementById('setPitch').value = settings.speechPitch ?? 1.0;

@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS = {
   cardSize: 'medium',
   playMode: 'random',
   burstWindow: 1.5,
+  cardVisibleSeconds: 1,
   debounceMs: 300,
   speechRate: 0.95,
   speechPitch: 1.25,
