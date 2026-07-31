@@ -38,7 +38,7 @@ jobs:
 
           if ! bunx wrangler pages project list 2>/dev/null | grep -q "^${PROJECT_NAME}\b"; then
             echo "Pages project '${PROJECT_NAME}' not found. Creating it..."
-            bunx wrangler pages project create "${PROJECT_NAME}"
+            bunx wrangler pages project create "${PROJECT_NAME}" --production-branch=main
           fi
 
           bunx wrangler pages deploy dist --project-name="${PROJECT_NAME}"
