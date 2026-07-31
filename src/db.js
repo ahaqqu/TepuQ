@@ -39,23 +39,26 @@ export async function seedDefaults() {
   STARTER_OBJECTS.forEach((s, i) => {
     const id = 'obj_' + String(i + 1).padStart(3, '0');
     objStore.put({
-      id,
-      name: s.name,
-      ttsText: s.name,
-      color: s.color,
-      animation: 'random',
-      imageBlob: null,
-      audioBlob: null,
-      useRecording: false,
-      audioType: 'tts',
-      active: true,
-      order: i,
-      keyBindings: [],
-      source: s.source || 'starter',
-    });
+    id,
+    name: s.name,
+    ttsText: s.name,
+    color: s.color,
+    animation: 'random',
+    imageBlob: null,
+    imageSource: 'starter',
+    audioBlob: null,
+    useRecording: false,
+    audioType: 'tts',
+    active: true,
+    order: i,
+    keyBindings: [],
+    source: s.source || 'starter',
   });
-  tx.objectStore('settings').put({ key: 'settings', ...DEFAULT_SETTINGS });
+  });
+  tx.objectStore('settings').put({ key: 'settings', ...DEFAULT_SETTINGS, _source: 'default' });
   tx.objectStore('meta').put({ key: 'meta', version: '3.0', lastModified: Date.now() });
+  // Default image blobs are loaded in the background so first paint stays fast.
+  // imageBlob is left null here and fetched asynchronously by loadStarterAssets.
   await txComplete(tx);
 
   // Fetch bundled assets in the background and update each object.
@@ -71,11 +74,14 @@ async function loadStarterAssets() {
       const id = 'obj_' + String(i + 1).padStart(3, '0');
       const existing = objects.find((o) => o.id === id);
       if (!existing) return;
+      // Only refresh the image if the user has not replaced it with a custom photo.
+      if (existing.imageSource === 'custom') return;
       const imageBlob = s.image ? await fetchAssetBlob(s.image) : null;
       if (imageBlob) {
         await putObject({
           ...existing,
           imageBlob,
+          imageSource: 'starter',
         });
       }
     })
@@ -83,13 +89,26 @@ async function loadStarterAssets() {
 }
 
 export async function loadData() {
-  const [objs, sets] = await Promise.all([getAllObjects(), getSettings()]);
+  let [objs, sets] = await Promise.all([getAllObjects(), getSettings()]);
   if (objs.length === 0) {
     await seedDefaults();
     return loadData();
   }
-  const settings = { ...DEFAULT_SETTINGS, ...sets };
+  const settings = await reconcileSettings(sets);
+  // Refresh starter images in the background so updated assets roll out on new deploys.
+  loadStarterAssets();
   return { objects: objs, settings };
+}
+
+async function reconcileSettings(stored) {
+  // If the user has never customized settings, keep them on the latest defaults.
+  // Once the user saves settings explicitly, we respect their choices and stop overwriting.
+  if (stored._source !== 'user') {
+    const fresh = { ...DEFAULT_SETTINGS, _source: 'default' };
+    await putSettings(fresh);
+    return fresh;
+  }
+  return { ...DEFAULT_SETTINGS, ...stored };
 }
 
 function txComplete(tx) {

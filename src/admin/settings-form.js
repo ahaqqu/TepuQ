@@ -8,14 +8,14 @@ export function bindSettingsForm(settings) {
   document.getElementById('btnSaveSettings').onclick = async () => {
     const newSettings = readSettingsForm();
     Object.assign(settings, newSettings);
-    await putSettings(settings);
+    await putSettings({ ...settings, _source: 'user' });
     showToast('Pengaturan disimpan');
   };
 
   document.getElementById('btnResetSettings').onclick = async () => {
     if (!confirm('Kembalikan pengaturan default?')) return;
     Object.assign(settings, DEFAULT_SETTINGS);
-    await putSettings(settings);
+    await putSettings({ ...settings, _source: 'default' });
     refreshSettingsForm(settings);
     showToast('Pengaturan direset');
   };
