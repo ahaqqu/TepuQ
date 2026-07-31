@@ -327,6 +327,10 @@ function bindBackTrigger() {
   const hint = document.getElementById('backHint');
   let timer = null;
   let hintTimer = null;
+  let activeTouchId = null;
+  let startTime = 0;
+  let feedbackTimer = null;
+  const PRESS_MS = 1500;
 
   const showHint = () => {
     hint.classList.add('show');
@@ -334,28 +338,70 @@ function bindBackTrigger() {
     hintTimer = setTimeout(() => hint.classList.remove('show'), 2000);
   };
 
-  const start = (e) => {
-    e.preventDefault();
-    timer = setTimeout(() => {
-      timer = null;
-      unlockPointer();
-      exitFullscreen().finally(showModePicker);
-    }, 1500);
+  const finish = () => {
+    timer = null;
+    startTime = 0;
+    trigger.classList.remove('back-active');
+    if (feedbackTimer) clearTimeout(feedbackTimer);
+    feedbackTimer = null;
+    unlockPointer();
+    exitFullscreen().finally(showModePicker);
   };
 
-  const cancel = () => {
+  const start = (e) => {
+    e.preventDefault();
+    if (timer) return;
+
+    if (e.type === 'touchstart') {
+      const touch = e.changedTouches[0];
+      activeTouchId = touch.identifier;
+    } else {
+      activeTouchId = null;
+    }
+
+    startTime = performance.now();
+    timer = setTimeout(() => {
+      timer = null;
+      if (navigator.vibrate) navigator.vibrate(80);
+      finish();
+    }, PRESS_MS);
+
+    // Visual feedback so parents know the gesture is registering.
+    trigger.classList.add('back-active');
+    feedbackTimer = setTimeout(() => {
+      feedbackTimer = null;
+      if (navigator.vibrate) navigator.vibrate(40);
+    }, PRESS_MS - 120);
+  };
+
+  const cancel = (e) => {
+    if (e?.type === 'touchend' || e?.type === 'touchcancel') {
+      const touch = e.changedTouches[0];
+      if (activeTouchId !== null && touch && touch.identifier !== activeTouchId) {
+        return;
+      }
+      activeTouchId = null;
+    }
+
     if (timer) {
       clearTimeout(timer);
       timer = null;
     }
+    if (feedbackTimer) {
+      clearTimeout(feedbackTimer);
+      feedbackTimer = null;
+    }
+    startTime = 0;
+    trigger.classList.remove('back-active');
   };
 
-  trigger.addEventListener('pointerdown', start);
+  trigger.addEventListener('pointerdown', start, { passive: false });
   trigger.addEventListener('pointerup', cancel);
   trigger.addEventListener('pointerleave', cancel);
   trigger.addEventListener('pointercancel', cancel);
   trigger.addEventListener('touchstart', start, { passive: false });
   trigger.addEventListener('touchend', cancel);
+  trigger.addEventListener('touchcancel', cancel);
   trigger.addEventListener('contextmenu', (e) => e.preventDefault());
 
   document.addEventListener('keydown', (e) => {

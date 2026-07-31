@@ -79,13 +79,17 @@ function renderPreview(obj) {
   card.style.overflow = 'hidden';
   card.style.pointerEvents = 'none';
 
-  const hasImage = !!obj.imageBlob;
+  const hasImage = !!(obj.imageUrl || obj.imageBlob);
   card.style.border = hasImage ? 'none' : '3px solid ' + (obj.color || '#4A90D9');
 
-  if (hasImage) {
-    const imgSrc = URL.createObjectURL(obj.imageBlob);
+  if (obj.imageUrl) {
     card.style.background = obj.color || '#4A90D9';
-    card.innerHTML = `<img src="${imgSrc}" alt="${escapeAttr(obj.name)}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+    card.innerHTML = `<img src="${escapeAttr(obj.imageUrl)}" alt="${escapeAttr(obj.name)}" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+  } else if (obj.imageBlob) {
+    const safeBlob = normalizeImageBlob(obj.imageBlob);
+    const imgSrc = URL.createObjectURL(safeBlob);
+    card.style.background = obj.color || '#4A90D9';
+    card.innerHTML = `<img src="${imgSrc}" alt="${escapeAttr(obj.name)}" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;display:block;">`;
   } else {
     card.style.background = obj.color || '#4A90D9';
     card.innerHTML = `
@@ -233,6 +237,7 @@ function bindObjectForm(objects, settings, refreshList, refreshMeta) {
       ttsText: document.getElementById('inpTts').value.trim() || document.getElementById('inpName').value.trim(),
       color: document.getElementById('inpColor').value,
       animation: document.getElementById('inpAnimation').value,
+      imageUrl: pendingImageBlob ? null : (existing?.imageUrl || null),
       imageBlob: pendingImageBlob || (existing?.imageBlob || null),
       imageSource: pendingImageBlob ? 'custom' : (existing?.imageSource || 'custom'),
       audioBlob: existing?.audioBlob || null,
@@ -288,6 +293,15 @@ function switchEditorTab(name) {
   document.querySelectorAll('#editorTabs .tab').forEach((t) => t.classList.toggle('active', t.dataset.editortab === name));
   document.getElementById('editorTabEditor').classList.toggle('hidden', name !== 'editor');
   document.getElementById('editorTabSettings').classList.toggle('hidden', name !== 'settings');
+}
+
+function normalizeImageBlob(blob) {
+  if (!blob) return blob;
+  const type = blob.type || '';
+  if (type === 'image/jpg' || type === '') {
+    return new Blob([blob], { type: 'image/jpeg' });
+  }
+  return blob;
 }
 
 function escapeHtml(str) {
