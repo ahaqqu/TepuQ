@@ -1,0 +1,126 @@
+# TepuQ — Agent Instructions
+
+## Project Purpose
+
+TepuQ is a fun and simple browser game for toddlers (15+ months) and their parents. It shows photo cards and speaks Indonesian names when the child taps the screen or presses keys. Parents configure everything through an admin mode.
+
+**Core principles (do not break):**
+- **Fun and simple** — keep the experience joyful and easy.
+- **Default settings must work** — the game should run immediately without configuration.
+- **Browser-first** — all data lives in the browser (IndexedDB). No backend server.
+- **Minimal changes** — only touch what is needed.
+- **Test after changing** — run unit and E2E tests before finishing.
+
+---
+
+## Tech Stack
+
+- **Build tool:** Vite
+- **Package manager:** Bun
+- **Frontend:** Vanilla JavaScript + HTML + CSS (no frameworks)
+- **Storage:** IndexedDB in the browser
+- **Tests:** Vitest (unit) + Playwright (E2E)
+- **Deployment:** Cloudflare Pages via GitHub Actions
+
+---
+
+## Project Structure
+
+```
+TepuQ/
+├── index.html              # Vite shell
+├── src/
+│   ├── main.js             # bootstrap
+│   ├── config.js           # defaults and constants
+│   ├── db.js               # IndexedDB
+│   ├── utils.js            # helpers
+│   ├── speech.js           # TTS + recorded audio
+│   ├── game/               # game logic modules
+│   └── admin/              # admin logic modules
+├── tests/
+│   ├── unit/               # Vitest tests
+│   └── e2e/                # Playwright tests
+├── AGENTS.md               # this file
+├── package.json            # Bun scripts
+├── vite.config.js
+├── vitest.config.js
+├── playwright.config.js
+├── wrangler.jsonc          # Cloudflare Pages config
+└── .github/workflows/deploy.yml
+```
+
+---
+
+## How to Run
+
+```bash
+bun install        # install dependencies
+bun run dev        # start dev server at http://localhost:5173
+bun run build      # build static site to dist/
+bun run preview    # preview the build
+bun run test:unit  # run Vitest unit tests
+bun run test:e2e   # run Playwright E2E tests (builds and previews first)
+```
+
+---
+
+## Manual Smoke Test Checklist
+
+After any change, verify at least these default-setting flows:
+
+1. `bun run dev`
+2. Open `http://localhost:5173`
+3. See the mode picker with both buttons.
+4. Click **TepuQ Bebas** → press any key → a card appears and audio speaks.
+5. Long-press top-left corner → return to mode picker.
+6. Click **TepuQ Target** → tap the card → it advances.
+7. Open `http://localhost:5173?mode=admin`
+8. Add a new object, save, and see it in the list.
+9. Export ZIP and confirm `config.json` + `images/` exist.
+10. Build passes: `bun run build`.
+11. Unit tests pass: `bun run test:unit`.
+
+---
+
+## What Must Not Break
+
+- Default settings in `src/config.js`.
+- Starter objects list and seeding in `src/db.js`.
+- Game mode: Bebas and Target must both work.
+- Admin mode: add/edit/delete object, settings, export/import ZIP.
+- Import/export of images and recorded audio.
+- Key bindings (case-insensitive).
+- No-border rule when an image is set.
+
+---
+
+## Rules for Agents
+
+1. **Make minimal changes.** Do not refactor unrelated code.
+2. **Run tests before finishing.** At minimum `bun run test:unit` and `bun run build`.
+3. **Prefer editing existing files.** Avoid creating new files unless required.
+4. **Update this file (AGENTS.md)** if you change project structure, scripts, or deployment.
+5. **Do not commit, push, or create pull requests** unless explicitly asked.
+6. **Keep it fun and simple.** If a feature adds complexity, propose a simpler alternative.
+
+---
+
+## Cloudflare Deployment Notes
+
+The GitHub Action in `.github/workflows/deploy.yml` deploys the `dist/` folder to Cloudflare Pages. Required repository secrets:
+
+- `CLOUDFLARE_API_TOKEN` — with `Cloudflare Pages:Edit` permission.
+- `CLOUDFLARE_ACCOUNT_ID` — from Cloudflare dashboard.
+- `CLOUDFLARE_PROJECT_NAME` — optional, defaults to `tepuq`.
+
+Data stays in the browser; the cloud deployment only serves static files.
+
+---
+
+## Useful References
+
+- Game logic: `src/game/logic.js`
+- Card rendering (including border/no-border): `src/game/card.js`
+- Admin editor (camera, audio, key bindings): `src/admin/editor.js`
+- Settings form: `src/admin/settings-form.js`
+- Import/export ZIP: `src/admin/import-export.js`
