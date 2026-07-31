@@ -97,11 +97,20 @@ After any change, verify at least these default-setting flows:
 ## Rules for Agents
 
 1. **Make minimal changes.** Do not refactor unrelated code.
-2. **Run tests before finishing.** At minimum `bun run test:unit` and `bun run build`.
+2. **Run tests before finishing.** At minimum `bun run test:unit`, `bun run test:e2e`, and `bun run build` must all pass.
 3. **Prefer editing existing files.** Avoid creating new files unless required.
 4. **Update this file (AGENTS.md)** if you change project structure, scripts, or deployment.
 5. **Do not commit, push, or create pull requests** unless explicitly asked.
 6. **Keep it fun and simple.** If a feature adds complexity, propose a simpler alternative.
+7. **One fix, one PR.** See the PR Checklist below for details.
+
+### PR Checklist
+Before creating a PR, the agent must:
+1. Check if a PR already exists for the same fix. If yes, update that branch instead of creating a new PR.
+2. Ensure the branch is based on the latest `origin/main` (`git fetch origin main && git rebase origin/main`).
+3. Verify the PR is mergeable via `gh pr view` before declaring it ready.
+4. If a replacement branch is created, close the old PR immediately and explain why.
+5. Never create a second PR for the same fix unless the first one was already closed or merged.
 
 ---
 
