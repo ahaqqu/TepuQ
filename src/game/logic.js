@@ -1,5 +1,5 @@
 import { speakOrPlay } from '../speech.js';
-import { createParticles } from './effects.js';
+import { createParticles, thumpCard } from './effects.js';
 import { createCard, clearPopCards } from './card.js';
 import { normalizeKey } from '../utils.js';
 
@@ -66,7 +66,7 @@ export function findBoundObject(active, key) {
   return active.find((o) => (o.keyBindings || []).includes(normalized)) || null;
 }
 
-export function handleTargetSuccess(objects, settings, elParticles) {
+export function handleTargetSuccess(objects, settings, elParticles, point) {
   const now = Date.now();
   if (now - state.lastInteractionTime < settings.debounceMs) return;
   state.lastInteractionTime = now;
@@ -87,11 +87,11 @@ export function handleTargetSuccess(objects, settings, elParticles) {
 
   state.currentObjectId = next.id;
   speakOrPlay(next, settings);
-  showSingleCard(next, settings, elParticles);
+  showSingleCard(next, settings, elParticles, point);
   resetAutoSmash(objects, settings);
 }
 
-export async function handleSuccess(source, objects, settings, elParticles, key) {
+export async function handleSuccess(source, objects, settings, elParticles, key, point) {
   const now = Date.now();
   if (now - state.lastInteractionTime < DEBOUNCE_MS) return;
   state.lastInteractionTime = now;
@@ -102,7 +102,7 @@ export async function handleSuccess(source, objects, settings, elParticles, key)
   if (active.length === 0) return;
 
   if (state.currentMode === 'target') {
-    handleTargetSuccess(objects, settings, elParticles);
+    handleTargetSuccess(objects, settings, elParticles, point);
     return;
   }
 
@@ -140,17 +140,19 @@ export async function handleSuccess(source, objects, settings, elParticles, key)
   const card = createCard(current, settings);
   card.dataset.autoRemove = 'true';
   game.appendChild(card);
-  createParticles(elParticles, card, current.color);
+  createParticles(elParticles, card, current.color, point?.x, point?.y);
+  thumpCard(card);
 
   if (source !== 'auto-smash') resetAutoSmash(objects, settings);
 }
 
-export function showSingleCard(obj, settings, elParticles) {
+export function showSingleCard(obj, settings, elParticles, point) {
   clearPopCards();
   const card = createCard(obj, settings);
   card.classList.add('target-card');
   document.getElementById('game').appendChild(card);
-  createParticles(elParticles, card, obj.color);
+  createParticles(elParticles, card, obj.color, point?.x, point?.y);
+  thumpCard(card);
 }
 
 function startBurstTimer(settings) {

@@ -1,9 +1,9 @@
 import { applyBackground, applyCardSize } from './background.js';
 import { buildDemoCard } from './card.js';
 import { handleSuccess, handleTargetSuccess, resetGameState, getState, setState, resetAutoSmash, stopAutoSmash } from './logic.js';
-import { initSpeech } from '../speech.js';
+import { speak } from '../speech.js';
 import { hintCard } from './effects.js';
-import { enterFullscreen, exitFullscreen, lockPointer, unlockPointer, onFullscreenChange, warnIfKioskBlocked } from './fullscreen.js';
+import { enterFullscreen, exitFullscreen, unlockPointer, onFullscreenChange, warnIfKioskBlocked } from './fullscreen.js';
 
 let appState = null;
 let demoTimer = null;
@@ -27,6 +27,7 @@ export function showModePicker() {
     fsUnsubscribe = null;
   }
   unlockPointer();
+  document.body.classList.remove('cursor-idle');
   // Don't force-exit fullscreen on the picker so parents can navigate,
   // but expose an obvious Exit Fullscreen button if active.
   updateExitHint();
@@ -43,6 +44,8 @@ export function showModePicker() {
   const btnTarget = document.getElementById('btnTarget');
   btnBebas.onclick = () => startMode('bebas');
   btnTarget.onclick = () => startMode('target');
+  btnBebas.onpointerenter = () => speak('Main TepuQ Bebas yuk', appState.settings);
+  btnTarget.onpointerenter = () => speak('Ayo main TepuQ Target bersamaku', appState.settings);
   btnBebas.classList.toggle('hidden', enabled.length === 1 && !enabled.includes('bebas'));
   btnTarget.classList.toggle('hidden', enabled.length === 1 && !enabled.includes('target'));
   startDemoCards();
@@ -104,10 +107,9 @@ export async function startMode(mode) {
 
 async function enterKiosk() {
   await enterFullscreen();
-  // Pointer lock reduces accidental touchpad scroll/swipe while in game, but only after fullscreen.
-  if (isFullscreen()) {
-    await lockPointer();
-  }
+  // No pointer lock: it hides the cursor. Instead the cursor is shown and
+  // auto-hides after inactivity (see initCursorAutoHide), so toddlers on a
+  // mouse can still see where they are tapping.
 }
 
 function showKioskWarningOnce() {
@@ -170,6 +172,22 @@ export function bindGameInput() {
   window.addEventListener('beforeunload', onBeforeUnload);
   bindBackTrigger();
   bindExitButton();
+  initCursorAutoHide();
+}
+
+const CURSOR_IDLE_MS = 3000;
+let cursorHideTimer = null;
+
+function initCursorAutoHide() {
+  const wake = () => {
+    document.body.classList.remove('cursor-idle');
+    if (cursorHideTimer) clearTimeout(cursorHideTimer);
+    if (getCurrentMode() === null) return;
+    cursorHideTimer = setTimeout(() => document.body.classList.add('cursor-idle'), CURSOR_IDLE_MS);
+  };
+  document.addEventListener('pointermove', wake, { passive: true });
+  document.addEventListener('pointerdown', wake, { passive: true });
+  document.addEventListener('keydown', wake, { passive: true });
 }
 
 function onKeyDown(e) {
@@ -221,6 +239,8 @@ function onTouchStart(e) {
   const modePicker = document.getElementById('modePicker');
   if (!modePicker.classList.contains('hidden')) return;
 
+  const touch = e.touches[0] || e.changedTouches[0];
+  const point = touch ? { x: touch.clientX, y: touch.clientY } : null;
   const targetCard = document.querySelector('.card-pop.target-card');
   const card = targetCard || document.getElementById('card');
   const isCard = e.target === card || card?.contains(e.target);
@@ -230,11 +250,11 @@ function onTouchStart(e) {
       hintCard(card);
       return;
     }
-    handleTargetSuccess(appState.objects, appState.settings, document.getElementById('particles'));
+    handleTargetSuccess(appState.objects, appState.settings, document.getElementById('particles'), point);
     return;
   }
 
-  handleSuccess('touch', appState.objects, appState.settings, document.getElementById('particles'));
+  handleSuccess('touch', appState.objects, appState.settings, document.getElementById('particles'), null, point);
 }
 
 function onTouchMove(e) {
@@ -247,12 +267,6 @@ function onTouchMove(e) {
 
 function onTouchEnd(e) {
   if (document.body.classList.contains('admin')) return;
-  if (e.touches.length === 0) {
-    // Re-lock pointer after a tap if we lost it (best effort for accidental touchpad clicks).
-    if (getCurrentMode() !== null && !document.pointerLockElement) {
-      lockPointer();
-    }
-  }
 }
 
 function onWheel(e) {
@@ -292,6 +306,7 @@ function onPointerDown(e) {
   e.preventDefault();
   if (!appState) return;
 
+  const point = { x: e.clientX, y: e.clientY };
   const clickedCard = document.querySelector('.card-pop.target-card') || document.getElementById('card');
   const isCard = e.target === clickedCard || clickedCard?.contains(e.target);
 
@@ -300,11 +315,11 @@ function onPointerDown(e) {
       hintCard(clickedCard);
       return;
     }
-    handleTargetSuccess(appState.objects, appState.settings, document.getElementById('particles'));
+    handleTargetSuccess(appState.objects, appState.settings, document.getElementById('particles'), point);
     return;
   }
 
-  handleSuccess('pointer', appState.objects, appState.settings, document.getElementById('particles'));
+  handleSuccess('pointer', appState.objects, appState.settings, document.getElementById('particles'), null, point);
 }
 
 function bindBackTrigger() {
