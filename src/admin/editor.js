@@ -1,11 +1,12 @@
 import { putObject, putMeta, getMeta } from '../db.js';
-import { showToast, getPlaceholder, keyStringToBindings, normalizeKey } from '../utils.js';
+import { showToast, getPlaceholder, keyStringToBindings, normalizeKey, resizeImage } from '../utils.js';
 import { speakOrPlay } from '../speech.js';
 
 let selectedObjectId = null;
 let recorder = null;
 let recordedChunks = [];
 let audioPreviewURL = null;
+let pendingImageBlob = null;
 
 export function initEditor(objects, settings, refreshList, refreshMeta) {
   bindObjectForm(objects, settings, refreshList, refreshMeta);
@@ -28,6 +29,8 @@ export function selectObject(id, objects) {
     document.getElementById('inpUseRecording').checked = !!obj.useRecording;
   }
   document.getElementById('inpPhoto').value = '';
+  document.getElementById('inpPhotoUrl').value = '';
+  pendingImageBlob = null;
   renderPreview(obj);
   renderAudioSection(obj);
   switchEditorTab('editor');
@@ -53,6 +56,9 @@ export function addNewObject() {
   if (noSel) noSel.classList.add('hidden');
   const objForm = document.getElementById('objectForm');
   if (objForm) objForm.classList.remove('hidden');
+  const urlInput = document.getElementById('inpPhotoUrl');
+  if (urlInput) urlInput.value = '';
+  pendingImageBlob = null;
   const preview = document.getElementById('photoPreview');
   if (preview) preview.innerHTML = '<span style="color:#888;font-size:14px">Belum ada foto</span>';
   renderAudioSection({ audioBlob: null, useRecording: false });
@@ -174,11 +180,35 @@ function bindObjectForm(objects, settings, refreshList, refreshMeta) {
     window.open('index.html', '_blank');
   };
 
-  document.getElementById('inpPhoto').addEventListener('change', (e) => {
+  document.getElementById('inpPhoto').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    document.getElementById('photoPreview').innerHTML = `<img src="${url}" alt="preview" style="max-width:100%;max-height:100%;object-fit:contain;">`;
+    try {
+      pendingImageBlob = await resizeImage(file);
+      const url = URL.createObjectURL(pendingImageBlob);
+      document.getElementById('photoPreview').innerHTML = `<img src="${url}" alt="preview" style="max-width:100%;max-height:100%;object-fit:contain;">`;
+    } catch (err) {
+      showToast('Gagal memproses foto: ' + err.message, true);
+      pendingImageBlob = null;
+    }
+  });
+
+  document.getElementById('btnLoadPhotoUrl').addEventListener('click', async () => {
+    const url = document.getElementById('inpPhotoUrl').value.trim();
+    if (!url) return;
+    try {
+      const res = await fetch(url, { mode: 'cors' });
+      if (!res.ok) throw new Error('Gagal mengunduh gambar');
+      const blob = await res.blob();
+      if (!blob.type.startsWith('image/')) throw new Error('URL bukan gambar');
+      pendingImageBlob = await resizeImage(blob);
+      const objectUrl = URL.createObjectURL(pendingImageBlob);
+      document.getElementById('photoPreview').innerHTML = `<img src="${objectUrl}" alt="preview" style="max-width:100%;max-height:100%;object-fit:contain;">`;
+      showToast('Foto dari URL siap');
+    } catch (err) {
+      showToast('Gagal memuat foto dari URL: ' + err.message, true);
+      pendingImageBlob = null;
+    }
   });
 
   document.getElementById('inpColor').addEventListener('input', (e) => {
@@ -203,13 +233,14 @@ function bindObjectForm(objects, settings, refreshList, refreshMeta) {
       ttsText: document.getElementById('inpTts').value.trim() || document.getElementById('inpName').value.trim(),
       color: document.getElementById('inpColor').value,
       animation: document.getElementById('inpAnimation').value,
-      imageBlob: file ? file : (existing?.imageBlob || null),
+      imageBlob: pendingImageBlob || (existing?.imageBlob || null),
       audioBlob: existing?.audioBlob || null,
       useRecording: existing?.audioBlob ? useRecording : false,
       audioType: existing?.audioBlob && useRecording ? 'recording' : 'tts',
       active: document.getElementById('inpActive').checked,
       order: existing ? existing.order : objects.length,
       keyBindings: keyStringToBindings(keyInput),
+      source: existing?.source || 'custom',
     };
     await putObject(newObj);
     const idx = objects.findIndex((o) => o.id === id);
@@ -217,6 +248,7 @@ function bindObjectForm(objects, settings, refreshList, refreshMeta) {
     else objects.push(newObj);
     selectedObjectId = id;
     document.getElementById('editorTitle').textContent = 'Edit Objek';
+    pendingImageBlob = null;
     refreshList();
     renderPreview(newObj);
     renderAudioSection(newObj);

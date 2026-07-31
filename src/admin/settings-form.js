@@ -1,4 +1,4 @@
-import { putSettings } from '../db.js';
+import { putSettings, resetDatabase } from '../db.js';
 import { showToast } from '../utils.js';
 import { DEFAULT_SETTINGS } from '../config.js';
 
@@ -18,6 +18,13 @@ export function bindSettingsForm(settings) {
     await putSettings(settings);
     refreshSettingsForm(settings);
     showToast('Pengaturan direset');
+  };
+
+  document.getElementById('btnResetAll').onclick = async () => {
+    if (!confirm('Hapus SEMUA data dan kembali ke pengaturan awal? Tindakan ini tidak bisa dibatalkan.')) return;
+    await resetDatabase();
+    sessionStorage.removeItem('tepuq-mode');
+    window.location.reload();
   };
 }
 

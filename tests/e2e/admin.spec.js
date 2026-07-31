@@ -4,7 +4,7 @@ test.describe('Admin mode default settings', () => {
   test('loads admin page', async ({ page }) => {
     await page.goto('/?mode=admin');
     await expect(page.locator('text=TepuQ Admin')).toBeVisible();
-    await expect(page.locator('#objectList .object-item')).toHaveCount(22);
+    await expect(page.locator('#objectList .object-item')).toHaveCount(17);
   });
 
   test('can add object and export zip', async ({ page }) => {

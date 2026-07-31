@@ -69,6 +69,45 @@ export function placeholderToBlob(obj) {
   });
 }
 
+const MAX_IMAGE_SIZE = 800;
+
+export function resizeImage(blob, maxSize = MAX_IMAGE_SIZE, outputType = 'image/jpeg', quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    if (!blob || !blob.type.startsWith('image/')) {
+      reject(new Error('File bukan gambar'));
+      return;
+    }
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { naturalWidth: w, naturalHeight: h } = img;
+      if (w > maxSize || h > maxSize) {
+        if (w > h) {
+          h = Math.round((h * maxSize) / w);
+          w = maxSize;
+        } else {
+          w = Math.round((w * maxSize) / h);
+          h = maxSize;
+        }
+      }
+      const c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      c.toBlob((b) => {
+        if (!b) reject(new Error('Gagal memproses gambar'));
+        else resolve(b);
+      }, outputType, quality);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Gagal membaca gambar'));
+    };
+    img.src = url;
+  });
+}
+
 export function getImageAspectRatio(blob) {
   return new Promise((resolve) => {
     if (!blob) { resolve(0); return; }
