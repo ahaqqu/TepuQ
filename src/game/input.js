@@ -3,9 +3,11 @@ import { buildDemoCard } from './card.js';
 import { handleSuccess, handleTargetSuccess, resetGameState, getState, setState, resetAutoSmash, stopAutoSmash } from './logic.js';
 import { initSpeech } from '../speech.js';
 import { hintCard } from './effects.js';
+import { enterFullscreen, exitFullscreen, lockPointer, unlockPointer, onFullscreenChange, warnIfKioskBlocked } from './fullscreen.js';
 
 let appState = null;
 let demoTimer = null;
+let fsUnsubscribe = null;
 
 export function initGame(state) {
   appState = state;
@@ -13,12 +15,22 @@ export function initGame(state) {
   applyBackground(document.getElementById('bgEffects'), state.settings.backgroundStyle);
   applyCardSize(state.settings.cardSize);
   setState({ currentMode: null });
+  showKioskWarningOnce();
   return setupModeSelection();
 }
 
 export function showModePicker() {
   if (!appState) return;
   stopAutoSmash();
+  if (fsUnsubscribe) {
+    fsUnsubscribe();
+    fsUnsubscribe = null;
+  }
+  unlockPointer();
+  // Don't force-exit fullscreen on the picker so parents can navigate,
+  // but expose an obvious Exit Fullscreen button if active.
+  updateExitHint();
+
   const elModePicker = document.getElementById('modePicker');
   const elCard = document.getElementById('card');
   elCard.className = 'hidden';
@@ -51,6 +63,11 @@ async function setupModeSelection() {
   }
 }
 
+function showModePickerSafe() {
+  unlockPointer();
+  exitFullscreen().finally(showModePicker);
+}
+
 export async function startMode(mode) {
   if (!appState) return;
   setState({ currentMode: mode });
@@ -68,10 +85,46 @@ export async function startMode(mode) {
   setState({ currentObjectId: first.id });
   document.getElementById('emptyState').classList.add('hidden');
 
+  // Try kiosk immersion when enabled (default on). Parents can disable fullscreen in admin.
+  if (appState.settings.fullscreen !== false) {
+    await enterKiosk();
+  }
+  fsUnsubscribe = onFullscreenChange(async (active) => {
+    if (!active && getCurrentMode() !== null) {
+      // Child exited fullscreen via OS gesture; pull them back to the safe picker instead of staying in game.
+      showModePicker();
+    }
+  });
+
   if (mode === 'target') {
     handleTargetSuccess(appState.objects, appState.settings, document.getElementById('particles'));
   }
   resetAutoSmash(appState.objects, appState.settings);
+}
+
+async function enterKiosk() {
+  await enterFullscreen();
+  // Pointer lock reduces accidental touchpad scroll/swipe while in game, but only after fullscreen.
+  if (isFullscreen()) {
+    await lockPointer();
+  }
+}
+
+function showKioskWarningOnce() {
+  const warning = warnIfKioskBlocked();
+  if (warning && !sessionStorage.getItem('tepuq-fs-warned')) {
+    sessionStorage.setItem('tepuq-fs-warned', '1');
+    // eslint-disable-next-line no-console
+    console.warn('TepuQ:', warning);
+  }
+}
+
+function isFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+
+export function isKioskActive() {
+  return getCurrentMode() !== null && isFullscreen();
 }
 
 function startDemoCards() {
@@ -109,17 +162,35 @@ export function bindGameInput() {
   document.addEventListener('keydown', onKeyDown, { passive: false });
   document.addEventListener('pointerdown', onPointerDown, { passive: false });
   document.addEventListener('touchstart', onTouchStart, { passive: false });
+  document.addEventListener('touchmove', onTouchMove, { passive: false });
+  document.addEventListener('touchend', onTouchEnd, { passive: false });
+  document.addEventListener('wheel', onWheel, { passive: false });
   document.addEventListener('contextmenu', (e) => e.preventDefault());
+  document.addEventListener('dragstart', (e) => e.preventDefault());
+  window.addEventListener('beforeunload', onBeforeUnload);
   bindBackTrigger();
+  bindExitButton();
 }
 
 function onKeyDown(e) {
   if (document.body.classList.contains('admin')) return;
+
+  // In game, allow only the "M" hint shortcut and the safe exit gesture.
+  // Every other key becomes an input so the child does not exit by accident.
   if (e.key === 'Escape') {
     e.preventDefault();
-    showModePicker();
+    if (getCurrentMode() !== null) showModePicker();
     return;
   }
+
+  // Block common browser / OS accelerator keys that toddlers can hit.
+  if (isBlockedKey(e)) {
+    e.preventDefault();
+    e.stopPropagation();
+    showBlockedToast('tombol');
+    return;
+  }
+
   e.preventDefault();
   if (!appState) return;
   if (getCurrentMode() === 'target') {
@@ -127,6 +198,20 @@ function onKeyDown(e) {
   } else {
     handleSuccess('keyboard', appState.objects, appState.settings, document.getElementById('particles'), e.key);
   }
+}
+
+function isBlockedKey(e) {
+  // Browser tab/window/address controls.
+  if (e.ctrlKey || e.metaKey) return true;
+  if (e.altKey) return true;
+
+  const key = e.key;
+  if (key === 'F1' || key === 'F2' || key === 'F3' || key === 'F4' || key === 'F5' ||
+      key === 'F6' || key === 'F7' || key === 'F8' || key === 'F9' || key === 'F10' ||
+      key === 'F11' || key === 'F12') return true;
+  if (key === 'Tab') return true;
+  // OS/system navigation; most cannot be trapped, but prevent default where allowed.
+  return false;
 }
 
 function onTouchStart(e) {
@@ -152,6 +237,40 @@ function onTouchStart(e) {
   handleSuccess('touch', appState.objects, appState.settings, document.getElementById('particles'));
 }
 
+function onTouchMove(e) {
+  if (document.body.classList.contains('admin')) return;
+  // Disable two-finger scroll / swipe gestures that can switch apps.
+  if (e.touches.length > 1) {
+    e.preventDefault();
+  }
+}
+
+function onTouchEnd(e) {
+  if (document.body.classList.contains('admin')) return;
+  if (e.touches.length === 0) {
+    // Re-lock pointer after a tap if we lost it (best effort for accidental touchpad clicks).
+    if (getCurrentMode() !== null && !document.pointerLockElement) {
+      lockPointer();
+    }
+  }
+}
+
+function onWheel(e) {
+  if (document.body.classList.contains('admin')) return;
+  if (getCurrentMode() === null) return;
+  // Block touchpad two-finger scroll and magic-mouse swipes during game.
+  e.preventDefault();
+}
+
+function onBeforeUnload(e) {
+  if (document.body.classList.contains('admin')) return;
+  if (getCurrentMode() !== null) {
+    // Warn if the parent tries to close while the child is mid-game in fullscreen.
+    e.preventDefault();
+    e.returnValue = '';
+  }
+}
+
 function onPointerDown(e) {
   if (document.body.classList.contains('admin')) return;
   if (e.target.id === 'backTrigger') return;
@@ -163,6 +282,9 @@ function onPointerDown(e) {
     if (modeBtn.id === 'btnTarget') startMode('target');
     return;
   }
+
+  // Clicking the Exit Fullscreen button on the picker is handled separately.
+  if (e.target.closest('#exitFullscreenBtn')) return;
 
   const modePicker = document.getElementById('modePicker');
   if (!modePicker.classList.contains('hidden')) return;
@@ -201,7 +323,8 @@ function bindBackTrigger() {
     e.preventDefault();
     timer = setTimeout(() => {
       timer = null;
-      showModePicker();
+      unlockPointer();
+      exitFullscreen().finally(showModePicker);
     }, 1500);
   };
 
@@ -221,8 +344,39 @@ function bindBackTrigger() {
   trigger.addEventListener('contextmenu', (e) => e.preventDefault());
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'm' || e.key === 'M') showHint();
+    if (e.key === 'm' || e.key === 'M') {
+      e.preventDefault();
+      showHint();
+    }
   });
+}
+
+function bindExitButton() {
+  const btn = document.getElementById('exitFullscreenBtn');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    exitFullscreen().finally(showModePicker);
+  });
+}
+
+let blockedToastTimer = null;
+function showBlockedToast(kind) {
+  const toast = document.getElementById('toast');
+  if (!toast) return;
+  toast.textContent = kind === 'tombol'
+    ? 'Tombol ini dilindungi supaya tidak keluar dari permainan'
+    : 'Gerakan ini dilindungi supaya tidak keluar dari permainan';
+  toast.classList.add('show', 'error');
+  if (blockedToastTimer) clearTimeout(blockedToastTimer);
+  blockedToastTimer = setTimeout(() => {
+    toast.classList.remove('show', 'error');
+  }, 1600);
+}
+
+function updateExitHint() {
+  const hint = document.getElementById('fsExitHint');
+  if (!hint) return;
+  hint.classList.toggle('show', isFullscreen());
 }
 
 function getCurrentMode() {
