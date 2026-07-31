@@ -38,7 +38,7 @@ export function createCard(obj, settings = {}) {
   card.style.width = sizeStyle;
   card.style.height = sizeStyle;
 
-  const hasImage = !!obj.imageBlob;
+  const hasImage = !!(obj.imageUrl || obj.imageBlob);
   if (hasImage) {
     card.style.border = 'none';
   } else {
@@ -72,8 +72,9 @@ export function createCard(obj, settings = {}) {
 
 export async function positionAndPopulateCard(card, obj) {
   let rectSize = parseCardSize();
-  if (obj.imageBlob) {
-    const aspect = await getImageAspectRatio(obj.imageBlob);
+  const imageSource = obj.imageUrl || obj.imageBlob;
+  if (imageSource) {
+    const aspect = await getImageAspectRatio(imageSource);
     if (aspect > 0) {
       const base = Math.min(rectSize.width, rectSize.height);
       rectSize = fitAspectRatio(aspect, base);
@@ -88,13 +89,19 @@ export async function positionAndPopulateCard(card, obj) {
   card.style.top = top + 'px';
   card.style.setProperty('--card-color', obj.color || '#4A90D9');
 
-  if (obj.imageBlob) {
-    const imgSrc = URL.createObjectURL(obj.imageBlob);
+  if (obj.imageUrl) {
+    card.style.background = obj.color || '#4A90D9';
+    card.style.width = rectSize.width + 'px';
+    card.style.height = rectSize.height + 'px';
+    card.innerHTML = `<img src="${escapeAttr(obj.imageUrl)}" alt="${escapeAttr(obj.name)}" draggable="false" onerror="this.style.display='none'" style="max-width:100%;max-height:100%;object-fit:contain;pointer-events:none;display:block;">`;
+  } else if (obj.imageBlob) {
+    const safeBlob = normalizeImageBlob(obj.imageBlob);
+    const imgSrc = URL.createObjectURL(safeBlob);
     objectURLs.push(imgSrc);
     card.style.background = obj.color || '#4A90D9';
     card.style.width = rectSize.width + 'px';
     card.style.height = rectSize.height + 'px';
-    card.innerHTML = `<img src="${imgSrc}" alt="${escapeAttr(obj.name)}" draggable="false" style="max-width:100%;max-height:100%;object-fit:contain;pointer-events:none;display:block;">`;
+    card.innerHTML = `<img src="${imgSrc}" alt="${escapeAttr(obj.name)}" draggable="false" onerror="this.style.display='none'" style="max-width:100%;max-height:100%;object-fit:contain;pointer-events:none;display:block;">`;
   } else {
     card.style.background = obj.color || '#4A90D9';
     card.style.width = rectSize.width + 'px';
@@ -105,6 +112,15 @@ export async function positionAndPopulateCard(card, obj) {
         <span style="font-size:5vmin;font-weight:700;color:rgba(255,255,255,0.95);text-shadow:0 0.3vmin 0.8vmin rgba(0,0,0,0.2);">${escapeHtml(obj.name || '')}</span>
       </div>`;
   }
+}
+
+function normalizeImageBlob(blob) {
+  if (!blob) return blob;
+  const type = blob.type || '';
+  if (type === 'image/jpg' || type === '') {
+    return new Blob([blob], { type: 'image/jpeg' });
+  }
+  return blob;
 }
 
 function escapeHtml(str) {
@@ -118,14 +134,14 @@ function escapeAttr(str) {
 export function renderStaticCard(el, obj) {
   if (!el) return;
   positionAndPopulateCard(el, obj);
-  const hasImage = !!obj.imageBlob;
+  const hasImage = !!(obj.imageUrl || obj.imageBlob);
   el.style.border = hasImage ? 'none' : 'var(--card-border) solid ' + (obj.color || '#4A90D9');
 }
 
 export function buildDemoCard(obj, settings = {}) {
   const card = document.createElement('div');
   card.className = 'demo-card';
-  card.style.border = obj.imageBlob ? 'none' : 'var(--card-border) solid ' + (obj.color || '#4A90D9');
+  card.style.border = (obj.imageUrl || obj.imageBlob) ? 'none' : 'var(--card-border) solid ' + (obj.color || '#4A90D9');
   card.style.setProperty('--card-color', obj.color || '#4A90D9');
   card.style.width = 'var(--card-size)';
   card.style.height = 'var(--card-size)';

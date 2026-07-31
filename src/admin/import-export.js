@@ -59,7 +59,7 @@ export async function importZip(file) {
   const config = JSON.parse(configText);
   if (!config.objects || !Array.isArray(config.objects)) throw new Error('config.json tidak valid');
 
-  const imported = [];
+    const imported = [];
   for (const o of config.objects) {
     const imgExt = o.image ? o.image.split('.').pop() : 'png';
     const audioExt = o.audio ? o.audio.split('.').pop() : 'webm';
@@ -71,7 +71,9 @@ export async function importZip(file) {
       ttsText: o.ttsText || o.name,
       color: o.color || '#4A90D9',
       animation: o.animation || 'random',
+      imageUrl: null,
       imageBlob: imgFile ? await imgFile.async('blob') : null,
+      imageSource: 'custom',
       audioBlob: audioFile ? await audioFile.async('blob') : null,
       useRecording: !!o.useRecording,
       audioType: o.audioType || 'tts',
@@ -101,7 +103,9 @@ export async function importZip(file) {
         ttsText: custom.ttsText,
         color: custom.color,
         animation: custom.animation,
+        imageUrl: custom.imageBlob ? null : o.imageUrl,
         imageBlob: custom.imageBlob || o.imageBlob,
+        imageSource: custom.imageBlob || o.imageBlob ? 'custom' : 'starter',
         audioBlob: custom.audioBlob || o.audioBlob,
         useRecording: custom.audioBlob ? custom.useRecording : (o.audioBlob ? o.useRecording : false),
         audioType: custom.audioBlob ? (custom.useRecording ? 'recording' : 'tts') : o.audioType,

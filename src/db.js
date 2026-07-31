@@ -26,7 +26,13 @@ async function fetchAssetBlob(path) {
   try {
     const res = await fetch(path);
     if (!res.ok) return null;
-    return await res.blob();
+    const blob = await res.blob();
+    // iOS Safari is strict about Blob MIME type for object URLs.
+    // Make sure starter JPGs are stored with the correct image/jpeg type.
+    if (path.endsWith('.jpg') && (!blob.type || blob.type === 'image/jpg' || blob.type === '')) {
+      return new Blob([blob], { type: 'image/jpeg' });
+    }
+    return blob;
   } catch {
     return null;
   }
@@ -39,21 +45,22 @@ export async function seedDefaults() {
   STARTER_OBJECTS.forEach((s, i) => {
     const id = 'obj_' + String(i + 1).padStart(3, '0');
     objStore.put({
-    id,
-    name: s.name,
-    ttsText: s.name,
-    color: s.color,
-    animation: 'random',
-    imageBlob: null,
-    imageSource: 'starter',
-    audioBlob: null,
-    useRecording: false,
-    audioType: 'tts',
-    active: true,
-    order: i,
-    keyBindings: [],
-    source: s.source || 'starter',
-  });
+      id,
+      name: s.name,
+      ttsText: s.name,
+      color: s.color,
+      animation: 'random',
+      imageUrl: s.image || null,
+      imageBlob: null,
+      imageSource: 'starter',
+      audioBlob: null,
+      useRecording: false,
+      audioType: 'tts',
+      active: true,
+      order: i,
+      keyBindings: [],
+      source: s.source || 'starter',
+    });
   });
   tx.objectStore('settings').put({ key: 'settings', ...DEFAULT_SETTINGS, _source: 'default' });
   tx.objectStore('meta').put({ key: 'meta', version: '3.0', lastModified: Date.now() });
@@ -61,26 +68,25 @@ export async function seedDefaults() {
   // imageBlob is left null here and fetched asynchronously by loadStarterAssets.
   await txComplete(tx);
 
-  // Fetch bundled assets in the background and update each object.
-  // This keeps first paint fast while still giving real photos/sounds OOTB.
-  loadStarterAssets();
+  // Starter images are served as normal HTTP URLs from /assets/starter/.
+  // We only store the URL, not a Blob, so the browser can cache them and
+  // so iOS Safari does not struggle with Blob MIME types.
   return;
 }
 
-async function loadStarterAssets() {
+async function refreshStarterImageUrls() {
   const objects = await getAllObjects();
   await Promise.all(
     STARTER_OBJECTS.map(async (s, i) => {
       const id = 'obj_' + String(i + 1).padStart(3, '0');
       const existing = objects.find((o) => o.id === id);
       if (!existing) return;
-      // Only refresh the image if the user has not replaced it with a custom photo.
+      // Only refresh the URL if the user has not replaced it with a custom photo.
       if (existing.imageSource === 'custom') return;
-      const imageBlob = s.image ? await fetchAssetBlob(s.image) : null;
-      if (imageBlob) {
+      if (existing.imageUrl !== s.image) {
         await putObject({
           ...existing,
-          imageBlob,
+          imageUrl: s.image || null,
           imageSource: 'starter',
         });
       }
@@ -95,8 +101,8 @@ export async function loadData() {
     return loadData();
   }
   const settings = await reconcileSettings(sets);
-  // Refresh starter images in the background so updated assets roll out on new deploys.
-  loadStarterAssets();
+  // Keep starter image URLs in sync with the current bundled assets.
+  refreshStarterImageUrls();
   return { objects: objs, settings };
 }
 

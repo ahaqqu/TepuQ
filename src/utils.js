@@ -108,20 +108,25 @@ export function resizeImage(blob, maxSize = MAX_IMAGE_SIZE, outputType = 'image/
   });
 }
 
-export function getImageAspectRatio(blob) {
+export function getImageAspectRatio(source) {
   return new Promise((resolve) => {
-    if (!blob) { resolve(0); return; }
+    if (!source) { resolve(0); return; }
     const img = new Image();
-    const url = URL.createObjectURL(blob);
+    let url = null;
+    if (source instanceof Blob) {
+      url = URL.createObjectURL(source);
+      img.src = url;
+    } else {
+      img.src = source;
+    }
     img.onload = () => {
-      URL.revokeObjectURL(url);
+      if (url) URL.revokeObjectURL(url);
       resolve(img.naturalWidth / img.naturalHeight || 1);
     };
     img.onerror = () => {
-      URL.revokeObjectURL(url);
+      if (url) URL.revokeObjectURL(url);
       resolve(0);
     };
-    img.src = url;
   });
 }
 
