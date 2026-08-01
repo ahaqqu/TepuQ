@@ -13,9 +13,8 @@ test.describe('Post-deploy smoke tests', () => {
 
     await When('the user starts TepuQ Bebas and presses a key', async () => {
       await page.locator('#btnBebas').click({ force: true });
-      await page.waitForTimeout(500);
+      await expect(page.locator('#modePicker')).toHaveClass(/hidden/);
       await page.keyboard.press('a');
-      await page.waitForTimeout(500);
     });
 
     await Then('a card appears using a default HTTP starter image', async () => {
@@ -37,7 +36,7 @@ test.describe('Post-deploy smoke tests', () => {
 
     await When('the user starts TepuQ Target', async () => {
       await page.locator('#btnTarget').click({ force: true });
-      await page.waitForTimeout(500);
+      await expect(page.locator('#modePicker')).toHaveClass(/hidden/);
     });
 
     await Then('the target card uses a default HTTP starter image', async () => {
@@ -52,7 +51,6 @@ test.describe('Post-deploy smoke tests', () => {
       const cards = page.locator('.card-pop.target-card');
       await expect(cards.first()).toBeVisible();
       await cards.first().click({ force: true });
-      await page.waitForTimeout(500);
     });
 
     await Then('the next target card is visible and still uses a default HTTP starter image', async () => {

@@ -48,7 +48,7 @@ export function chooseNext(active, current, playMode, shufflePool) {
     let pool = shufflePool || [];
     if (pool.length === 0) {
       pool = active.filter((o) => o.id !== current?.id).sort(() => Math.random() - 0.5);
-      if (pool.length === 0) return current || active[0];
+      if (pool.length === 0) return { next: current || active[0], pool: [] };
     }
     return { next: pool.shift(), pool };
   }
@@ -80,7 +80,7 @@ export function handleTargetSuccess(objects, settings, elParticles, point) {
   const active = objects.filter((o) => o.active);
   if (active.length === 0) return;
 
-  const current = active.find((o) => o.id === state.currentObjectId) || active[0];
+  const current = active.find((o) => o.id === state.currentObjectId) || null;
   const raw = chooseNext(active, current, settings.playMode, state.shufflePool);
   const next = raw?.pool !== undefined ? raw.next : raw;
   if (raw?.pool !== undefined) state.shufflePool = raw.pool;
@@ -119,7 +119,7 @@ export async function handleSuccess(source, objects, settings, elParticles, key,
   } else if (state.burstActive && state.burstObjectId) {
     current = active.find((o) => o.id === state.burstObjectId) || active[0];
   } else {
-    const prev = active.find((o) => o.id === state.currentObjectId) || active[0];
+    const prev = active.find((o) => o.id === state.currentObjectId) || null;
     const raw = chooseNext(active, prev, settings.playMode, state.shufflePool);
     current = raw?.pool !== undefined ? raw.next : raw;
     if (raw?.pool !== undefined) state.shufflePool = raw.pool;

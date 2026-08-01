@@ -109,6 +109,9 @@ After any change, verify at least these default-setting flows:
 5. **Do not commit, push, or create pull requests** unless explicitly asked.
 6. **Keep it fun and simple.** If a feature adds complexity, propose a simpler alternative.
 7. **One fix, one PR.** See the PR Checklist below for details.
+8. **Use `bun` and `bunx`.** This is a Bun project. Use `bun install`, `bun run ...`, and `bunx playwright ...`. Do not use `npm`, `npx`, or `yarn` unless specifically instructed.
+9. **Write tests in BDD style.** E2E tests should read as `Given / When / Then` steps using Playwright `test.step`. Unit tests should describe behavior, not implementation.
+10. **Avoid `page.waitForTimeout` in E2E tests.** Prefer explicit Playwright waits (e.g., `await expect(locator).toBeVisible()`, `await expect(locator).toHaveClass(...)`). If a timeout is unavoidable because the app has an async, UI-undetectable side effect (e.g., image resize before save), keep it small, comment why, and pair it with an explicit DOM assertion.
 
 ### PR Checklist
 Before creating a PR, the agent must:
