@@ -17,28 +17,30 @@ function renderBuildInfo() {
 }
 
 async function bootstrap() {
-  await initDB();
-  const { objects, settings } = await loadData();
-  initSpeech();
-  renderBuildInfo();
+  try {
+    await initDB();
+    const { objects, settings } = await loadData();
+    initSpeech();
+    renderBuildInfo();
 
-  if (!window.JSZip && window.jszip) window.JSZip = window.jszip;
+    if (!window.JSZip && window.jszip) window.JSZip = window.jszip;
 
-  const isAdmin = new URLSearchParams(location.search).get('mode') === 'admin';
-  if (isAdmin) {
-    document.body.classList.add('admin');
-    await renderAdmin(objects, settings);
-  } else {
-    document.body.classList.remove('admin');
-    bindGameInput();
-    await initGame({ objects, settings });
+    const isAdmin = new URLSearchParams(location.search).get('mode') === 'admin';
+    if (isAdmin) {
+      document.body.classList.add('admin');
+      await renderAdmin(objects, settings);
+    } else {
+      document.body.classList.remove('admin');
+      bindGameInput();
+      await initGame({ objects, settings });
+    }
+  } finally {
+    document.documentElement.classList.remove('bootstrapping');
   }
 }
 
 window.addEventListener('tepuq:refresh-admin', async () => {
-  const { loadData } = await import('./db.js');
   const { objects, settings } = await loadData();
-  const { renderAdmin } = await import('./admin/index.js');
   await renderAdmin(objects, settings);
 });
 

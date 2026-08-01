@@ -1,18 +1,61 @@
 import {
-  getImageAspectRatio,
-  fitAspectRatio,
   parseCardSize,
-  getPlaceholder,
   revokeObjectURLs,
 } from '../utils.js';
 import { resolveEntryAnimation, addEntryAnimationClasses } from './animations.js';
 
 const objectURLs = [];
+const imageAspectCache = new Map();
 
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
     revokeObjectURLs(objectURLs);
   });
+}
+
+function cacheKeyForSource(source) {
+  if (source instanceof Blob) return `blob:${source.size}:${source.type}`;
+  return String(source);
+}
+
+function getCachedAspect(source) {
+  return imageAspectCache.get(cacheKeyForSource(source)) || 0;
+}
+
+function setCachedAspect(source, aspect) {
+  imageAspectCache.set(cacheKeyForSource(source), aspect);
+}
+
+function measureImageAspect(source) {
+  return new Promise((resolve) => {
+    if (!source) { resolve(0); return; }
+    const img = new Image();
+    let url = null;
+    if (source instanceof Blob) {
+      url = URL.createObjectURL(source);
+      img.src = url;
+    } else {
+      img.src = source;
+    }
+    img.onload = () => {
+      if (url) URL.revokeObjectURL(url);
+      resolve(img.naturalWidth / img.naturalHeight || 1);
+    };
+    img.onerror = () => {
+      if (url) URL.revokeObjectURL(url);
+      resolve(0);
+    };
+  });
+}
+
+function fitImageToBounds(aspect, maxWidth, maxHeight) {
+  let width = maxHeight * aspect;
+  let height = maxHeight;
+  if (width > maxWidth) {
+    width = maxWidth;
+    height = width / aspect;
+  }
+  return { width, height };
 }
 
 export function clearPopCards() {
@@ -70,42 +113,56 @@ export function createCard(obj, settings = {}) {
   return card;
 }
 
-export async function positionAndPopulateCard(card, obj) {
-  let rectSize = parseCardSize();
+export function positionAndPopulateCard(card, obj) {
+  const rectSize = parseCardSize();
   const imageSource = obj.imageUrl || obj.imageBlob;
-  if (imageSource) {
-    const aspect = await getImageAspectRatio(imageSource);
-    if (aspect > 0) {
-      const base = Math.min(rectSize.width, rectSize.height);
-      rectSize = fitAspectRatio(aspect, base);
-    }
-  }
-  const maxLeft = Math.max(0, window.innerWidth - rectSize.width);
-  const maxTop = Math.max(0, window.innerHeight - rectSize.height);
+  const hasImage = !!imageSource;
   const pad = 16;
-  const left = pad + Math.random() * Math.max(0, maxLeft - pad * 2);
-  const top = pad + Math.random() * Math.max(0, maxTop - pad * 2);
-  card.style.left = left + 'px';
-  card.style.top = top + 'px';
+  const maxCardWidth = Math.min(rectSize.width, window.innerWidth - pad * 2);
+  const maxCardHeight = Math.min(rectSize.height, window.innerHeight - pad * 2);
+
+  function applySize(width, height) {
+    const maxLeft = Math.max(0, window.innerWidth - width);
+    const maxTop = Math.max(0, window.innerHeight - height);
+    const left = pad + Math.random() * Math.max(0, maxLeft - pad * 2);
+    const top = pad + Math.random() * Math.max(0, maxTop - pad * 2);
+    card.style.left = left + 'px';
+    card.style.top = top + 'px';
+    card.style.width = width + 'px';
+    card.style.height = height + 'px';
+  }
+
   card.style.setProperty('--card-color', obj.color || '#4A90D9');
 
-  if (obj.imageUrl) {
-    card.style.background = obj.color || '#4A90D9';
-    card.style.width = rectSize.width + 'px';
-    card.style.height = rectSize.height + 'px';
-    card.innerHTML = `<img src="${escapeAttr(obj.imageUrl)}" alt="${escapeAttr(obj.name)}" draggable="false" onerror="this.style.display='none'" style="max-width:100%;max-height:100%;object-fit:contain;pointer-events:none;display:block;">`;
-  } else if (obj.imageBlob) {
-    const safeBlob = normalizeImageBlob(obj.imageBlob);
-    const imgSrc = URL.createObjectURL(safeBlob);
-    objectURLs.push(imgSrc);
-    card.style.background = obj.color || '#4A90D9';
-    card.style.width = rectSize.width + 'px';
-    card.style.height = rectSize.height + 'px';
-    card.innerHTML = `<img src="${imgSrc}" alt="${escapeAttr(obj.name)}" draggable="false" onerror="this.style.display='none'" style="max-width:100%;max-height:100%;object-fit:contain;pointer-events:none;display:block;">`;
+  if (hasImage) {
+    let width = maxCardWidth;
+    let height = maxCardHeight;
+    const aspect = getCachedAspect(imageSource);
+    if (aspect > 0) {
+      const fitted = fitImageToBounds(aspect, maxCardWidth, maxCardHeight);
+      width = fitted.width;
+      height = fitted.height;
+    }
+    applySize(width, height);
+    card.style.background = 'transparent';
+
+    const safeBlob = obj.imageBlob ? normalizeImageBlob(obj.imageBlob) : null;
+    const imgSrc = safeBlob ? URL.createObjectURL(safeBlob) : obj.imageUrl;
+    if (safeBlob) objectURLs.push(imgSrc);
+
+    card.innerHTML = `<img src="${escapeAttr(imgSrc)}" alt="${escapeAttr(obj.name)}" draggable="false" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:contain;pointer-events:none;display:block;">`;
+
+    if (!aspect) {
+      measureImageAspect(imageSource).then((measured) => {
+        if (!measured || !card.isConnected) return;
+        setCachedAspect(imageSource, measured);
+        const fitted = fitImageToBounds(measured, maxCardWidth, maxCardHeight);
+        applySize(fitted.width, fitted.height);
+      });
+    }
   } else {
+    applySize(maxCardWidth, maxCardHeight);
     card.style.background = obj.color || '#4A90D9';
-    card.style.width = rectSize.width + 'px';
-    card.style.height = rectSize.height + 'px';
     card.innerHTML = `
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1vmin;width:100%;height:100%;padding:3vmin;text-align:center;">
         <span style="font-size:16vmin;font-weight:800;color:rgba(255,255,255,0.95);text-shadow:0 0.5vmin 1.5vmin rgba(0,0,0,0.2);">${(obj.name || '?').charAt(0).toUpperCase()}</span>

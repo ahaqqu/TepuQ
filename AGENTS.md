@@ -36,7 +36,8 @@ TepuQ/
 │   ├── utils.js            # helpers
 │   ├── speech.js           # TTS + recorded audio
 │   ├── game/               # game logic modules
-│   └── admin/              # admin logic modules
+│   ├── admin/              # admin logic modules
+│   └── styles/             # CSS: base.css, game.css, admin.css, main.css
 ├── public/
 │   ├── assets/             # bundled CC0 starter images + audio
 │   └── vendor/             # third-party JS libraries
@@ -147,6 +148,19 @@ Default images and audio are bundled in `public/assets/` and seeded into Indexed
 - Parents can replace any starter object’s photo or recording in admin mode.
 
 See `docs/assets-sources.md` for the full list of files, URLs, and licenses.
+
+---
+
+## CSS Structure
+
+Styles live in `src/styles/` and are imported through `src/styles/main.css`:
+
+- `base.css` — reset, loader, shared utilities, toast message.
+- `gameplay.css` — structural game CSS: layout, sizing, touch/keyboard behavior, hit areas, functional animations, card/particle shells, hints.
+- `theme.css` — visual styling: colors, gradients, decorative background effects, mode picker look, hover/focus states. Safe to override or swap without breaking gameplay.
+- `admin.css` — admin UI layout and components.
+
+When changing styling, prefer editing `theme.css`. When changing game behavior that relies on layout or animations, edit `gameplay.css`.
 
 ---
 

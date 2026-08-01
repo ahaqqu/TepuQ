@@ -137,9 +137,9 @@ export async function handleSuccess(source, objects, settings, elParticles, key,
     popCards.slice(0, popCards.length - MAX_POP_CARDS + 1).forEach((c) => c.remove());
   }
 
-  const card = createCard(current, settings);
-  card.dataset.autoRemove = 'true';
-  game.appendChild(card);
+    const card = createCard(current, settings);
+    card.dataset.autoRemove = 'true';
+    game.appendChild(card);
   createParticles(elParticles, card, current.color, point?.x, point?.y);
   thumpCard(card);
 
