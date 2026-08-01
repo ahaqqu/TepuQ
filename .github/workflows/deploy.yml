@@ -35,29 +35,36 @@ jobs:
         run: |
           set -e
           bunx wrangler whoami || true
-          bunx wrangler kv namespace list --format=json 2>/dev/null | node -e "
+          bunx wrangler kv namespace list --format=json | tee /tmp/kv_list.json
+          echo "KV list raw:"
+          cat /tmp/kv_list.json
+          echo ""
+          node -e "
             const fs = require('fs');
-            const input = fs.readFileSync(0, 'utf8').trim();
-            console.log('KV list raw length:', input.length);
-            console.log('KV list prefix:', input.slice(0, 80));
+            const input = fs.readFileSync('/tmp/kv_list.json', 'utf8').trim();
+            if (!input) { console.error('Empty KV list response'); process.exit(1); }
             let data;
-            try { data = JSON.parse(input); } catch (e) { console.error('JSON parse error', e.message); process.exit(1); }
+            try { data = JSON.parse(input); } catch (e) { console.error('JSON parse error:', e.message, 'input:', input.slice(0, 200)); process.exit(1); }
             const ns = Array.isArray(data) ? data.find(n => n.title === 'TEPUQ_SYNC') : null;
-            const id = ns ? ns.id : '';
-            fs.writeFileSync('/tmp/kv_ns_id.txt', id);
-            console.log('Found existing KV:', id || 'none');
-          
+            fs.writeFileSync('/tmp/kv_ns_id.txt', ns ? ns.id : '');
+            console.log('Found existing KV:', ns ? ns.id : 'none');
+          "
           NS_ID=$(cat /tmp/kv_ns_id.txt)
           if [ -z "$NS_ID" ]; then
             echo "Creating KV namespace TEPUQ_SYNC..."
-            bunx wrangler kv namespace create TEPUQ_SYNC --format=json 2>/dev/null | node -e "
+            bunx wrangler kv namespace create TEPUQ_SYNC --format=json | tee /tmp/kv_create.json
+            echo "KV create raw:"
+            cat /tmp/kv_create.json
+            echo ""
+            node -e "
               const fs = require('fs');
-              const input = fs.readFileSync(0, 'utf8').trim();
-              console.log('KV create raw:', input.slice(0, 200));
+              const input = fs.readFileSync('/tmp/kv_create.json', 'utf8').trim();
+              if (!input) { console.error('Empty KV create response'); process.exit(1); }
               let data;
-              try { data = JSON.parse(input); } catch (e) { console.error('JSON parse error', e.message); process.exit(1); }
+              try { data = JSON.parse(input); } catch (e) { console.error('JSON parse error:', e.message, 'input:', input.slice(0, 200)); process.exit(1); }
               fs.writeFileSync('/tmp/kv_ns_id.txt', data.id || '');
-            
+              console.log('Created KV:', data.id || 'none');
+            "
           fi
           NS_ID=$(cat /tmp/kv_ns_id.txt)
           if [ -z "$NS_ID" ]; then
