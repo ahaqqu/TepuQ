@@ -73,6 +73,7 @@ function showModePickerSafe() {
 
 export async function startMode(mode) {
   if (!appState) return;
+  resetGameState();
   setState({ currentMode: mode });
   sessionStorage.setItem('tepuq-mode', mode);
   document.getElementById('modePicker').classList.add('hidden');
@@ -84,8 +85,6 @@ export async function startMode(mode) {
     return;
   }
 
-  const first = active[0];
-  setState({ currentObjectId: first.id });
   document.getElementById('emptyState').classList.add('hidden');
 
   // Try kiosk immersion when enabled (default on). Parents can disable fullscreen in admin.
