@@ -90,6 +90,7 @@
       <div class="tabs">
         <div class="tab active" data-tab="objects">Objek</div>
         <div class="tab" data-tab="settings">Pengaturan</div>
+        <div class="tab" data-tab="sync">Sinkron</div>
       </div>
 
       <div id="tabObjects" class="tab-pane">
@@ -101,6 +102,34 @@
 
       <div id="tabSettings" class="tab-pane hidden">
         <p style="color:#666">Pilih objek untuk mengeditnya.</p>
+      </div>
+
+      <div id="tabSync" class="tab-pane hidden">
+        <div id="syncSection" class="sync-section">
+          <h3>☁️ Sinkron Cloud</h3>
+          <p class="field-desc">Login dengan username dan password keluarga untuk menyimpan data di cloud dan menggunakannya di perangkat lain.</p>
+
+          <form id="syncLoginForm" class="sync-login">
+            <div class="form-group">
+              <label for="syncUser">Username</label>
+              <input type="text" id="syncUser" autocomplete="username">
+            </div>
+            <div class="form-group">
+              <label for="syncPass">Password</label>
+              <input type="password" id="syncPass" autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn success">Login</button>
+          </form>
+
+          <div id="syncActions" class="sync-actions hidden">
+            <p id="syncInfo" class="sync-info"></p>
+            <button class="btn success" id="syncPush">☁️ Push ke Cloud</button>
+            <button class="btn" id="syncPull">⬇️ Pull dari Cloud</button>
+            <button class="btn secondary" id="syncLogout">Logout</button>
+          </div>
+
+          <p id="syncStatus" class="sync-status"></p>
+        </div>
       </div>
 
       <div class="admin-footer" id="adminFooter">

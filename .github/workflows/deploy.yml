@@ -28,6 +28,52 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Ensure KV namespace and write wrangler.jsonc
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -e
+          NS_ID=$(bunx wrangler kv namespace list --format=json 2>/dev/null | node -e "
+            const fs = require('fs');
+            const data = JSON.parse(fs.readFileSync(0, 'utf8'));
+            const ns = data.find(n => n.title === 'TEPUQ_SYNC');
+            console.log(ns ? ns.id : '');
+          ")
+          if [ -z "$NS_ID" ]; then
+            echo "Creating KV namespace TEPUQ_SYNC..."
+            NS_ID=$(bunx wrangler kv namespace create TEPUQ_SYNC --format=json 2>/dev/null | node -e "
+              const fs = require('fs');
+              const data = JSON.parse(fs.readFileSync(0, 'utf8'));
+              console.log(data.id || '');
+            ")
+          fi
+          if [ -z "$NS_ID" ]; then
+            echo "Failed to get or create KV namespace"
+            exit 1
+          fi
+          echo "KV namespace ID: $NS_ID"
+          node -e "
+            const fs = require('fs');
+            const config = JSON.parse(fs.readFileSync('wrangler.jsonc', 'utf8'));
+            config.kv_namespaces = [{ binding: 'TEPUQ_SYNC', id: '$NS_ID' }];
+            fs.writeFileSync('wrangler.jsonc', JSON.stringify(config, null, 2) + '\n');
+          "
+
+      - name: Set Cloudflare Pages secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TEPUQ_USER: ${{ secrets.TEPUQ_USER }}
+          TEPUQ_PASS: ${{ secrets.TEPUQ_PASS }}
+          TEPUQ_JWT_SECRET: ${{ secrets.TEPUQ_JWT_SECRET }}
+        run: |
+          set -e
+          PROJECT_NAME="${{ secrets.CLOUDFLARE_PROJECT_NAME || 'tepuq' }}"
+          printf "%s" "$TEPUQ_USER" | bunx wrangler pages secret put TEPUQ_USER --project-name="${PROJECT_NAME}"
+          printf "%s" "$TEPUQ_PASS" | bunx wrangler pages secret put TEPUQ_PASS --project-name="${PROJECT_NAME}"
+          printf "%s" "$TEPUQ_JWT_SECRET" | bunx wrangler pages secret put TEPUQ_JWT_SECRET --project-name="${PROJECT_NAME}"
+
       - name: Deploy to Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

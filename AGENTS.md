@@ -2,12 +2,12 @@
 
 ## Project Purpose
 
-TepuQ is a fun and simple browser game for toddlers (15+ months) and their parents. It shows photo cards and speaks Indonesian names when the child taps the screen or presses keys. Parents configure everything through an admin mode.
+TepuQ is a fun and simple browser game for toddlers (15+ months) and their parents. It shows photo cards and speaks Indonesian names when the child taps the screen or presses keys. Parents configure everything through an admin mode. An optional cloud-sync feature lets a family share custom objects and settings across devices.
 
 **Core principles (do not break):**
 - **Fun and simple** — keep the experience joyful and easy.
 - **Default settings must work** — the game should run immediately without configuration.
-- **Browser-first** — all data lives in the browser (IndexedDB). No backend server.
+- **Browser-first** — all data lives in the browser (IndexedDB). Cloud sync is optional and uses a minimal backend.
 - **Minimal changes** — only touch what is needed.
 - **Test after changing** — run unit and E2E tests before finishing.
 
@@ -18,7 +18,8 @@ TepuQ is a fun and simple browser game for toddlers (15+ months) and their paren
 - **Build tool:** Vite
 - **Package manager:** Bun
 - **Frontend:** Vanilla JavaScript + HTML + CSS (no frameworks)
-- **Storage:** IndexedDB in the browser
+- **Local storage:** IndexedDB in the browser
+- **Cloud sync:** Cloudflare Pages Functions + KV
 - **Tests:** Vitest (unit) + Playwright (E2E)
 - **Deployment:** Cloudflare Pages via GitHub Actions
 
@@ -29,6 +30,8 @@ TepuQ is a fun and simple browser game for toddlers (15+ months) and their paren
 ```
 TepuQ/
 ├── index.html              # Vite shell
+├── functions/              # Cloudflare Pages Functions
+│   └── api/                # /api/login, /api/sync
 ├── src/
 │   ├── main.js             # bootstrap
 │   ├── config.js           # defaults and constants
@@ -59,11 +62,14 @@ TepuQ/
 
 ```bash
 bun install        # install dependencies
-bun run dev        # start dev server at http://localhost:5173
+bun run dev        # start Vite dev server at http://localhost:5173
 bun run build      # build static site to dist/
 bun run preview    # preview the build
 bun run test:unit  # run Vitest unit tests
 bun run test:e2e   # run Playwright E2E tests (builds and previews first)
+
+# For cloud sync local dev (serves Pages Functions + KV from wrangler.jsonc):
+bunx wrangler pages dev dist
 ```
 
 ---
@@ -81,8 +87,9 @@ After any change, verify at least these default-setting flows:
 7. Open `http://localhost:5173?mode=admin`
 8. Add a new object, save, and see it in the list.
 9. Export ZIP and confirm `config.json` only contains custom objects/recordings; import merges them with defaults.
-10. Build passes: `bun run build`.
-11. Unit tests pass: `bun run test:unit`.
+10. (If sync is implemented) Open admin, log in with the shared family credentials, push, then pull; custom objects and settings round-trip across Devices.
+11. Build passes: `bun run build`.
+12. Unit tests pass: `bun run test:unit`.
 
 ---
 
@@ -95,6 +102,7 @@ After any change, verify at least these default-setting flows:
 - Import/export of images and recorded audio.
 - Key bindings (case-insensitive).
 - No-border rule when an image is set.
+- Optional cloud sync: login, push, pull, and logout (when implemented).
 
 ---
 
@@ -140,7 +148,15 @@ The GitHub Action in `.github/workflows/deploy.yml` deploys the `dist/` folder t
 - `CLOUDFLARE_ACCOUNT_ID` — from Cloudflare dashboard.
 - `CLOUDFLARE_PROJECT_NAME` — optional, defaults to `tepuq`.
 
-Wrangler is a pinned dev dependency (`wrangler` in `package.json`). Data stays in the browser; the cloud deployment only serves static files.
+For cloud sync, also set these repository secrets:
+
+- `TEPUQ_USER` — shared family sync username.
+- `TEPUQ_PASS` — shared family sync password.
+- `TEPUQ_JWT_SECRET` — JWT signing secret (long random string).
+
+The GitHub Action creates the `TEPUQ_SYNC` KV namespace automatically if it is missing and writes its ID into `wrangler.jsonc` before deploying. No manual Wrangler or Cloudflare dashboard setup is required.
+
+Wrangler is a pinned dev dependency (`wrangler` in `package.json`). Local data stays in the browser; the cloud deployment serves static files plus the optional sync API.
 
 ## Starter Assets
 
@@ -174,3 +190,4 @@ When changing styling, prefer editing `theme.css`. When changing game behavior t
 - Admin editor (camera, audio, key bindings): `src/admin/editor.js`
 - Settings form: `src/admin/settings-form.js`
 - Import/export ZIP: `src/admin/import-export.js`
+- Cloud sync: `src/admin/sync.js`, `functions/api/login.js`, `functions/api/sync.js`
