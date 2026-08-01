@@ -6,8 +6,13 @@
   <title>TepuQ</title>
   <script src="/vendor/jszip.min.js"></script>
   <script src="/vendor/FileSaver.min.js"></script>
+  <script>document.documentElement.classList.add('bootstrapping');</script>
 </head>
 <body>
+  <div id="appLoader" class="app-loader" aria-hidden="true">
+    <span class="app-loader__spin">🌟</span>
+    <span>TepuQ</span>
+  </div>
 
   <!-- GAME -->
   <div id="game">

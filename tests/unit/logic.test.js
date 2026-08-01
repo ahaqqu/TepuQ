@@ -22,6 +22,25 @@ describe('chooseNext', () => {
     expect(first.pool.length).toBe(1);
   });
 
+  it('round-robin from null current includes all objects in first pool', () => {
+    const first = chooseNext(objects, null, 'round-robin', []);
+    expect([objects[0].id, objects[1].id, objects[2].id]).toContain(first.next.id);
+    expect(first.pool.length).toBe(2);
+  });
+
+  it('round-robin cycles through every object before repeating', () => {
+    let pool = [];
+    let current = null;
+    const seen = new Set();
+    for (let i = 0; i < objects.length; i++) {
+      const raw = chooseNext(objects, current, 'round-robin', pool);
+      current = raw.next;
+      pool = raw.pool;
+      seen.add(current.id);
+    }
+    expect(seen.size).toBe(objects.length);
+  });
+
   it('returns only object when list has one item', () => {
     expect(chooseNext(one, one[0], 'random').id).toBe('a');
   });

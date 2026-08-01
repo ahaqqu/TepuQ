@@ -140,7 +140,7 @@ test.describe('Game mode default settings', () => {
       await papaItem.locator('[data-action="edit"]').click({ force: true });
       await expect(page.locator('#editorTitle')).toHaveText('Edit Objek');
       await page.locator('#inpPhoto').setInputFiles(path.join(__dirname, 'fixtures', 'papa.png'));
-      await page.waitForTimeout(200);
+      await expect(page.locator('#photoPreview img')).toBeVisible();
       await page.locator('#objectForm button[type="submit"]').click({ force: true });
       await expect(page.locator('text=Objek disimpan')).toBeVisible();
     });
@@ -171,6 +171,7 @@ test.describe('Game mode default settings', () => {
       await page.locator('#inpTts').fill('Ini Apel');
       await page.locator('#inpKeys').fill('1');
       await page.locator('#inpPhoto').setInputFiles(path.join(__dirname, 'fixtures', 'papa.png'));
+      await expect(page.locator('#photoPreview img')).toBeVisible();
       await page.locator('#objectForm button[type="submit"]').click({ force: true });
       await expect(page.locator('text=Objek disimpan')).toBeVisible();
     });
@@ -182,6 +183,7 @@ test.describe('Game mode default settings', () => {
       await page.locator('#inpTts').fill('Ini Pisang');
       await page.locator('#inpKeys').fill('2');
       await page.locator('#inpPhoto').setInputFiles(path.join(__dirname, 'fixtures', 'papa.png'));
+      await expect(page.locator('#photoPreview img')).toBeVisible();
       await page.locator('#objectForm button[type="submit"]').click({ force: true });
       await expect(page.locator('text=Objek disimpan')).toBeVisible();
     });

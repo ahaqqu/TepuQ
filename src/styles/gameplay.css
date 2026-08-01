@@ -1,0 +1,335 @@
+:root {
+  --card-size: 55vmin;
+  --card-border: 1.2vmin;
+  --shadow: 0 1.5vmin 4vmin rgba(0,0,0,0.25);
+  --font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html, body {
+  font-family: var(--font);
+}
+
+#game {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.bg-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#modePicker {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3vmin;
+  z-index: 20;
+}
+
+#modePicker h1 { margin: 0; }
+
+.mode-buttons {
+  display: flex;
+  gap: 4vmin;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.mode-btn {
+  position: relative;
+  overflow: hidden;
+  width: 34vmin;
+  height: 34vmin;
+  border-radius: 4vmin;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2vmin;
+  font-size: 4vmin;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mode-btn:active { transform: scale(0.95); }
+
+.mode-icon {
+  font-size: 10vmin;
+  line-height: 1;
+  display: inline-block;
+}
+
+.demo-card {
+  position: absolute;
+  width: var(--card-size);
+  height: var(--card-size);
+  border-radius: 4vmin;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.demo-card img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+#card {
+  position: absolute;
+  width: var(--card-size);
+  height: var(--card-size);
+  border-radius: 4vmin;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  z-index: 10;
+  will-change: transform, opacity;
+}
+
+#card img, .card-pop img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  display: block;
+}
+
+.card-pop {
+  background: rgba(255,255,255,0.95);
+  border-radius: 4vmin;
+  box-shadow: var(--shadow);
+}
+
+.anim-bounce { animation: bounceIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.anim-pop { animation: popIn 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+.anim-spin { animation: spinIn 0.6s ease-out forwards; }
+.anim-slide-left { animation: slideLeft 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.anim-slide-right { animation: slideRight 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.anim-slide-top { animation: slideTop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.anim-slide-bottom { animation: slideBottom 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.anim-flip { animation: flipIn 0.6s ease-in-out forwards; }
+.anim-wobble { animation: wobbleIn 0.6s ease-in-out forwards; }
+.anim-zoom { animation: zoomIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+.exit-fade { animation: fadeOut 0.25s ease forwards; }
+.exit-zoom { animation: zoomOut 0.3s ease-in forwards; }
+.exit-slide-left { animation: slideOutLeft 0.35s ease-in forwards; }
+.exit-slide-right { animation: slideOutRight 0.35s ease-in forwards; }
+.exit-slide-top { animation: slideOutTop 0.35s ease-in forwards; }
+.exit-slide-bottom { animation: slideOutBottom 0.35s ease-in forwards; }
+.exit-shrink { animation: shrinkOut 0.35s ease-in forwards; }
+
+.hint-wobble { animation: hintWobble 0.5s ease-in-out; }
+
+@keyframes bounceIn {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.15); opacity: 1; }
+  75% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.2); opacity: 0; }
+  70% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes spinIn {
+  0% { transform: rotate(-360deg) scale(0); opacity: 0; }
+  100% { transform: rotate(0) scale(1); opacity: 1; }
+}
+
+@keyframes slideLeft {
+  0% { transform: translateX(-60vw) scale(0.5); opacity: 0; }
+  100% { transform: translateX(0) scale(1); opacity: 1; }
+}
+@keyframes slideRight {
+  0% { transform: translateX(60vw) scale(0.5); opacity: 0; }
+  100% { transform: translateX(0) scale(1); opacity: 1; }
+}
+@keyframes slideTop {
+  0% { transform: translateY(-60vh) scale(0.5); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes slideBottom {
+  0% { transform: translateY(60vh) scale(0.5); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes flipIn {
+  0% { transform: rotateY(90deg) scale(0.5); opacity: 0; }
+  100% { transform: rotateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes wobbleIn {
+  0% { transform: scale(0.5) rotate(0); opacity: 0; }
+  25% { transform: scale(1.1) rotate(-10deg); }
+  50% { transform: scale(0.95) rotate(8deg); }
+  75% { transform: scale(1.05) rotate(-5deg); }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+@keyframes zoomIn {
+  0% { transform: scale(0.2); opacity: 0; }
+  80% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeOut { to { opacity: 0; } }
+@keyframes zoomOut { to { transform: scale(0) rotate(15deg); opacity: 0; } }
+@keyframes slideOutLeft { to { transform: translateX(-60vw) rotate(-15deg); opacity: 0; } }
+@keyframes slideOutRight { to { transform: translateX(60vw) rotate(15deg); opacity: 0; } }
+@keyframes slideOutTop { to { transform: translateY(-60vh) rotate(15deg); opacity: 0; } }
+@keyframes slideOutBottom { to { transform: translateY(60vh) rotate(-15deg); opacity: 0; } }
+@keyframes shrinkOut {
+  0% { transform: scale(1); opacity: 1; }
+  60% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+@keyframes hintWobble {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-8deg) scale(1.03); }
+  75% { transform: rotate(8deg) scale(1.03); }
+}
+
+.particle {
+  position: absolute;
+  width: 1.8vmin;
+  height: 1.8vmin;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 15;
+  will-change: transform, opacity;
+}
+
+.particle-square { border-radius: 1vmin; }
+.particle-star { border-radius: 0; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+
+.effect-ring {
+  position: absolute;
+  width: 12vmin;
+  height: 12vmin;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 15;
+  will-change: transform, opacity;
+}
+
+.effect-flash {
+  position: absolute;
+  width: 16vmin;
+  height: 16vmin;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 14;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.thump {
+  animation: thump 0.4s ease-out;
+}
+
+@keyframes thump {
+  0% { transform: scale(1) rotate(0deg); }
+  30% { transform: scale(1.14) rotate(-2deg); }
+  60% { transform: scale(0.94) rotate(1.5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+#backTrigger {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 10vmin;
+  height: 10vmin;
+  z-index: 25;
+  cursor: pointer;
+}
+
+#backTrigger:focus { outline: none; }
+#backTrigger.back-active {
+  background: rgba(255,255,255,0.35);
+  border-radius: 0 0 100% 0;
+  transition: background 0.15s ease;
+}
+
+#backHint {
+  position: absolute;
+  top: 1vmin;
+  left: 1vmin;
+  padding: 0.8vmin 1.6vmin;
+  border-radius: 1vmin;
+  color: #fff;
+  font-size: 2.2vmin;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 26;
+}
+
+#backHint.show { opacity: 1; }
+
+.fs-exit-hint {
+  position: absolute;
+  top: 1vmin;
+  right: 1vmin;
+  display: flex;
+  align-items: center;
+  gap: 1.2vmin;
+  padding: 0.8vmin 1.4vmin;
+  border-radius: 1vmin;
+  color: #fff;
+  font-size: 2vmin;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 26;
+}
+
+.fs-exit-hint.show { opacity: 1; }
+
+.fs-exit-hint__dot {
+  width: 1.2vmin;
+  height: 1.2vmin;
+  border-radius: 50%;
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+}
+
+#emptyState {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2vmin;
+  z-index: 30;
+  text-align: center;
+  padding: 4vmin;
+}
+
+#emptyState h2 { font-size: 5vmin; margin: 0; }
+#emptyState p { font-size: 3vmin; opacity: 0.9; }
