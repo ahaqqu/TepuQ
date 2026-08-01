@@ -2,6 +2,7 @@ import { renderObjectList } from './object-list.js';
 import { selectObject, addNewObject, initEditor } from './editor.js';
 import { bindSettingsForm, refreshSettingsForm } from './settings-form.js';
 import { exportZip, importZip } from './import-export.js';
+import { initSyncUI, refreshSyncUI } from './sync.js';
 import { showToast } from '../utils.js';
 import { getMeta, putMeta } from '../db.js';
 
@@ -24,6 +25,8 @@ export async function renderAdmin(objects, settings) {
   bindImportExport(objects, settings);
   bindSettingsForm(settings);
   refreshSettingsForm(settings);
+  initSyncUI();
+  await refreshSyncUI();
   await renderBackupReminder();
   renderAdminBuildInfo();
 }
@@ -40,6 +43,10 @@ function bindAdminTabs() {
       t.classList.add('active');
       document.getElementById('tabObjects').classList.toggle('hidden', t.dataset.tab !== 'objects');
       document.getElementById('tabSettings').classList.toggle('hidden', t.dataset.tab !== 'settings');
+      document.getElementById('tabSync').classList.toggle('hidden', t.dataset.tab !== 'sync');
+      if (t.dataset.tab === 'sync') {
+        refreshSyncUI();
+      }
     });
   });
 }
