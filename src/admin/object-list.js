@@ -1,5 +1,6 @@
 import { getPlaceholder, escapeHtml, showToast } from '../utils.js';
-import { putObject, getAllObjects } from '../db.js';
+import { putObject, getAllObjects, getSettings, deleteObject } from '../db.js';
+import { speakOrPlay } from '../speech.js';
 
 export function renderObjectList(objects, selectFn) {
   const list = document.getElementById('objectList');
@@ -33,15 +34,12 @@ export function renderObjectList(objects, selectFn) {
 }
 
 async function testObject(obj) {
-  const { speakOrPlay } = await import('../speech.js');
-  const { getSettings } = await import('../db.js');
   const settings = await getSettings();
   speakOrPlay(obj, settings);
 }
 
 async function deleteFromList(id) {
   if (!confirm('Yakin hapus objek ini?')) return;
-  const { deleteObject } = await import('../db.js');
   await deleteObject(id);
   showToast('Objek dihapus');
   window.dispatchEvent(new CustomEvent('tepuq:refresh-admin'));

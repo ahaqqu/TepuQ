@@ -163,37 +163,36 @@ export function getSettings() {
 export function putObject(obj) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(['objects'], 'readwrite');
-    const req = tx.objectStore('objects').put(obj);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.objectStore('objects').put(obj);
   });
 }
 
 export function putSettings(s) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(['settings'], 'readwrite');
-    const payload = { key: 'settings', ...s };
-    const req = tx.objectStore('settings').put(payload);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.objectStore('settings').put({ key: 'settings', ...s });
   });
 }
 
 export function deleteObject(id) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(['objects'], 'readwrite');
-    const req = tx.objectStore('objects').delete(id);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.objectStore('objects').delete(id);
   });
 }
 
 export function putMeta(meta) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(['meta'], 'readwrite');
-    const req = tx.objectStore('meta').put({ key: 'meta', ...meta });
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.objectStore('meta').put({ key: 'meta', ...meta });
   });
 }
 

@@ -330,7 +330,9 @@ function bindBackTrigger() {
   let activeTouchId = null;
   let startTime = 0;
   let feedbackTimer = null;
+  let visualTimer = null;
   const PRESS_MS = 1500;
+  const VISUAL_DELAY_MS = 250;
 
   const showHint = () => {
     hint.classList.add('show');
@@ -344,6 +346,8 @@ function bindBackTrigger() {
     trigger.classList.remove('back-active');
     if (feedbackTimer) clearTimeout(feedbackTimer);
     feedbackTimer = null;
+    if (visualTimer) clearTimeout(visualTimer);
+    visualTimer = null;
     unlockPointer();
     exitFullscreen().finally(showModePicker);
   };
@@ -366,8 +370,13 @@ function bindBackTrigger() {
       finish();
     }, PRESS_MS);
 
-    // Visual feedback so parents know the gesture is registering.
-    trigger.classList.add('back-active');
+    // Only show visual feedback once the press is sustained, so a quick tap
+    // in the top-left corner does not flash the white rectangle.
+    visualTimer = setTimeout(() => {
+      visualTimer = null;
+      trigger.classList.add('back-active');
+    }, VISUAL_DELAY_MS);
+
     feedbackTimer = setTimeout(() => {
       feedbackTimer = null;
       if (navigator.vibrate) navigator.vibrate(40);
@@ -390,6 +399,10 @@ function bindBackTrigger() {
     if (feedbackTimer) {
       clearTimeout(feedbackTimer);
       feedbackTimer = null;
+    }
+    if (visualTimer) {
+      clearTimeout(visualTimer);
+      visualTimer = null;
     }
     startTime = 0;
     trigger.classList.remove('back-active');
