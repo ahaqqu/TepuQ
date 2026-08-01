@@ -28,33 +28,38 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Ensure KV namespace and write wrangler.jsonc
+      - name: Setup Wrangler config
         env:
-          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -e
-          set -o pipefail
-          API_BASE="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/storage/kv/namespaces"
-          echo "Listing KV namespaces..."
-          LIST_RESP=$(curl -fsSL -H "Authorization: Bearer ${CF_TOKEN}" "${API_BASE}")
-          NS_ID=$(echo "$LIST_RESP" | node -e "
+          bunx wrangler whoami || true
+          bunx wrangler kv namespace list --format=json 2>/dev/null | node -e "
             const fs = require('fs');
-            const data = JSON.parse(fs.readFileSync(0, 'utf8'));
-            if (!data.success) { console.error(data); process.exit(1); }
-            const ns = data.result.find(n => n.title === 'TEPUQ_SYNC');
-            console.log(ns ? ns.id : '');
-          ")
+            const input = fs.readFileSync(0, 'utf8').trim();
+            console.log('KV list raw length:', input.length);
+            console.log('KV list prefix:', input.slice(0, 80));
+            let data;
+            try { data = JSON.parse(input); } catch (e) { console.error('JSON parse error', e.message); process.exit(1); }
+            const ns = Array.isArray(data) ? data.find(n => n.title === 'TEPUQ_SYNC') : null;
+            const id = ns ? ns.id : '';
+            fs.writeFileSync('/tmp/kv_ns_id.txt', id);
+            console.log('Found existing KV:', id || 'none');
+          
+          NS_ID=$(cat /tmp/kv_ns_id.txt)
           if [ -z "$NS_ID" ]; then
             echo "Creating KV namespace TEPUQ_SYNC..."
-            CREATE_RESP=$(curl -fsSL -X POST -H "Authorization: Bearer ${CF_TOKEN}" -H "Content-Type: application/json" "${API_BASE}" -d '{"title":"TEPUQ_SYNC"}')
-            NS_ID=$(echo "$CREATE_RESP" | node -e "
+            bunx wrangler kv namespace create TEPUQ_SYNC --format=json 2>/dev/null | node -e "
               const fs = require('fs');
-              const data = JSON.parse(fs.readFileSync(0, 'utf8'));
-              if (!data.success) { console.error(data); process.exit(1); }
-              console.log(data.result.id || '');
-            ")
+              const input = fs.readFileSync(0, 'utf8').trim();
+              console.log('KV create raw:', input.slice(0, 200));
+              let data;
+              try { data = JSON.parse(input); } catch (e) { console.error('JSON parse error', e.message); process.exit(1); }
+              fs.writeFileSync('/tmp/kv_ns_id.txt', data.id || '');
+            
           fi
+          NS_ID=$(cat /tmp/kv_ns_id.txt)
           if [ -z "$NS_ID" ]; then
             echo "Failed to get or create KV namespace"
             exit 1
@@ -69,39 +74,17 @@ jobs:
 
       - name: Set Cloudflare Pages secrets
         env:
-          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           TEPUQ_USER: ${{ secrets.TEPUQ_USER }}
           TEPUQ_PASS: ${{ secrets.TEPUQ_PASS }}
           TEPUQ_JWT_SECRET: ${{ secrets.TEPUQ_JWT_SECRET }}
         run: |
           set -e
-          export PROJECT_NAME="${{ secrets.CLOUDFLARE_PROJECT_NAME || 'tepuq' }}"
-          node -e "
-            const secrets = {
-              TEPUQ_USER: process.env.TEPUQ_USER,
-              TEPUQ_PASS: process.env.TEPUQ_PASS,
-              TEPUQ_JWT_SECRET: process.env.TEPUQ_JWT_SECRET,
-            };
-            const base = 'https://api.cloudflare.com/client/v4/accounts/' + process.env.CF_ACCOUNT + '/pages/projects/' + process.env.PROJECT_NAME + '/secrets';
-            for (const [name, value] of Object.entries(secrets)) {
-              if (!value) { console.log('Secret ' + name + ' is empty, skipping'); continue; }
-              console.log('Setting ' + name + '...');
-              const resp = await fetch(base + '/' + name, {
-                method: 'PUT',
-                headers: {
-                  Authorization: 'Bearer ' + process.env.CF_TOKEN,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ type: 'secret_text', value }),
-              });
-              const data = await resp.json();
-              if (!resp.ok || !data.success) {
-                console.error(data);
-                process.exit(1);
-              }
-            }
-          "
+          PROJECT_NAME="${{ secrets.CLOUDFLARE_PROJECT_NAME || 'tepuq' }}"
+          printf "%s\n" "$TEPUQ_USER" | bunx wrangler pages secret put TEPUQ_USER --project-name="${PROJECT_NAME}"
+          printf "%s\n" "$TEPUQ_PASS" | bunx wrangler pages secret put TEPUQ_PASS --project-name="${PROJECT_NAME}"
+          printf "%s\n" "$TEPUQ_JWT_SECRET" | bunx wrangler pages secret put TEPUQ_JWT_SECRET --project-name="${PROJECT_NAME}"
 
       - name: Deploy to Cloudflare Pages
         env:
