@@ -35,9 +35,9 @@ jobs:
         run: |
           set -e
           bunx wrangler whoami || true
-          bunx wrangler kv namespace list --format=json 2>/dev/null > /tmp/kv_list.json
+          bunx wrangler kv namespace list --format=json | tee /tmp/kv_list.json
           echo "KV list raw:"
-          head -c 500 /tmp/kv_list.json
+          cat /tmp/kv_list.json
           echo ""
           node -e "
             const fs = require('fs');
@@ -52,9 +52,9 @@ jobs:
           NS_ID=$(cat /tmp/kv_ns_id.txt)
           if [ -z "$NS_ID" ]; then
             echo "Creating KV namespace TEPUQ_SYNC..."
-            bunx wrangler kv namespace create TEPUQ_SYNC --format=json 2>/dev/null > /tmp/kv_create.json
+            bunx wrangler kv namespace create TEPUQ_SYNC --format=json | tee /tmp/kv_create.json
             echo "KV create raw:"
-            head -c 500 /tmp/kv_create.json
+            cat /tmp/kv_create.json
             echo ""
             node -e "
               const fs = require('fs');
