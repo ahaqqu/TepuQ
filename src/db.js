@@ -7,8 +7,9 @@ export async function initDB() {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onerror = () => reject(req.error);
     req.onsuccess = () => { db = req.result; resolve(db); };
-    req.onupgradeneeded = (e) => {
+    req.onupgradeneeded = async (e) => {
       const d = e.target.result;
+      const tx = e.target.transaction;
       if (!d.objectStoreNames.contains('objects')) {
         d.createObjectStore('objects', { keyPath: 'id' });
       }
@@ -18,7 +19,11 @@ export async function initDB() {
       if (!d.objectStoreNames.contains('meta')) {
         d.createObjectStore('meta', { keyPath: 'key' });
       }
+      // Refresh starter image URLs once per version bump. This keeps bundled
+      // asset paths in sync without racing against runtime user edits.
+      await refreshStarterImageUrlsInTransaction(tx);
     };
+
   });
 }
 
@@ -74,24 +79,30 @@ export async function seedDefaults() {
   return;
 }
 
-async function refreshStarterImageUrls() {
-  const objects = await getAllObjects();
-  await Promise.all(
-    STARTER_OBJECTS.map(async (s, i) => {
-      const id = 'obj_' + String(i + 1).padStart(3, '0');
-      const existing = objects.find((o) => o.id === id);
-      if (!existing) return;
-      // Only refresh the URL if the user has not replaced it with a custom photo.
-      if (existing.imageSource === 'custom') return;
-      if (existing.imageUrl !== s.image) {
-        await putObject({
-          ...existing,
-          imageUrl: s.image || null,
-          imageSource: 'starter',
-        });
-      }
-    })
-  );
+function refreshStarterImageUrlsInTransaction(tx) {
+  return new Promise((resolve, reject) => {
+    const store = tx.objectStore('objects');
+    const getAllReq = store.getAll();
+    getAllReq.onsuccess = () => {
+      const objects = getAllReq.result || [];
+      STARTER_OBJECTS.forEach((s, i) => {
+        const id = 'obj_' + String(i + 1).padStart(3, '0');
+        const existing = objects.find((o) => o.id === id);
+        if (!existing) return;
+        // Only refresh the URL if the user has not replaced it with a custom photo.
+        if (existing.imageSource === 'custom') return;
+        if (existing.imageUrl !== s.image) {
+          store.put({
+            ...existing,
+            imageUrl: s.image || null,
+            imageSource: 'starter',
+          });
+        }
+      });
+      resolve();
+    };
+    getAllReq.onerror = () => reject(getAllReq.error);
+  });
 }
 
 export async function loadData() {
@@ -101,8 +112,6 @@ export async function loadData() {
     return loadData();
   }
   const settings = await reconcileSettings(sets);
-  // Keep starter image URLs in sync with the current bundled assets.
-  refreshStarterImageUrls();
   return { objects: objs, settings };
 }
 

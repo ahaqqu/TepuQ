@@ -88,8 +88,10 @@ export async function startMode(mode) {
   document.getElementById('emptyState').classList.add('hidden');
 
   // Try kiosk immersion when enabled (default on). Parents can disable fullscreen in admin.
+  // Do not await fullscreen so the game is responsive immediately; the mode picker is already
+  // hidden and input handlers are bound. Fullscreen is best-effort.
   if (appState.settings.fullscreen !== false) {
-    await enterKiosk();
+    enterKiosk().catch(() => {});
   }
   fsUnsubscribe = onFullscreenChange(async (active) => {
     if (!active && getCurrentMode() !== null) {
