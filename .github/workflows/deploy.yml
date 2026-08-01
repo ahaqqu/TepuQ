@@ -35,38 +35,21 @@ jobs:
         run: |
           set -e
           bunx wrangler whoami || true
-          bunx wrangler kv namespace list --format=json | tee /tmp/kv_list.json
-          echo "KV list raw:"
-          cat /tmp/kv_list.json
-          echo ""
-          node -e "
-            const fs = require('fs');
-            const input = fs.readFileSync('/tmp/kv_list.json', 'utf8').trim();
-            if (!input) { console.error('Empty KV list response'); process.exit(1); }
-            let data;
-            try { data = JSON.parse(input); } catch (e) { console.error('JSON parse error:', e.message, 'input:', input.slice(0, 200)); process.exit(1); }
-            const ns = Array.isArray(data) ? data.find(n => n.title === 'TEPUQ_SYNC') : null;
-            fs.writeFileSync('/tmp/kv_ns_id.txt', ns ? ns.id : '');
-            console.log('Found existing KV:', ns ? ns.id : 'none');
-          "
-          NS_ID=$(cat /tmp/kv_ns_id.txt)
-          if [ -z "$NS_ID" ]; then
-            echo "Creating KV namespace TEPUQ_SYNC..."
-            bunx wrangler kv namespace create TEPUQ_SYNC --format=json | tee /tmp/kv_create.json
-            echo "KV create raw:"
-            cat /tmp/kv_create.json
-            echo ""
+          find_kv_ns_id() {
+            bunx wrangler kv namespace list | tee /tmp/kv_list.json >/dev/null
             node -e "
               const fs = require('fs');
-              const input = fs.readFileSync('/tmp/kv_create.json', 'utf8').trim();
-              if (!input) { console.error('Empty KV create response'); process.exit(1); }
-              let data;
-              try { data = JSON.parse(input); } catch (e) { console.error('JSON parse error:', e.message, 'input:', input.slice(0, 200)); process.exit(1); }
-              fs.writeFileSync('/tmp/kv_ns_id.txt', data.id || '');
-              console.log('Created KV:', data.id || 'none');
+              const data = JSON.parse(fs.readFileSync('/tmp/kv_list.json', 'utf8'));
+              const ns = (Array.isArray(data) ? data : []).find(n => n.title === 'TEPUQ_SYNC');
+              console.log(ns ? ns.id : '');
             "
+          }
+          NS_ID=$(find_kv_ns_id)
+          if [ -z "$NS_ID" ]; then
+            echo "Creating KV namespace TEPUQ_SYNC..."
+            bunx wrangler kv namespace create TEPUQ_SYNC
+            NS_ID=$(find_kv_ns_id)
           fi
-          NS_ID=$(cat /tmp/kv_ns_id.txt)
           if [ -z "$NS_ID" ]; then
             echo "Failed to get or create KV namespace"
             exit 1
