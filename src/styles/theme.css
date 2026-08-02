@@ -211,11 +211,11 @@
   .mode-btn {
     font-size: 5.8vmin;
     gap: 1.5vmin;
-    padding: 2.5vmin 1vmin 0;
+    padding: 3vmin 1vmin 0;
   }
 
   .mode-btn small {
-    font-size: 3vmin !important;
+    display: none;
   }
 
   .mode-icon {
