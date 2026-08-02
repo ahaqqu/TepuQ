@@ -210,6 +210,8 @@
 
   .mode-btn {
     font-size: 5.8vmin;
+    gap: 1.5vmin;
+    padding: 2.5vmin 1vmin 0;
   }
 
   .mode-btn small {
@@ -218,6 +220,7 @@
 
   .mode-icon {
     font-size: 13vmin;
+    line-height: 1.25;
   }
 
   .main-sync__form input,
@@ -238,6 +241,7 @@
   }
 
   .build-info {
+    bottom: 6vmin;
     font-size: 2.6vmin;
   }
 }
