@@ -1,5 +1,8 @@
 export const DB_NAME = 'tepuq_db';
-export const DB_VERSION = 3;
+// Bump DB_VERSION when bundled starter images change: the version is baked
+// into the stored starter image URLs as a cache-busting query string, and the
+// upgrade handler refreshes those URLs so browsers fetch the new images.
+export const DB_VERSION = 4;
 
 export const DEFAULT_SETTINGS = {
   backgroundStyle: 'combined',

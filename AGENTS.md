@@ -199,6 +199,10 @@ Default images and audio are bundled in `public/assets/` and seeded into Indexed
 - **Audio:** default uses browser Text-to-Speech; parents can record their own voice per object in admin mode.
 - Parents can replace any starter object’s photo or recording in admin mode.
 
+### Cache-busting rule
+
+Starter images are served as plain HTTP URLs and cached by the browser; IndexedDB only stores the URL string. **Whenever a bundled starter image (or any `public/assets/starter/` file) changes, bump `DB_VERSION` in `src/config.js` in the same commit.** The version is baked into the stored starter URLs (`?v=<DB_VERSION>`), so the DB upgrade rewrites the URLs and browsers fetch the new files. Changing an asset without bumping the version leaves browsers serving the old cached image.
+
 See `docs/assets-sources.md` for the full list of files, URLs, and licenses.
 
 ---

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isStarterObjectUntouched } from '../../src/db.js';
+import { isStarterObjectUntouched, starterImageUrl } from '../../src/db.js';
 
 const STARTER_PAPA = {
   name: 'Papa',
@@ -13,7 +13,7 @@ function starterObject(overrides = {}) {
     name: 'Papa',
     ttsText: 'Papa',
     color: '#4A90D9',
-    imageUrl: '/assets/starter/papa.jpg',
+    imageUrl: starterImageUrl(STARTER_PAPA),
     imageBlob: null,
     imageSource: 'starter',
     audioBlob: null,

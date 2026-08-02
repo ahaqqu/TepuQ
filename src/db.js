@@ -2,6 +2,12 @@ import { DB_NAME, DB_VERSION, DEFAULT_SETTINGS, STARTER_OBJECTS } from './config
 
 let db = null;
 
+// Versioned URL for a bundled starter image. The query string busts the
+// browser HTTP cache when the bundled assets change (see config.js DB_VERSION).
+export function starterImageUrl(s) {
+  return s.image ? `${s.image}?v=${DB_VERSION}` : null;
+}
+
 export async function initDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
@@ -55,7 +61,7 @@ export async function seedDefaults() {
       ttsText: s.name,
       color: s.color,
       animation: 'random',
-      imageUrl: s.image || null,
+      imageUrl: starterImageUrl(s),
       imageBlob: null,
       imageSource: 'starter',
       audioBlob: null,
@@ -91,10 +97,10 @@ function refreshStarterImageUrlsInTransaction(tx) {
         if (!existing) return;
         // Only refresh the URL if the user has not replaced it with a custom photo.
         if (existing.imageSource === 'custom') return;
-        if (existing.imageUrl !== s.image) {
+        if (existing.imageUrl !== starterImageUrl(s)) {
           store.put({
             ...existing,
-            imageUrl: s.image || null,
+            imageUrl: starterImageUrl(s),
             imageSource: 'starter',
           });
         }
@@ -124,7 +130,7 @@ export function isStarterObjectUntouched(o, s) {
     o.name === s.name &&
     o.ttsText === s.name &&
     o.color === s.color &&
-    o.imageUrl === (s.image || null) &&
+    o.imageUrl === starterImageUrl(s) &&
     o.imageBlob == null &&
     o.imageSource === 'starter' &&
     o.audioBlob == null &&
