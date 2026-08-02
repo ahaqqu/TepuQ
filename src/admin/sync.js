@@ -1,13 +1,15 @@
 import { initDB, loadData, getAllObjects, putSettings, putMeta, getMeta } from '../db.js';
-import { buildSyncPayload, parseSyncPayload } from './sync-serializer.js';
+import { buildSyncPayload, parseSyncPayload, configToLogString } from './sync-serializer.js';
 import { mergeImportedObjects } from './merge-objects.js';
 import { showToast } from '../utils.js';
 
 const API_BASE = '/api';
+const LOG_STORAGE_KEY = 'tepuq_sync_log';
 
 export function initSyncUI() {
   const section = document.getElementById('syncSection');
   if (!section) return;
+  restoreSyncLog();
   refreshSyncUI();
 
   section.querySelector('#syncLoginForm')?.addEventListener('submit', async (e) => {
@@ -25,6 +27,12 @@ export function initSyncUI() {
 
   section.querySelector('#syncPull')?.addEventListener('click', async () => {
     await handlePull();
+  });
+
+  section.querySelector('#syncLogClear')?.addEventListener('click', () => {
+    localStorage.removeItem(LOG_STORAGE_KEY);
+    const el = document.getElementById('syncLog');
+    if (el) el.textContent = '';
   });
 }
 
@@ -103,6 +111,8 @@ async function handlePush() {
   try {
     const { objects, settings } = await loadData();
     const payload = await buildSyncPayload(objects, settings);
+    const { config } = await parseSyncPayload(payload);
+    const jsonSize = new TextEncoder().encode(JSON.stringify(config)).length;
     const res = await fetch(`${API_BASE}/sync`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -111,13 +121,20 @@ async function handlePush() {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
+      appendSyncLog('PUSH GAGAL', data.error || 'Push gagal');
       showSyncStatus(data.error || 'Push gagal', true);
       return;
     }
+    appendSyncLog(
+      'PUSH',
+      config,
+      `${config.objects?.length || 0} objek, JSON ${jsonSize} byte, terkirim ${data.size} byte`
+    );
     showSyncStatus(`Push berhasil (${data.size} bytes)`);
     await updateLastSyncTime();
   } catch (err) {
     console.error(err);
+    appendSyncLog('PUSH GAGAL', err.message);
     showSyncStatus('Push gagal: ' + err.message, true);
   }
 }
@@ -130,26 +147,31 @@ async function handlePull() {
       credentials: 'same-origin',
     });
     if (res.status === 204) {
+      appendSyncLog('PULL', 'Belum ada data di cloud');
       showSyncStatus('Belum ada data di cloud');
       return;
     }
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
+      appendSyncLog('PULL GAGAL', data.error || 'Pull gagal');
       showSyncStatus(data.error || 'Pull gagal', true);
       return;
     }
     if (!data.payload) {
+      appendSyncLog('PULL', 'Payload kosong');
       showSyncStatus('Payload kosong', true);
       return;
     }
 
-    const { settings, objects } = await parseSyncPayload(data.payload);
+    const { settings, objects, config } = await parseSyncPayload(data.payload);
+    appendSyncLog('PULL', config, `${objects.length} objek`);
     await applyPulledData(objects, settings);
     showSyncStatus('Pull berhasil. Memuat ulang halaman...');
     await updateLastSyncTime();
     location.reload();
   } catch (err) {
     console.error(err);
+    appendSyncLog('PULL GAGAL', err.message);
     showSyncStatus('Pull gagal: ' + err.message, true);
   }
 }
@@ -211,4 +233,30 @@ function showSyncStatus(text, isError = false) {
   if (!el) return;
   el.textContent = text;
   el.className = 'sync-status' + (isError ? ' error' : '');
+}
+
+// Append a push/pull entry to the admin sync log. `detail` is either a
+// config object (shown as pretty JSON) or a plain message string.
+// The log is persisted in localStorage so it survives the reload after pull.
+function appendSyncLog(type, detail, summary = '') {
+  const el = document.getElementById('syncLog');
+  if (!el) return;
+  const ts = new Date().toLocaleTimeString('id-ID');
+  const body = typeof detail === 'string' ? detail : configToLogString(detail);
+  const entry = `[${ts}] ${type}${summary ? ' — ' + summary : ''}\n${body}\n\n`;
+  const text = (localStorage.getItem(LOG_STORAGE_KEY) || '') + entry;
+  try {
+    localStorage.setItem(LOG_STORAGE_KEY, text);
+  } catch (err) {
+    console.error(err);
+  }
+  el.textContent = text;
+  el.scrollTop = el.scrollHeight;
+}
+
+function restoreSyncLog() {
+  const el = document.getElementById('syncLog');
+  if (!el) return;
+  el.textContent = localStorage.getItem(LOG_STORAGE_KEY) || '';
+  el.scrollTop = el.scrollHeight;
 }

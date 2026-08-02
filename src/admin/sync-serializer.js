@@ -66,7 +66,24 @@ export async function parseSyncPayload(compressedString) {
     version: config.version || '3.0',
     settings: config.settings || {},
     objects: imported,
+    config,
   };
+}
+
+// Pretty-print a sync config for the admin log. The raw config contains
+// base64 image/audio data, so replace those fields with size placeholders
+// to keep the log readable.
+export function configToLogString(config) {
+  const copy = JSON.parse(JSON.stringify(config || {}));
+  for (const o of copy.objects || []) {
+    if (typeof o.imageData === 'string' && o.imageData) {
+      o.imageData = `[base64 ${o.imageData.length} chars]`;
+    }
+    if (typeof o.audioData === 'string' && o.audioData) {
+      o.audioData = `[base64 ${o.audioData.length} chars]`;
+    }
+  }
+  return JSON.stringify(copy, null, 2);
 }
 
 function blobToBase64(blob) {
