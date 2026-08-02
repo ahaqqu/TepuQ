@@ -362,7 +362,7 @@ function bindObjectForm(objects, getSettings, refreshList, refreshMeta) {
       active: document.getElementById('inpActive').checked,
       order: existing ? existing.order : objects.length,
       keyBindings: keyStringToBindings(keyInput),
-      source: existing?.source || 'custom',
+      source: 'custom',
     };
     await putObject(newObj);
     const idx = objects.findIndex((o) => o.id === id);
