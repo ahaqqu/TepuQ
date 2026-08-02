@@ -13,12 +13,15 @@ test.describe('Admin mode default settings', () => {
     await Then('the admin header is visible and default objects are listed', async () => {
       await expect(page.locator('text=TepuQ Admin')).toBeVisible();
       await expect(page.locator('#objectList .object-item')).toHaveCount(17);
+      await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
     });
   });
 
   test('can add object and export zip', async ({ page }) => {
     await Given('the admin page is opened', async () => {
       await page.goto('/?mode=admin');
+      await expect(page.locator('#objectList .object-item')).toHaveCount(17);
+      await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
     });
 
     await When('the parent clicks Add Object and fills the form', async () => {

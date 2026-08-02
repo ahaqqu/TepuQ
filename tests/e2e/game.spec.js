@@ -18,12 +18,15 @@ async function resetAllData(page) {
   await page.locator('#btnResetAll').click({ force: true });
   await page.waitForURL('/?mode=admin');
   await expect(page.locator('#objectList .object-item')).toHaveCount(17);
+  // Wait for bootstrap to finish so the admin UI is actually interactive.
+  await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
 }
 
 async function startBebasMode(page) {
   await page.goto('/');
   await page.evaluate(() => { sessionStorage.clear(); });
   await page.goto('/');
+  await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
   await page.locator('#btnBebas').click({ force: true });
   await expect(page.locator('#modePicker')).toHaveClass(/hidden/);
 }
@@ -64,6 +67,7 @@ test.describe('Game mode default settings', () => {
   test('TepuQ Target advances on card click with default HTTP image', async ({ page }) => {
     await Given('the user starts TepuQ Target mode', async () => {
       await page.goto('/');
+      await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
       await page.locator('#btnTarget').click({ force: true });
       await expect(page.locator('#modePicker')).toHaveClass(/hidden/);
     });
@@ -99,6 +103,7 @@ test.describe('Game mode default settings', () => {
     await When('the parent opens the default Papa object in admin', async () => {
       await page.goto('/?mode=admin');
       await expect(page.locator('#objectList .object-item')).toHaveCount(17);
+      await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
       const papaItem = page.locator('#objectList .object-item', { hasText: /Papa/ });
       await papaItem.locator('[data-action="edit"]').click({ force: true });
       await expect(page.locator('#editorTitle')).toHaveText('Edit Objek');
@@ -128,6 +133,8 @@ test.describe('Game mode default settings', () => {
 
     await When('the parent uploads a custom image for Papa', async () => {
       await page.goto('/?mode=admin');
+      await expect(page.locator('#objectList .object-item')).toHaveCount(17);
+      await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
       const papaItem = page.locator('#objectList .object-item', { hasText: /Papa/ });
       await papaItem.locator('[data-action="edit"]').click({ force: true });
       await expect(page.locator('#editorTitle')).toHaveText('Edit Objek');
@@ -189,11 +196,15 @@ test.describe('Game mode default settings', () => {
       const appleSrc = await appleCard.getAttribute('src');
       expect(appleSrc).toMatch(/^blob:/);
 
-      await page.evaluate(() => { document.querySelectorAll('.card-pop').forEach((c) => c.remove()); });
-      // Allow the first card's animation/debounce to settle before pressing the next key.
-      await page.waitForTimeout(300);
+      // Wait for the entry animation to finish so the debounce window has elapsed.
+      await page.waitForFunction(() => {
+        const card = document.querySelector('.card-pop');
+        if (!card) return false;
+        return (card.getAnimations() || []).length === 0;
+      }, { timeout: 5000 });
+
       await page.keyboard.press('2');
-      const bananaCard = page.locator('.card-pop img');
+      const bananaCard = page.locator('.card-pop img').last();
       await expect(bananaCard).toBeVisible();
       const bananaSrc = await bananaCard.getAttribute('src');
       expect(bananaSrc).toMatch(/^blob:/);
@@ -201,6 +212,7 @@ test.describe('Game mode default settings', () => {
 
     await When('the parent deletes Custom Apple and edits Custom Banana', async () => {
       await page.goto('/?mode=admin');
+      await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
       const appleItem = page.locator('#objectList .object-item', { hasText: /Custom Apple/ });
       const bananaItem = page.locator('#objectList .object-item', { hasText: /Custom Banana/ });
 
@@ -220,18 +232,20 @@ test.describe('Game mode default settings', () => {
       await startBebasMode(page);
 
       await page.keyboard.press('1');
-      const randomCard = page.locator('.card-pop');
-      await expect(randomCard.first()).toBeVisible();
-      if (await randomCard.first().isVisible()) {
-        const randomText = await randomCard.first().textContent();
-        expect(randomText).not.toContain('Custom Apple');
-      }
+      const randomCard = page.locator('.card-pop').first();
+      await expect(randomCard).toBeVisible();
+      const randomText = await randomCard.textContent();
+      expect(randomText).not.toContain('Custom Apple');
 
-      await page.evaluate(() => { document.querySelectorAll('.card-pop').forEach((c) => c.remove()); });
-      // Allow the previous card's animation/debounce to settle before the next key.
-      await page.waitForTimeout(300);
+      // Wait for the entry animation to finish so the debounce window has elapsed.
+      await page.waitForFunction(() => {
+        const card = document.querySelector('.card-pop');
+        if (!card) return false;
+        return (card.getAnimations() || []).length === 0;
+      }, { timeout: 5000 });
+
       await page.keyboard.press('9');
-      const editedCard = page.locator('.card-pop');
+      const editedCard = page.locator('.card-pop').last();
       await expect(editedCard).toBeVisible();
       const editedImg = editedCard.locator('img');
       const editedSrc = await editedImg.getAttribute('src');
