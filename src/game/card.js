@@ -16,28 +16,6 @@ function setCachedAspect(source, aspect) {
   imageAspectCache.set(cacheKeyForSource(source), aspect);
 }
 
-function measureImageAspect(source) {
-  return new Promise((resolve) => {
-    if (!source) { resolve(0); return; }
-    const img = new Image();
-    let url = null;
-    if (source instanceof Blob) {
-      url = URL.createObjectURL(source);
-      img.src = url;
-    } else {
-      img.src = source;
-    }
-    img.onload = () => {
-      if (url) URL.revokeObjectURL(url);
-      resolve(img.naturalWidth / img.naturalHeight || 1);
-    };
-    img.onerror = () => {
-      if (url) URL.revokeObjectURL(url);
-      resolve(0);
-    };
-  });
-}
-
 function fitImageToBounds(aspect, maxWidth, maxHeight) {
   let width = maxHeight * aspect;
   let height = maxHeight;
@@ -90,10 +68,12 @@ export function createCard(obj, settings = {}) {
     card.style.border = 'var(--card-border) solid ' + (obj.color || '#4A90D9');
   }
 
-  positionAndPopulateCard(card, obj);
-
   const anim = resolveEntryAnimation(obj, settings);
-  addEntryAnimationClasses(card, anim);
+  // For image cards whose aspect is not known yet, the card stays hidden
+  // until the image loads and is sized, then the entry animation runs.
+  const revealed = positionAndPopulateCard(card, obj, () => addEntryAnimationClasses(card, anim));
+  if (revealed) addEntryAnimationClasses(card, anim);
+
   card.addEventListener('animationend', () => {
     card.classList.remove('anim-' + anim);
     if (card.dataset.autoRemove) {
@@ -118,7 +98,7 @@ export function createCard(obj, settings = {}) {
   return card;
 }
 
-export function positionAndPopulateCard(card, obj) {
+export function positionAndPopulateCard(card, obj, onReveal = null) {
   const rectSize = parseCardSize();
   const imageSource = obj.imageUrl || obj.imageBlob;
   const hasImage = !!imageSource;
@@ -140,15 +120,18 @@ export function positionAndPopulateCard(card, obj) {
   card.style.setProperty('--card-color', obj.color || '#4A90D9');
 
   if (hasImage) {
-    let width = maxCardWidth;
-    let height = maxCardHeight;
     const aspect = getCachedAspect(imageSource);
+    let usedAspect = 0;
     if (aspect > 0) {
       const fitted = fitImageToBounds(aspect, maxCardWidth, maxCardHeight);
-      width = fitted.width;
-      height = fitted.height;
+      applySize(fitted.width, fitted.height);
+      usedAspect = aspect;
+    } else {
+      // Aspect unknown: keep the card hidden until the image loads and the
+      // card is sized, so no letterbox gap shows around the photo.
+      applySize(maxCardWidth, maxCardHeight);
+      card.style.visibility = 'hidden';
     }
-    applySize(width, height);
     card.style.background = 'transparent';
 
     const safeBlob = obj.imageBlob ? normalizeImageBlob(obj.imageBlob) : null;
@@ -164,17 +147,30 @@ export function positionAndPopulateCard(card, obj) {
     img.style.objectFit = 'contain';
     img.style.pointerEvents = 'none';
     img.style.display = 'block';
-    img.onerror = () => { img.style.display = 'none'; };
-    card.appendChild(img);
-
-    if (!aspect) {
-      measureImageAspect(imageSource).then((measured) => {
-        if (!measured || !card.isConnected) return;
-        setCachedAspect(imageSource, measured);
+    img.onload = () => {
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      if (!w || !h) return;
+      const measured = w / h;
+      setCachedAspect(imageSource, measured);
+      if (!card.isConnected) return;
+      if (Math.abs(measured - usedAspect) > 0.001) {
         const fitted = fitImageToBounds(measured, maxCardWidth, maxCardHeight);
         applySize(fitted.width, fitted.height);
-      });
-    }
+      }
+      if (card.style.visibility === 'hidden') {
+        card.style.visibility = 'visible';
+        if (onReveal) onReveal();
+      }
+    };
+    img.onerror = () => {
+      img.style.display = 'none';
+      if (card.style.visibility === 'hidden') {
+        card.style.visibility = 'visible';
+        if (onReveal) onReveal();
+      }
+    };
+    card.appendChild(img);
   } else {
     applySize(maxCardWidth, maxCardHeight);
     card.style.background = obj.color || '#4A90D9';
@@ -206,6 +202,8 @@ export function positionAndPopulateCard(card, obj) {
     wrap.append(big, small);
     card.appendChild(wrap);
   }
+
+  return card.style.visibility !== 'hidden';
 }
 
 function normalizeImageBlob(blob) {
@@ -239,9 +237,9 @@ export function buildDemoCard(obj, settings = {}) {
   card.style.setProperty('--card-color', obj.color || '#4A90D9');
   card.style.width = 'var(--card-size)';
   card.style.height = 'var(--card-size)';
-  positionAndPopulateCard(card, obj);
 
   const anim = resolveEntryAnimation(obj, settings);
-  addEntryAnimationClasses(card, anim);
+  const revealed = positionAndPopulateCard(card, obj, () => addEntryAnimationClasses(card, anim));
+  if (revealed) addEntryAnimationClasses(card, anim);
   return card;
 }

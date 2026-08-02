@@ -77,11 +77,18 @@ function isBlockedKey(e) {
 
 function onTouchStart(e) {
   if (document.body.classList.contains('admin')) return;
+
+  const target = e.target;
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
+    return;
+  }
+
+  const modePicker = document.getElementById('modePicker');
+  if (modePicker && !modePicker.classList.contains('hidden')) return;
+
   e.preventDefault();
   const appState = getAppState();
   if (!appState) return;
-  const modePicker = document.getElementById('modePicker');
-  if (!modePicker.classList.contains('hidden')) return;
 
   const touch = e.touches[0] || e.changedTouches[0];
   const point = touch ? { x: touch.clientX, y: touch.clientY } : null;

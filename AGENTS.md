@@ -151,6 +151,24 @@ Before creating a PR, the agent must:
 
 ---
 
+## Development Rule: Tap / Click Must Work on Mobile
+
+During development, whenever adding or changing interactive elements (links, buttons, forms, inputs) on the main page, ensure taps still work on mobile. The game's input handlers can silently break mobile taps:
+
+**The trap:** `src/game/input.js`'s `onTouchStart` calls `e.preventDefault()`. On mobile, `preventDefault()` on `touchstart` cancels the browser's synthetic `click` and blocks input focus — any element that relies on native clicks (links, forms, buttons) stops working while the mode picker is visible.
+
+**Development rules (follow when touching `input.js` or adding interactive UI):**
+1. Do **not** call `e.preventDefault()` while the mode picker is visible. Let normal UI interactions (links, form inputs, submit buttons) work natively.
+2. Skip `INPUT`, `TEXTAREA`, and `SELECT` targets entirely so typing/focus is never blocked.
+3. Keep `e.preventDefault()` only for actual gameplay touches (mode picker hidden), so accidental touches don't advance cards on the picker screen.
+4. Touch on the `#backTrigger` is handled separately with its own listeners — do not rely on the document-level handler for it.
+5. Every game input handler must early-return when `document.body.classList.contains('admin')` — check `onTouchStart`/`onPointerDown`/`onKeyDown` guards.
+6. Before finishing, verify at least the Admin link (`⚙️ Admin`) and the username/password inputs are tappable on a phone-sized viewport.
+
+Current correct behavior lives in `onTouchStart` in `src/game/input.js`. If you restructure the input handlers, keep these rules.
+
+---
+
 ## Cloudflare Deployment Notes
 
 The GitHub Action in `.github/workflows/deploy.yml` deploys the `dist/` folder to Cloudflare Pages. It will create the Pages project automatically if it does not already exist. Required repository secrets:
