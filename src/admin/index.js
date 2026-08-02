@@ -11,7 +11,7 @@ function renderAdminBuildInfo() {
   if (!footer || typeof __TEPUQ_BUILD_TIME__ === 'undefined') return;
   const d = new Date(__TEPUQ_BUILD_TIME__);
   const fmt = d.toLocaleString('id-ID', {
-    day: '2-digit', month: 'short', year: 'numeric',
+    day: '2-digit', month: 'long', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
   footer.textContent += ` · Versi ${fmt}`;
