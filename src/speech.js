@@ -1,6 +1,7 @@
 let idVoice = null;
 let voiceRetryTimer = null;
 let speechUnlocked = false;
+let gestureCleanup = null;
 
 function loadVoices() {
   const synth = window.speechSynthesis;
@@ -23,13 +24,18 @@ function loadVoices() {
 // and no errors. A muted, nearly-empty utterance on the first pointerdown /
 // touch / keydown creates the trusted session without making a sound, so all
 // later speaks (including auto-smash timers) are allowed to play.
+//
+// We only mark speech as unlocked once WebKit fires the 'start' event.
 function unlockSpeech() {
   const synth = window.speechSynthesis;
   if (!synth || speechUnlocked) return;
-  speechUnlocked = true;
   try {
     const warmup = new SpeechSynthesisUtterance(' ');
     warmup.volume = 0;
+    warmup.rate = 10;
+    warmup.onstart = () => {
+      speechUnlocked = true;
+    };
     synth.speak(warmup);
   } catch {
     // ignore
@@ -43,16 +49,14 @@ export function initSpeech() {
   if (synth.onvoiceschanged !== undefined) {
     synth.onvoiceschanged = loadVoices;
   }
-  const onGesture = () => {
-    unlockSpeech();
-    loadVoices();
-    window.removeEventListener('pointerdown', onGesture, true);
-    window.removeEventListener('touchstart', onGesture, true);
-    window.removeEventListener('keydown', onGesture, true);
-  };
-  window.addEventListener('pointerdown', onGesture, true);
-  window.addEventListener('touchstart', onGesture, true);
-  window.addEventListener('keydown', onGesture, true);
+}
+
+// Unlock iOS speech from a real gameplay gesture. Called once when the user
+// starts a game mode (taps a mode button), so TTS works during gameplay without
+// us trying to speak on the mode picker screen.
+export function unlockSpeechForGameplay() {
+  unlockSpeech();
+  loadVoices();
 }
 
 function startUtterance(u) {
@@ -73,19 +77,25 @@ export function speak(text, settings = {}) {
   }
   loadVoices();
   const u = new SpeechSynthesisUtterance(text);
-  // Only force Indonesian when an Indonesian voice is installed; otherwise
-  // some browsers (e.g. Chrome Android) stay silent when lang has no match.
-  // The voice itself is not assigned explicitly: iOS Safari can silently
-  // drop utterances carrying a voice reference, so let the browser
-  // auto-select from lang instead.
-  if (idVoice) {
+  const voices = synth.getVoices();
+  const voice = voices.find((v) => v.lang.toLowerCase().startsWith('id')) || null;
+  if (voice) {
+    // iOS Safari needs both lang and a concrete voice reference to reliably
+    // pick the Indonesian voice. On Android Chrome an explicit voice avoids
+    // the silence that can happen when lang has no matching installed voice.
+    u.lang = 'id-ID';
+    u.voice = voice;
+  } else if (voices.length === 0) {
+    // Voice list hasn't loaded yet (common on iOS at first tap). Hint the
+    // language anyway; the browser will select the best available voice once
+    // voices become available.
     u.lang = 'id-ID';
   }
   u.rate = settings.speechRate ?? 0.95;
   u.pitch = settings.speechPitch ?? 1.25;
   u.volume = settings.volume ?? 0.8;
 
-  if (synth.speaking) {
+  if (synth.speaking || synth.pending) {
     // iOS Safari swallows a speak() called synchronously right after
     // cancel(), so let the cancel finish before starting the new utterance.
     synth.cancel();

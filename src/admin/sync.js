@@ -5,6 +5,13 @@ import { showToast } from '../utils.js';
 
 const API_BASE = '/api';
 const LOG_STORAGE_KEY = 'tepuq_sync_log';
+const FETCH_TIMEOUT_MS = 20000;
+
+function fetchWithTimeout(url, options = {}, ms = FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(id));
+}
 
 export function initSyncUI() {
   const section = document.getElementById('syncSection');
@@ -44,9 +51,10 @@ async function handleLogin() {
     return;
   }
   try {
-    const res = await fetch(`${API_BASE}/login`, {
+    const res = await fetchWithTimeout(`${API_BASE}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
       body: JSON.stringify({ user, pass }),
     });
     const data = await res.json().catch(() => ({}));
@@ -65,9 +73,10 @@ async function handleLogin() {
 // Login with family credentials and pull cloud data immediately.
 // Used by the main page login form; returns { ok, pulled, error }.
 export async function loginAndPull(user, pass) {
-  const loginRes = await fetch(`${API_BASE}/login`, {
+  const loginRes = await fetchWithTimeout(`${API_BASE}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
     body: JSON.stringify({ user, pass }),
   });
   const loginData = await loginRes.json().catch(() => ({}));
@@ -75,7 +84,7 @@ export async function loginAndPull(user, pass) {
     return { ok: false, error: loginData.error || 'Login gagal' };
   }
 
-  const pullRes = await fetch(`${API_BASE}/sync`, {
+  const pullRes = await fetchWithTimeout(`${API_BASE}/sync`, {
     method: 'GET',
     credentials: 'same-origin',
   });
@@ -191,6 +200,7 @@ async function applyPulledData(importedObjects, settings) {
   await new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error || new Error('Transaction aborted'));
   });
 }
 
