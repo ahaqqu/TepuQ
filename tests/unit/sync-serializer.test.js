@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildSyncPayload, parseSyncPayload } from '../../src/admin/sync-serializer.js';
+import { buildSyncPayload, parseSyncPayload, configToLogString } from '../../src/admin/sync-serializer.js';
 
 describe('sync serializer', () => {
   it('round-trips settings and custom objects with blobs', async () => {
@@ -86,5 +86,27 @@ describe('sync serializer', () => {
     const parsed = await parseSyncPayload(payload);
     expect(parsed.objects).toHaveLength(0);
     expect(parsed.settings).toEqual({ cardSize: 'small' });
+  });
+
+  it('returns the raw decoded config alongside parsed data', async () => {
+    const payload = await buildSyncPayload([], { cardSize: 'small' });
+    const parsed = await parseSyncPayload(payload);
+    expect(parsed.config.version).toBe('3.0');
+    expect(parsed.config.partial).toBe(true);
+    expect(parsed.config.objects).toEqual([]);
+    expect(parsed.config.settings).toEqual({ cardSize: 'small' });
+  });
+
+  it('configToLogString pretty-prints config and redacts base64 data', async () => {
+    const config = {
+      version: '3.0',
+      objects: [
+        { id: 'obj_1', name: 'Papa', image: 'images/obj_1.png', imageData: 'AAAAbbbb', audio: '', audioData: '' },
+      ],
+    };
+    const text = configToLogString(config);
+    expect(text).toContain('"name": "Papa"');
+    expect(text).toContain('"[base64 8 chars]"');
+    expect(text).not.toContain('AAAAbbbb');
   });
 });

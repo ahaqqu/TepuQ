@@ -1,6 +1,35 @@
 body.admin #game { display: none; }
 body:not(.admin) #admin { display: none; }
 
+.sync-log {
+  margin-top: 12px;
+}
+
+.sync-log__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #444;
+}
+
+.sync-log__pre {
+  margin: 0;
+  padding: 10px;
+  max-height: 320px;
+  overflow: auto;
+  background: #1e2430;
+  color: #d7e0ea;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 #admin {
   position: fixed;
   inset: 0;

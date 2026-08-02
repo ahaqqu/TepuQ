@@ -42,17 +42,23 @@ export async function onRequestPost(context) {
     return error('Missing payload string');
   }
 
-  let parsed;
-  try {
-    parsed = JSON.parse(payload);
-  } catch {
-    return error('Invalid JSON payload', 400);
-  }
-  if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.objects)) {
-    return error('Malformed payload', 400);
-  }
-  if (parsed.version && parsed.version !== '3.0') {
-    return error('Unsupported payload version', 400);
+  // The client sends the payload as a compressed string ('gz:'/'raw:'
+  // from sync-serializer.js), not as plain JSON. Only legacy clients
+  // store plain JSON, so validate the JSON shape only for those.
+  const isCompressed = payload.startsWith('gz:') || payload.startsWith('raw:');
+  if (!isCompressed) {
+    let parsed;
+    try {
+      parsed = JSON.parse(payload);
+    } catch {
+      return error('Invalid JSON payload', 400);
+    }
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.objects)) {
+      return error('Malformed payload', 400);
+    }
+    if (parsed.version && parsed.version !== '3.0') {
+      return error('Unsupported payload version', 400);
+    }
   }
 
   const encoder = new TextEncoder();
