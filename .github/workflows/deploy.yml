@@ -57,7 +57,9 @@ jobs:
           echo "KV namespace ID: $NS_ID"
           node -e "
             const fs = require('fs');
-            const config = JSON.parse(fs.readFileSync('wrangler.jsonc', 'utf8'));
+            let text = fs.readFileSync('wrangler.jsonc', 'utf8');
+            text = text.replace(/\\/\\/[\\s\\S]*?$/gm, '').replace(/\\/\\*[\\s\\S]*?\\*\\//g, '');
+            const config = JSON.parse(text);
             config.kv_namespaces = [{ binding: 'TEPUQ_SYNC', id: '$NS_ID' }];
             fs.writeFileSync('wrangler.jsonc', JSON.stringify(config, null, 2) + '\n');
           "

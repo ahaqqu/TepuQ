@@ -21,9 +21,11 @@ export async function renderAdmin(objects, settings) {
   renderObjectList(objects, (id) => selectObject(id, objects));
   bindAdminTabs();
   bindEditorTabs();
-  initEditor(objects, settings, () => renderObjectList(objects, (id) => selectObject(id, objects)));
-  bindImportExport(objects, settings);
-  bindSettingsForm(settings);
+  initEditor(objects, () => settings, () => renderObjectList(objects, (id) => selectObject(id, objects)));
+  bindImportExport(objects, () => settings);
+  bindSettingsForm(settings, (newSettings) => {
+    settings = newSettings;
+  });
   refreshSettingsForm(settings);
   initSyncUI();
   await refreshSyncUI();
@@ -62,8 +64,9 @@ function bindEditorTabs() {
   });
 }
 
-function bindImportExport(objects, settings) {
-  document.getElementById('btnExport').onclick = () => exportZip(objects, settings);
+function bindImportExport(objects, settingsOrGetter) {
+  const getSettings = () => typeof settingsOrGetter === 'function' ? settingsOrGetter() : settingsOrGetter;
+  document.getElementById('btnExport').onclick = () => exportZip(objects, getSettings());
   document.getElementById('btnImport').onclick = () => document.getElementById('importFile').click();
   document.getElementById('importFile').addEventListener('change', async (e) => {
     const file = e.target.files[0];

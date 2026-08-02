@@ -1,48 +1,15 @@
 import { speakOrPlay } from '../speech.js';
 import { createParticles, thumpCard } from './effects.js';
-import { createCard, clearPopCards } from './card.js';
+import { createCard, clearPopCards, revokeCardURL } from './card.js';
 import { normalizeKey } from '../utils.js';
+import { getState, setState, resetGameState } from './game-state.js';
 
-const DEBOUNCE_MS = 80;
-
-let state = {
-  currentMode: null,
-  currentObjectId: null,
-  lastInteractionTime: 0,
-  burstActive: false,
-  burstObjectId: null,
-  burstTimer: null,
-  autoSmashTimer: null,
-  targetTransitionTimer: null,
-  shufflePool: [],
-};
-
-export function getState() {
-  return state;
-}
-
-export function setState(patch) {
-  state = { ...state, ...patch };
-}
-
-export function resetGameState() {
-  state = {
-    currentMode: null,
-    currentObjectId: null,
-    lastInteractionTime: 0,
-    burstActive: false,
-    burstObjectId: null,
-    burstTimer: null,
-    autoSmashTimer: null,
-    targetTransitionTimer: null,
-    shufflePool: [],
-  };
-}
+export { getState, setState, resetGameState } from './game-state.js';
 
 export function chooseNext(active, current, playMode, shufflePool) {
   if (playMode === 'sequential') {
     const idx = active.findIndex((o) => o.id === current?.id);
-    return active[(idx + 1) % active.length];
+    return { next: active[(idx + 1) % active.length], pool: [] };
   }
   if (playMode === 'round-robin') {
     let pool = shufflePool || [];
@@ -52,12 +19,12 @@ export function chooseNext(active, current, playMode, shufflePool) {
     }
     return { next: pool.shift(), pool };
   }
-  if (active.length === 1) return active[0];
+  if (active.length === 1) return { next: active[0], pool: [] };
   let next;
   do {
     next = active[Math.floor(Math.random() * active.length)];
   } while (next.id === current?.id);
-  return next;
+  return { next, pool: [] };
 }
 
 export function findBoundObject(active, key) {
@@ -66,11 +33,8 @@ export function findBoundObject(active, key) {
   return active.find((o) => (o.keyBindings || []).includes(normalized)) || null;
 }
 
-export function handleTargetSuccess(objects, settings, elParticles, point) {
-  const now = Date.now();
-  if (now - state.lastInteractionTime < settings.debounceMs) return;
-  state.lastInteractionTime = now;
-
+function advanceTargetCard(objects, settings, elParticles, point) {
+  const state = getState();
   stopAutoSmash();
   if (state.targetTransitionTimer) {
     clearTimeout(state.targetTransitionTimer);
@@ -81,9 +45,8 @@ export function handleTargetSuccess(objects, settings, elParticles, point) {
   if (active.length === 0) return;
 
   const current = active.find((o) => o.id === state.currentObjectId) || null;
-  const raw = chooseNext(active, current, settings.playMode, state.shufflePool);
-  const next = raw?.pool !== undefined ? raw.next : raw;
-  if (raw?.pool !== undefined) state.shufflePool = raw.pool;
+  const { next, pool } = chooseNext(active, current, settings.playMode, state.shufflePool);
+  state.shufflePool = pool;
 
   state.currentObjectId = next.id;
   speakOrPlay(next, settings);
@@ -91,18 +54,26 @@ export function handleTargetSuccess(objects, settings, elParticles, point) {
   resetAutoSmash(objects, settings);
 }
 
-export async function handleSuccess(source, objects, settings, elParticles, key, point) {
+export function handleTargetSuccess(objects, settings, elParticles, point) {
+  const state = getState();
   const now = Date.now();
-  if (now - state.lastInteractionTime < DEBOUNCE_MS) return;
+  if (now - state.lastInteractionTime < settings.debounceMs) return;
   state.lastInteractionTime = now;
+  advanceTargetCard(objects, settings, elParticles, point);
+}
 
-  stopAutoSmash();
+export async function handleSuccess(source, objects, settings, elParticles, key, point) {
+  const state = getState();
+  const debounceMs = Number(settings.debounceMs) > 0 ? Number(settings.debounceMs) : 0;
+  const now = Date.now();
+  if (now - state.lastInteractionTime < debounceMs) return;
+  state.lastInteractionTime = now;
 
   const active = objects.filter((o) => o.active);
   if (active.length === 0) return;
 
   if (state.currentMode === 'target') {
-    handleTargetSuccess(objects, settings, elParticles, point);
+    advanceTargetCard(objects, settings, elParticles, point);
     return;
   }
 
@@ -120,9 +91,9 @@ export async function handleSuccess(source, objects, settings, elParticles, key,
     current = active.find((o) => o.id === state.burstObjectId) || active[0];
   } else {
     const prev = active.find((o) => o.id === state.currentObjectId) || null;
-    const raw = chooseNext(active, prev, settings.playMode, state.shufflePool);
-    current = raw?.pool !== undefined ? raw.next : raw;
-    if (raw?.pool !== undefined) state.shufflePool = raw.pool;
+    const { next, pool } = chooseNext(active, prev, settings.playMode, state.shufflePool);
+    state.shufflePool = pool;
+    current = next;
     state.currentObjectId = current.id;
     state.burstActive = true;
     state.burstObjectId = current.id;
@@ -134,12 +105,15 @@ export async function handleSuccess(source, objects, settings, elParticles, key,
   const popCards = [...game.querySelectorAll('.card-pop:not(.target-card)')];
   const MAX_POP_CARDS = 6;
   if (popCards.length >= MAX_POP_CARDS) {
-    popCards.slice(0, popCards.length - MAX_POP_CARDS + 1).forEach((c) => c.remove());
+    popCards.slice(0, popCards.length - MAX_POP_CARDS + 1).forEach((c) => {
+      revokeCardURL(c);
+      c.remove();
+    });
   }
 
-    const card = createCard(current, settings);
-    card.dataset.autoRemove = 'true';
-    game.appendChild(card);
+  const card = createCard(current, settings);
+  card.dataset.autoRemove = 'true';
+  game.appendChild(card);
   createParticles(elParticles, card, current.color, point?.x, point?.y);
   thumpCard(card);
 
@@ -156,6 +130,7 @@ export function showSingleCard(obj, settings, elParticles, point) {
 }
 
 function startBurstTimer(settings) {
+  const state = getState();
   const ms = (Number(settings.burstWindow) > 0 ? Number(settings.burstWindow) : 0) * 1000;
   if (ms <= 0) {
     state.burstActive = false;
@@ -170,6 +145,7 @@ function startBurstTimer(settings) {
 }
 
 function autoSmashLoop(objects, settings, elParticles) {
+  const state = getState();
   if (state.currentMode !== 'bebas') return;
   handleSuccess('auto-smash', objects, settings, elParticles);
   const delay = Number(settings.autoSmashDelay) || 0;
@@ -179,6 +155,7 @@ function autoSmashLoop(objects, settings, elParticles) {
 }
 
 export function resetAutoSmash(objects, settings) {
+  const state = getState();
   stopAutoSmash();
   const delay = Number(settings.autoSmashDelay) || 0;
   if (delay <= 0 || state.currentMode === 'target') return;
@@ -186,6 +163,7 @@ export function resetAutoSmash(objects, settings) {
 }
 
 export function stopAutoSmash() {
+  const state = getState();
   if (state.autoSmashTimer) clearTimeout(state.autoSmashTimer);
   state.autoSmashTimer = null;
 }

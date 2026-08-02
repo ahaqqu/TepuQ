@@ -2,7 +2,8 @@
 // These run inside the Pages Functions worker and use crypto.subtle only.
 
 const COOKIE_NAME = 'tepuq_session';
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year; family-only shared credential, no sensitive data
+const TOKEN_MAX_AGE = 60 * 60 * 24 * 365; // 1 year; same reasoning as the cookie
 
 export function json(body, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(body), {
@@ -26,7 +27,8 @@ export function setSessionCookie(token) {
 export async function signToken(username, secret) {
   const encoder = new TextEncoder();
   const header = { alg: 'HS256', typ: 'JWT' };
-  const payload = { sub: username, iat: Math.floor(Date.now() / 1000) };
+  const now = Math.floor(Date.now() / 1000);
+  const payload = { sub: username, iat: now, exp: now + TOKEN_MAX_AGE };
   const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, '');
   const payloadB64 = btoa(JSON.stringify(payload)).replace(/=/g, '');
   const data = `${headerB64}.${payloadB64}`;
@@ -61,6 +63,7 @@ export async function verifyToken(token, secret) {
   if (!ok) return null;
   try {
     const payload = JSON.parse(atob(payloadB64.padEnd(payloadB64.length + (4 - (payloadB64.length % 4)) % 4, '=')));
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
     return payload.sub || null;
   } catch {
     return null;
@@ -75,4 +78,20 @@ export function getCookieValue(request, name) {
 
 export function kvKeyForUser(username) {
   return `family:${username}`;
+}
+
+export function constantTimeStringEquals(a, b) {
+  const encoder = new TextEncoder();
+  const aBuf = encoder.encode(a || '');
+  const bBuf = encoder.encode(b || '');
+  if (aBuf.length !== bBuf.length) return false;
+  let result = 0;
+  for (let i = 0; i < aBuf.length; i++) {
+    result |= aBuf[i] ^ bBuf[i];
+  }
+  return result === 0;
+}
+
+export function getClientIP(request) {
+  return request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() || 'unknown';
 }

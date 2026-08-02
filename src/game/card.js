@@ -1,17 +1,7 @@
-import {
-  parseCardSize,
-  revokeObjectURLs,
-} from '../utils.js';
+import { parseCardSize } from '../utils.js';
 import { resolveEntryAnimation, addEntryAnimationClasses } from './animations.js';
 
-const objectURLs = [];
 const imageAspectCache = new Map();
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', () => {
-    revokeObjectURLs(objectURLs);
-  });
-}
 
 function cacheKeyForSource(source) {
   if (source instanceof Blob) return `blob:${source.size}:${source.type}`;
@@ -58,8 +48,20 @@ function fitImageToBounds(aspect, maxWidth, maxHeight) {
   return { width, height };
 }
 
+export function revokeCardURL(card) {
+  if (!card) return;
+  const url = card.dataset.objectUrl;
+  if (url) {
+    try { URL.revokeObjectURL(url); } catch {}
+    delete card.dataset.objectUrl;
+  }
+}
+
 export function clearPopCards() {
-  document.querySelectorAll('.card-pop').forEach((c) => c.remove());
+  document.querySelectorAll('.card-pop').forEach((c) => {
+    revokeCardURL(c);
+    c.remove();
+  });
 }
 
 export function createCard(obj, settings = {}) {
@@ -100,7 +102,10 @@ export function createCard(obj, settings = {}) {
         card.animate(
           [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(0.6)' }],
           { duration: 400, easing: 'ease-in' }
-        ).onfinish = () => card.remove();
+        ).onfinish = () => {
+          revokeCardURL(card);
+          card.remove();
+        };
       };
       if (visibleMs > 0) {
         setTimeout(fadeOut, visibleMs);
@@ -148,9 +153,19 @@ export function positionAndPopulateCard(card, obj) {
 
     const safeBlob = obj.imageBlob ? normalizeImageBlob(obj.imageBlob) : null;
     const imgSrc = safeBlob ? URL.createObjectURL(safeBlob) : obj.imageUrl;
-    if (safeBlob) objectURLs.push(imgSrc);
+    if (safeBlob) card.dataset.objectUrl = imgSrc;
 
-    card.innerHTML = `<img src="${escapeAttr(imgSrc)}" alt="${escapeAttr(obj.name)}" draggable="false" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:contain;pointer-events:none;display:block;">`;
+    const img = document.createElement('img');
+    img.src = imgSrc;
+    img.alt = obj.name || '';
+    img.draggable = false;
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'contain';
+    img.style.pointerEvents = 'none';
+    img.style.display = 'block';
+    img.onerror = () => { img.style.display = 'none'; };
+    card.appendChild(img);
 
     if (!aspect) {
       measureImageAspect(imageSource).then((measured) => {
@@ -163,11 +178,33 @@ export function positionAndPopulateCard(card, obj) {
   } else {
     applySize(maxCardWidth, maxCardHeight);
     card.style.background = obj.color || '#4A90D9';
-    card.innerHTML = `
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1vmin;width:100%;height:100%;padding:3vmin;text-align:center;">
-        <span style="font-size:16vmin;font-weight:800;color:rgba(255,255,255,0.95);text-shadow:0 0.5vmin 1.5vmin rgba(0,0,0,0.2);">${(obj.name || '?').charAt(0).toUpperCase()}</span>
-        <span style="font-size:5vmin;font-weight:700;color:rgba(255,255,255,0.95);text-shadow:0 0.3vmin 0.8vmin rgba(0,0,0,0.2);">${escapeHtml(obj.name || '')}</span>
-      </div>`;
+    const wrap = document.createElement('div');
+    wrap.style.display = 'flex';
+    wrap.style.flexDirection = 'column';
+    wrap.style.alignItems = 'center';
+    wrap.style.justifyContent = 'center';
+    wrap.style.gap = '1vmin';
+    wrap.style.width = '100%';
+    wrap.style.height = '100%';
+    wrap.style.padding = '3vmin';
+    wrap.style.textAlign = 'center';
+
+    const big = document.createElement('span');
+    big.style.fontSize = '16vmin';
+    big.style.fontWeight = '800';
+    big.style.color = 'rgba(255,255,255,0.95)';
+    big.style.textShadow = '0 0.5vmin 1.5vmin rgba(0,0,0,0.2)';
+    big.textContent = (obj.name || '?').charAt(0).toUpperCase();
+
+    const small = document.createElement('span');
+    small.style.fontSize = '5vmin';
+    small.style.fontWeight = '700';
+    small.style.color = 'rgba(255,255,255,0.95)';
+    small.style.textShadow = '0 0.3vmin 0.8vmin rgba(0,0,0,0.2)';
+    small.textContent = obj.name || '';
+
+    wrap.append(big, small);
+    card.appendChild(wrap);
   }
 }
 

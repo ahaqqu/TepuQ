@@ -1,7 +1,17 @@
 import { defineConfig } from 'vite';
+import { execSync } from 'child_process';
 
 // Build timestamp shown in the app so parents can confirm which version is deployed.
-const buildTime = new Date().toISOString();
+// Using the commit timestamp keeps the bundle reproducible for the same source tree
+// while still displaying a meaningful deployment-ish time.
+function getBuildTime() {
+  try {
+    return execSync('git log -1 --format=%cI', { encoding: 'utf8' }).trim();
+  } catch {
+    return new Date().toISOString();
+  }
+}
+const buildTime = getBuildTime();
 
 export default defineConfig({
   base: '/',

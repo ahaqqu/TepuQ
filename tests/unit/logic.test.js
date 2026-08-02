@@ -11,9 +11,9 @@ const one = [{ id: 'a', name: 'Apple', active: true }];
 
 describe('chooseNext', () => {
   it('sequential cycles through active objects', () => {
-    expect(chooseNext(objects, objects[0], 'sequential').id).toBe('b');
-    expect(chooseNext(objects, objects[1], 'sequential').id).toBe('c');
-    expect(chooseNext(objects, objects[2], 'sequential').id).toBe('a');
+    expect(chooseNext(objects, objects[0], 'sequential').next.id).toBe('b');
+    expect(chooseNext(objects, objects[1], 'sequential').next.id).toBe('c');
+    expect(chooseNext(objects, objects[2], 'sequential').next.id).toBe('a');
   });
 
   it('round-robin shuffles remaining objects', () => {
@@ -42,13 +42,13 @@ describe('chooseNext', () => {
   });
 
   it('returns only object when list has one item', () => {
-    expect(chooseNext(one, one[0], 'random').id).toBe('a');
+    expect(chooseNext(one, one[0], 'random').next.id).toBe('a');
   });
 
   it('random never repeats the current object', () => {
     for (let i = 0; i < 50; i++) {
       const next = chooseNext(objects, objects[1], 'random');
-      expect(next.id).not.toBe('b');
+      expect(next.next.id).not.toBe('b');
     }
   });
 });

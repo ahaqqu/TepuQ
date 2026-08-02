@@ -1,5 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Allow multiple agents/worktrees to run E2E tests concurrently on the same machine
+// by picking a unique preview port via TEPUQ_E2E_PORT.
+const E2E_PORT = Number(process.env.TEPUQ_E2E_PORT) || 4173;
+const E2E_BASE_URL = process.env.PLAYWRIGHT_BASE_URL || `http://localhost:${E2E_PORT}`;
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -8,7 +13,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'list',
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:4173',
+    baseURL: E2E_BASE_URL,
     trace: 'on-first-retry',
   },
   projects: [
@@ -18,8 +23,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'bun run preview',
-    url: 'http://localhost:4173',
+    command: `bun run preview --port ${E2E_PORT}`,
+    url: E2E_BASE_URL,
     reuseExistingServer: !process.env.CI,
   },
 });
