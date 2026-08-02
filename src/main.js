@@ -18,26 +18,12 @@ function renderBuildInfo() {
   }
 }
 
-function bindMainSyncLogout() {
-  const btn = document.getElementById('mainSyncLogout');
-  if (!btn) return;
-  btn.addEventListener('click', async () => {
-    try {
-      await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
-    } catch (err) {
-      console.error(err);
-    }
-    location.reload();
-  });
-}
-
-// Show the "logged in as …" info and logout button when a session exists,
-// and hide the login form. Otherwise leave the login form visible.
+// Show the "logged in as …" info and hide the login form when a session
+// exists. Otherwise leave the login form visible.
 async function applyMainSyncState() {
   const user = await fetchCurrentUser();
   const form = document.getElementById('mainSyncForm');
   const infoEl = document.getElementById('mainSyncInfo');
-  const logoutBtn = document.getElementById('mainSyncLogout');
   const statusEl = document.getElementById('mainSyncStatus');
   if (user) {
     if (form) form.remove();
@@ -46,7 +32,6 @@ async function applyMainSyncState() {
       infoEl.textContent = `☁️ Login aktif sebagai ${user}`;
       infoEl.classList.remove('hidden');
     }
-    if (logoutBtn) logoutBtn.classList.remove('hidden');
   }
 }
 
@@ -102,7 +87,6 @@ async function bootstrap() {
       document.body.classList.remove('admin');
       bindGameInput();
       bindMainSyncLogin();
-      bindMainSyncLogout();
       await applyMainSyncState();
       await initGame({ objects, settings });
     }
