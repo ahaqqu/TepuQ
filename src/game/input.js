@@ -1,7 +1,7 @@
 import { handleSuccess } from './logic.js';
 import { hintCard } from './effects.js';
 import { exitFullscreen, unlockPointer } from './fullscreen.js';
-import { showModePicker, startMode, getCurrentMode, getAppState } from './mode-manager.js';
+import { showModePicker, getCurrentMode, getAppState } from './mode-manager.js';
 
 export function bindGameInput() {
   document.addEventListener('keydown', onKeyDown, { passive: false });
@@ -132,14 +132,6 @@ function onBeforeUnload(e) {
 function onPointerDown(e) {
   if (document.body.classList.contains('admin')) return;
   if (e.target.id === 'backTrigger') return;
-
-  const modeBtn = e.target.closest('.mode-btn');
-  if (modeBtn) {
-    e.preventDefault();
-    if (modeBtn.id === 'btnBebas') startMode('bebas');
-    if (modeBtn.id === 'btnTarget') startMode('target');
-    return;
-  }
 
   const modePicker = document.getElementById('modePicker');
   if (!modePicker.classList.contains('hidden')) return;

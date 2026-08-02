@@ -56,7 +56,7 @@ function bindMainSyncLogin() {
         statusEl.textContent = result.error || 'Login gagal';
         return;
       }
-      applyMainSyncState();
+      await applyMainSyncState();
       if (!result.pulled) {
         statusEl.textContent = 'Login berhasil. Belum ada data di cloud.';
         return;
