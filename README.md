@@ -14,6 +14,7 @@ Butuh [Bun](https://bun.sh/) yang sudah terinstall.
 ```bash
 bun install        # install dependencies
 bun run dev        # dev server di http://localhost:5173
+bun run build      # build static site ke dist/
 bun run preview    # preview build production
 ```
 
@@ -25,13 +26,21 @@ Buka di browser:
 ## Fitur Admin
 
 - Tambah, edit, hapus objek.
-- Upload foto atau ambil foto langsung dari kamera.
+- Upload foto dari file atau muat dari URL.
 - Rekam suara sendiri dengan toggle untuk menggantikan TTS.
-- Atur warna tema dan animasi kartu.
+- Atur warna, animasi muncul, dan ukuran kartu.
+- Atur gaya latar belakang, mode putar, jendela burst, dan lama kartu tampil.
 - Atur kecepatan, pitch, dan volume suara TTS Bahasa Indonesia.
 - Atur tombol cepat (key binding) untuk objek tertentu.
+- Atur mode yang tersedia dan mode layar penuh.
 - Export data ke ZIP (`tepuq-data.zip`) untuk backup.
 - Import ZIP untuk memindahkan data antar browser atau perangkat.
+
+## Sinkron Cloud (Opsional)
+
+Keluarga bisa login dengan username dan password bersama untuk menyimpan objek custom dan pengaturan ke cloud, lalu menggunakannya di perangkat lain. Sinkron ini opsional; semua data lokal tetap tersimpan di browser masing-masing.
+
+Sinkron cloud menggunakan Cloudflare Pages Functions + KV. Lihat `AGENTS.md` untuk detail konfigurasi secrets.
 
 ## Teknologi
 
@@ -41,6 +50,7 @@ Buka di browser:
 - JSZip dan FileSaver untuk export/import.
 - Web Speech API untuk suara Bahasa Indonesia (`id-ID`).
 - MediaRecorder untuk merekam suara.
+- Cloudflare Pages Functions + KV untuk sinkron cloud opsional.
 
 ## Test
 
@@ -57,6 +67,12 @@ Tambahkan repository secrets berikut di GitHub:
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
 - `CLOUDFLARE_PROJECT_NAME` (opsional, default `tepuq`)
+
+Jika ingin mengaktifkan sinkron cloud, tambahkan juga:
+
+- `TEPUQ_USER` — username keluarga untuk sinkron.
+- `TEPUQ_PASS` — password keluarga untuk sinkron.
+- `TEPUQ_JWT_SECRET` — secret acak panjang untuk menandai JWT.
 
 ## Catatan
 

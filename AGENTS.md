@@ -136,6 +136,8 @@ After any change, verify at least these default-setting flows:
 8. **Write tests in BDD style.** E2E tests should read as `Given / When / Then` steps using Playwright `test.step`. Unit tests should describe behavior, not implementation.
 9. **Avoid `page.waitForTimeout` in E2E tests.** Prefer explicit Playwright waits (e.g., `await expect(locator).toBeVisible()`, `await expect(locator).toHaveClass(...)`). If a timeout is unavoidable because the app has an async, UI-undetectable side effect (e.g., image resize before save), keep it small, comment why, and pair it with an explicit DOM assertion.
 
+## Pull Requests
+
 ### PR Checklist
 Before creating a PR, the agent must:
 1. Check if a PR already exists for the same fix. If yes, update that branch instead of creating a new PR.
@@ -144,14 +146,26 @@ Before creating a PR, the agent must:
 4. If a replacement branch is created, close the old PR immediately and explain why.
 5. Never create a second PR for the same fix unless the first one was already closed or merged.
 6. **Write the PR title and description in English.** The project uses English for commit messages and PR descriptions so they are readable for all contributors. Indonesian is fine for user-facing copy inside the app.
-7. **Use `gh api` to update PR title/description.** Avoid `gh pr edit`; it can fail silently due to GraphQL issues. Example:
+
+### Updating PR title and description
+- **Use `gh api --input` to update PR title/description.** Avoid `gh pr edit`; it can fail silently due to GraphQL issues. Also avoid `--field title=... --field body=...` when the body contains newlines or quotes, because the shell will send a JSON-escaped literal to GitHub and the PR description will render as broken escaped text.
+
+   Create a JSON payload file and send it with `--input`:
    ```bash
+   cat >/tmp/pr-payload.json <<'JSON'
+   {
+     "title": "feat: ...",
+     "body": "### What changed\n- ...\n\n### Tests\n- [x] bun run test:unit"
+   }
+   JSON
    gh api repos/<owner>/<repo>/pulls/<number> \
      --method PATCH \
-     --field title="feat: ..." \
-     --field body="### What changed\n- ...\n\n### Tests\n- [x] bun run test:unit"
+     --input /tmp/pr-payload.json
    ```
-   Always verify with `gh pr view <number> --json title,body`.
+- Always verify with `gh pr view <number> --json title,body`.
+
+### Push / PR description rule
+Every time a branch is pushed after additional commits or fixes, the agent must re-read the PR description and update it so it accurately reflects the final state of the branch. Do not leave the PR description stale or referencing outdated commits/files.
 
 ---
 
