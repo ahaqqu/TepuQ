@@ -77,19 +77,14 @@ export function speak(text, settings = {}) {
   }
   loadVoices();
   const u = new SpeechSynthesisUtterance(text);
-  const voices = synth.getVoices();
-  const voice = voices.find((v) => v.lang.toLowerCase().startsWith('id')) || null;
+  // Always tell the browser the text is Indonesian. On iOS Safari this is
+  // required for it to pick an appropriate voice; on other platforms the
+  // browser falls back to its default voice when no Indonesian voice is
+  // installed.
+  u.lang = 'id-ID';
+  const voice = synth.getVoices().find((v) => v.lang.toLowerCase().startsWith('id')) || null;
   if (voice) {
-    // iOS Safari needs both lang and a concrete voice reference to reliably
-    // pick the Indonesian voice. On Android Chrome an explicit voice avoids
-    // the silence that can happen when lang has no matching installed voice.
-    u.lang = 'id-ID';
     u.voice = voice;
-  } else if (voices.length === 0) {
-    // Voice list hasn't loaded yet (common on iOS at first tap). Hint the
-    // language anyway; the browser will select the best available voice once
-    // voices become available.
-    u.lang = 'id-ID';
   }
   u.rate = settings.speechRate ?? 0.95;
   u.pitch = settings.speechPitch ?? 1.25;
