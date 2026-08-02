@@ -24,6 +24,7 @@ async function startBebasMode(page) {
   await page.goto('/');
   await page.evaluate(() => { sessionStorage.clear(); });
   await page.goto('/');
+  await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
   await page.locator('#btnBebas').click({ force: true });
   await expect(page.locator('#modePicker')).toHaveClass(/hidden/);
 }
@@ -64,6 +65,7 @@ test.describe('Game mode default settings', () => {
   test('TepuQ Target advances on card click with default HTTP image', async ({ page }) => {
     await Given('the user starts TepuQ Target mode', async () => {
       await page.goto('/');
+      await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
       await page.locator('#btnTarget').click({ force: true });
       await expect(page.locator('#modePicker')).toHaveClass(/hidden/);
     });

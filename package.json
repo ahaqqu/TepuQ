@@ -10,7 +10,7 @@
     "test": "vitest run --config vitest.config.js",
     "test:unit": "vitest run --config vitest.config.js",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "bun run scripts/run-e2e.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.45.0",

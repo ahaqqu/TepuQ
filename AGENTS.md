@@ -32,6 +32,7 @@ TepuQ/
 ├── index.html              # Vite shell
 ├── functions/              # Cloudflare Pages Functions
 │   └── api/                # /api/login, /api/logout, /api/me, /api/sync
+├── scripts/                # helper scripts (e.g. dynamic E2E port runner)
 ├── src/
 │   ├── main.js             # bootstrap
 │   ├── config.js           # defaults and constants
@@ -76,8 +77,11 @@ bun run build      # build static site to dist/
 bun run preview    # preview the build on port 4173
 bun run test:unit  # run Vitest unit tests
 bun run test:e2e   # run Playwright E2E tests against the current dist/
+                   # scripts/run-e2e.js finds a free port automatically, so
+                   # multiple agents can run E2E concurrently and won't clash
+                   # with a separate `bun run preview` on port 4173
 
-# Run E2E on a different port so multiple agents/worktrees don't collide:
+# Override the E2E preview port manually if needed:
 TEPUQ_E2E_PORT=4180 bun run test:e2e
 
 # For cloud sync local dev (serves Pages Functions + KV from wrangler.jsonc):
