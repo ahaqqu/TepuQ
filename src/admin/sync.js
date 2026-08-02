@@ -219,12 +219,25 @@ export async function refreshSyncUI() {
   }
 }
 
-async function checkLoginStatus() {
+export async function checkLoginStatus() {
   try {
     const res = await fetch(`${API_BASE}/me`, { method: 'GET', credentials: 'same-origin' });
     return res.ok;
   } catch {
     return false;
+  }
+}
+
+// Returns the logged-in username, or null when not logged in.
+export async function fetchCurrentUser() {
+  try {
+    const res = await fetch(`${API_BASE}/me`, { method: 'GET', credentials: 'same-origin' });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    const user = data && data.ok ? data.user : null;
+    return typeof user === 'string' && user ? user : null;
+  } catch {
+    return null;
   }
 }
 

@@ -45,12 +45,15 @@
         </button>
       </div>
       <div id="mainSync" class="main-sync">
+        <p class="main-sync__desc">Login dengan username dan password keluarga untuk mengambil data dari cloud.</p>
         <form id="mainSyncForm" class="main-sync__form">
           <input type="text" id="mainSyncUser" placeholder="User keluarga" autocomplete="username" aria-label="Username">
           <input type="password" id="mainSyncPass" placeholder="Password" autocomplete="current-password" aria-label="Password">
           <button type="submit" class="main-sync__btn">☁️ Login</button>
         </form>
         <p id="mainSyncStatus" class="main-sync__status"></p>
+        <p id="mainSyncInfo" class="main-sync__status hidden"></p>
+        <button id="mainSyncLogout" class="main-sync__btn hidden">Logout</button>
       </div>
       <div id="fsNote" class="fs-note">Tekan lama pojok kiri atas untuk keluar dari layar penuh.</div>
       <div id="buildInfo" class="build-info"></div>
