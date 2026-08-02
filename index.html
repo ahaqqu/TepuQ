@@ -44,6 +44,14 @@
           <small style="font-size:2.2vmin;font-weight:400;opacity:.9">Ketuk fotonya!</small>
         </button>
       </div>
+      <div id="mainSync" class="main-sync">
+        <form id="mainSyncForm" class="main-sync__form">
+          <input type="text" id="mainSyncUser" placeholder="User keluarga" autocomplete="username" aria-label="Username">
+          <input type="password" id="mainSyncPass" placeholder="Password" autocomplete="current-password" aria-label="Password">
+          <button type="submit" class="main-sync__btn">☁️ Login</button>
+        </form>
+        <p id="mainSyncStatus" class="main-sync__status"></p>
+      </div>
       <div id="fsNote" class="fs-note">Tekan lama pojok kiri atas untuk keluar dari layar penuh.</div>
       <div id="buildInfo" class="build-info"></div>
       <a href="?mode=admin" class="admin-link" aria-label="Buka Admin">⚙️ Admin</a>
