@@ -4,7 +4,7 @@ import { initSpeech } from './speech.js';
 import { initGame } from './game/mode-manager.js';
 import { bindGameInput } from './game/input.js';
 import { renderAdmin } from './admin/index.js';
-import { loginAndPull } from './admin/sync.js';
+import { loginAndPull, fetchCurrentUser } from './admin/sync.js';
 
 function renderBuildInfo() {
   const el = document.getElementById('buildInfo');
@@ -15,6 +15,38 @@ function renderBuildInfo() {
       hour: '2-digit', minute: '2-digit',
     });
     el.textContent = `Versi ${fmt}`;
+  }
+}
+
+function bindMainSyncLogout() {
+  const btn = document.getElementById('mainSyncLogout');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
+    } catch (err) {
+      console.error(err);
+    }
+    location.reload();
+  });
+}
+
+// Show the "logged in as …" info and logout button when a session exists,
+// and hide the login form. Otherwise leave the login form visible.
+async function applyMainSyncState() {
+  const user = await fetchCurrentUser();
+  const form = document.getElementById('mainSyncForm');
+  const infoEl = document.getElementById('mainSyncInfo');
+  const logoutBtn = document.getElementById('mainSyncLogout');
+  const statusEl = document.getElementById('mainSyncStatus');
+  if (user) {
+    if (form) form.remove();
+    if (statusEl) statusEl.textContent = '';
+    if (infoEl) {
+      infoEl.textContent = `☁️ Login aktif sebagai ${user}`;
+      infoEl.classList.remove('hidden');
+    }
+    if (logoutBtn) logoutBtn.classList.remove('hidden');
   }
 }
 
@@ -39,6 +71,7 @@ function bindMainSyncLogin() {
         statusEl.textContent = result.error || 'Login gagal';
         return;
       }
+      applyMainSyncState();
       if (!result.pulled) {
         statusEl.textContent = 'Login berhasil. Belum ada data di cloud.';
         return;
@@ -69,6 +102,8 @@ async function bootstrap() {
       document.body.classList.remove('admin');
       bindGameInput();
       bindMainSyncLogin();
+      bindMainSyncLogout();
+      await applyMainSyncState();
       await initGame({ objects, settings });
     }
   } finally {
