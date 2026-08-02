@@ -54,6 +54,40 @@ async function handleLogin() {
   }
 }
 
+// Login with family credentials and pull cloud data immediately.
+// Used by the main page login form; returns { ok, pulled, error }.
+export async function loginAndPull(user, pass) {
+  const loginRes = await fetch(`${API_BASE}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user, pass }),
+  });
+  const loginData = await loginRes.json().catch(() => ({}));
+  if (!loginRes.ok || !loginData.ok) {
+    return { ok: false, error: loginData.error || 'Login gagal' };
+  }
+
+  const pullRes = await fetch(`${API_BASE}/sync`, {
+    method: 'GET',
+    credentials: 'same-origin',
+  });
+  if (pullRes.status === 204) {
+    return { ok: true, pulled: false };
+  }
+  const data = await pullRes.json().catch(() => ({}));
+  if (!pullRes.ok || !data.ok) {
+    return { ok: true, pulled: false, error: data.error || 'Pull gagal' };
+  }
+  if (!data.payload) {
+    return { ok: true, pulled: false };
+  }
+
+  const { settings, objects } = await parseSyncPayload(data.payload);
+  await applyPulledData(objects, settings);
+  await updateLastSyncTime();
+  return { ok: true, pulled: true };
+}
+
 async function handleLogout() {
   try {
     await fetch(`${API_BASE}/logout`, { method: 'POST', credentials: 'same-origin' });

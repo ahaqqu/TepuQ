@@ -109,6 +109,65 @@
   max-width: 80vmin;
 }
 
+.main-sync {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8vmin;
+  max-width: 90vmin;
+}
+
+.main-sync__form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1.5vmin;
+}
+
+.main-sync__form input {
+  font-family: var(--font);
+  font-size: 2.6vmin;
+  font-weight: 600;
+  color: #222;
+  background: rgba(255,255,255,0.92);
+  border: none;
+  border-radius: 1.2vmin;
+  padding: 1vmin 2vmin;
+  width: 24vmin;
+  outline: none;
+}
+
+.main-sync__form input:focus {
+  box-shadow: 0 0 0 0.6vmin rgba(255,255,255,0.35);
+}
+
+.main-sync__btn {
+  font-family: var(--font);
+  font-size: 2.6vmin;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(255,255,255,0.25);
+  border: 0.4vmin solid rgba(255,255,255,0.7);
+  border-radius: 1.2vmin;
+  padding: 1vmin 2.4vmin;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.main-sync__btn:hover, .main-sync__btn:focus {
+  background: rgba(255,255,255,0.45);
+  outline: none;
+}
+
+.main-sync__status {
+  font-size: 2.4vmin;
+  margin: 0;
+  min-height: 3vmin;
+  opacity: 0.9;
+  text-shadow: 0 0.2vmin 0.6vmin rgba(0,0,0,0.3);
+}
+
 .build-info {
   position: absolute;
   bottom: 3.2vmin;
@@ -131,6 +190,49 @@
   color: #fff;
   opacity: 1;
   outline: none;
+}
+
+@media (max-width: 760px) {
+  #modePicker h1 {
+    font-size: 14vmin;
+  }
+
+  .mode-subtitle {
+    font-size: 4.2vmin;
+  }
+
+  .mode-btn {
+    font-size: 5.8vmin;
+  }
+
+  .mode-btn small {
+    font-size: 3vmin !important;
+  }
+
+  .mode-icon {
+    font-size: 13vmin;
+  }
+
+  .main-sync__form input,
+  .main-sync__btn {
+    font-size: 3.4vmin;
+  }
+
+  .main-sync__status {
+    font-size: 3vmin;
+  }
+
+  .fs-note {
+    font-size: 3.2vmin;
+  }
+
+  .admin-link {
+    font-size: 3vmin;
+  }
+
+  .build-info {
+    font-size: 2.6vmin;
+  }
 }
 
 .bg-gradient {

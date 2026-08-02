@@ -18,11 +18,9 @@ export function error(message, status = 400) {
   return json({ ok: false, error: message }, status);
 }
 
-export function setSessionCookie(username) {
-  const payload = JSON.stringify({ user: username, iat: Date.now() });
-  const value = btoa(payload); // simple obfuscated cookie, signed in full flow
+export function setSessionCookie(token) {
   const secure = 'Secure; SameSite=Strict; HttpOnly';
-  return `${COOKIE_NAME}=${value}; Path=/; Max-Age=${COOKIE_MAX_AGE}; ${secure}`;
+  return `${COOKIE_NAME}=${token}; Path=/; Max-Age=${COOKIE_MAX_AGE}; ${secure}`;
 }
 
 export async function signToken(username, secret) {

@@ -168,7 +168,12 @@ export function bindGameInput() {
   document.addEventListener('touchmove', onTouchMove, { passive: false });
   document.addEventListener('touchend', onTouchEnd, { passive: false });
   document.addEventListener('wheel', onWheel, { passive: false });
-  document.addEventListener('contextmenu', (e) => e.preventDefault());
+  document.addEventListener('contextmenu', (e) => {
+    // Keep paste/long-press menu working inside text fields (sync login).
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+    e.preventDefault();
+  });
   document.addEventListener('dragstart', (e) => e.preventDefault());
   window.addEventListener('beforeunload', onBeforeUnload);
   bindBackTrigger();
@@ -193,6 +198,12 @@ function initCursorAutoHide() {
 
 function onKeyDown(e) {
   if (document.body.classList.contains('admin')) return;
+
+  // Let parents type in text fields (e.g. sync login) without triggering cards.
+  const target = e.target;
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+    return;
+  }
 
   // In game, allow only the "M" hint shortcut and the safe exit gesture.
   // Every other key becomes an input so the child does not exit by accident.

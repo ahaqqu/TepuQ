@@ -3,6 +3,7 @@ import { initDB, loadData } from './db.js';
 import { initSpeech } from './speech.js';
 import { initGame, bindGameInput } from './game/input.js';
 import { renderAdmin } from './admin/index.js';
+import { loginAndPull } from './admin/sync.js';
 
 function renderBuildInfo() {
   const el = document.getElementById('buildInfo');
@@ -14,6 +15,40 @@ function renderBuildInfo() {
     });
     el.textContent = `Versi ${fmt}`;
   }
+}
+
+function bindMainSyncLogin() {
+  const form = document.getElementById('mainSyncForm');
+  if (!form) return;
+  const userEl = document.getElementById('mainSyncUser');
+  const passEl = document.getElementById('mainSyncPass');
+  const statusEl = document.getElementById('mainSyncStatus');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const user = userEl.value.trim();
+    const pass = passEl.value;
+    if (!user || !pass) {
+      statusEl.textContent = 'Isi username dan password';
+      return;
+    }
+    statusEl.textContent = 'Login & mengambil data...';
+    try {
+      const result = await loginAndPull(user, pass);
+      if (!result.ok) {
+        statusEl.textContent = result.error || 'Login gagal';
+        return;
+      }
+      if (!result.pulled) {
+        statusEl.textContent = 'Login berhasil. Belum ada data di cloud.';
+        return;
+      }
+      statusEl.textContent = 'Data diambil, memuat ulang...';
+      location.reload();
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = 'Sinkron gagal: ' + err.message;
+    }
+  });
 }
 
 async function bootstrap() {
@@ -32,6 +67,7 @@ async function bootstrap() {
     } else {
       document.body.classList.remove('admin');
       bindGameInput();
+      bindMainSyncLogin();
       await initGame({ objects, settings });
     }
   } finally {
