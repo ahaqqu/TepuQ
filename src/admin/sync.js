@@ -1,6 +1,6 @@
-import { initDB, loadData, getAllObjects, getSettings, putObject, putSettings, putMeta, getMeta } from '../db.js';
+import { initDB, loadData, getAllObjects, putSettings, putMeta, getMeta } from '../db.js';
 import { buildSyncPayload, parseSyncPayload } from './sync-serializer.js';
-import { importZip } from './import-export.js';
+import { mergeImportedObjects } from './merge-objects.js';
 import { showToast } from '../utils.js';
 
 const API_BASE = '/api';
@@ -145,8 +145,9 @@ async function handlePull() {
 
     const { settings, objects } = await parseSyncPayload(data.payload);
     await applyPulledData(objects, settings);
-    showSyncStatus('Pull berhasil. Muat ulang halaman.');
+    showSyncStatus('Pull berhasil. Memuat ulang halaman...');
     await updateLastSyncTime();
+    location.reload();
   } catch (err) {
     console.error(err);
     showSyncStatus('Pull gagal: ' + err.message, true);
@@ -154,60 +155,21 @@ async function handlePull() {
 }
 
 async function applyPulledData(importedObjects, settings) {
-  // Reuse the same overwrite/merge strategy as ZIP import:
-  // preserve starter objects, replace/merge custom ones by id/name.
   const existing = await getAllObjects();
-  const existingById = Object.fromEntries(existing.map((o) => [o.id, o]));
-  const existingByName = Object.fromEntries(existing.map((o) => [normalizeImportKey(o.name), o]));
-  const importedById = Object.fromEntries(importedObjects.map((o) => [o.id, o]));
-  const importedByName = Object.fromEntries(importedObjects.map((o) => [normalizeImportKey(o.name), o]));
-
-  const merged = [];
-  for (const o of existing) {
-    const custom = importedById[o.id] || importedByName[normalizeImportKey(o.name)];
-    if (custom) {
-      merged.push({
-        ...o,
-        name: custom.name,
-        ttsText: custom.ttsText,
-        color: custom.color,
-        animation: custom.animation,
-        imageUrl: custom.imageBlob ? null : o.imageUrl,
-        imageBlob: custom.imageBlob || o.imageBlob,
-        imageSource: custom.imageBlob || o.imageBlob ? 'custom' : 'starter',
-        audioBlob: custom.audioBlob || o.audioBlob,
-        useRecording: custom.audioBlob ? custom.useRecording : (o.audioBlob ? o.useRecording : false),
-        audioType: custom.audioBlob ? (custom.useRecording ? 'recording' : 'tts') : o.audioType,
-        active: custom.active,
-        order: typeof custom.order === 'number' ? custom.order : o.order,
-        keyBindings: custom.keyBindings?.length ? custom.keyBindings : o.keyBindings,
-        source: 'custom',
-      });
-    } else {
-      merged.push(o);
-    }
-  }
-
-  for (const i of importedObjects) {
-    if (!existingById[i.id] && !existingByName[normalizeImportKey(i.name)]) {
-      merged.push({ ...i, source: 'custom' });
-    }
-  }
+  const merged = mergeImportedObjects(existing, importedObjects);
 
   const db = await initDB();
   const tx = db.transaction(['objects', 'settings', 'meta'], 'readwrite');
   tx.objectStore('objects').clear();
   merged.forEach((o) => tx.objectStore('objects').put(o));
-  tx.objectStore('settings').put({ key: 'settings', ...(settings || {}) });
+
+  const hasSettings = settings && Object.keys(settings).length > 0;
+  tx.objectStore('settings').put({ key: 'settings', ...(hasSettings ? settings : {}), _source: hasSettings ? 'user' : 'default' });
   tx.objectStore('meta').put({ key: 'meta', version: '3.0', lastModified: Date.now() });
   await new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
-}
-
-function normalizeImportKey(name) {
-  return (name || '').toLowerCase().trim().replace(/\s+/g, ' ');
 }
 
 async function updateLastSyncTime() {
@@ -237,7 +199,7 @@ export async function refreshSyncUI() {
 
 async function checkLoginStatus() {
   try {
-    const res = await fetch(`${API_BASE}/sync`, { method: 'GET', credentials: 'same-origin' });
+    const res = await fetch(`${API_BASE}/me`, { method: 'GET', credentials: 'same-origin' });
     return res.ok;
   } catch {
     return false;

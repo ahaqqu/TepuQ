@@ -31,7 +31,7 @@ TepuQ is a fun and simple browser game for toddlers (15+ months) and their paren
 TepuQ/
 ├── index.html              # Vite shell
 ├── functions/              # Cloudflare Pages Functions
-│   └── api/                # /api/login, /api/sync
+│   └── api/                # /api/login, /api/logout, /api/me, /api/sync
 ├── src/
 │   ├── main.js             # bootstrap
 │   ├── config.js           # defaults and constants
@@ -39,7 +39,16 @@ TepuQ/
 │   ├── utils.js            # helpers
 │   ├── speech.js           # TTS + recorded audio
 │   ├── game/               # game logic modules
+│   │   ├── game-state.js   # centralized mutable game state
+│   │   ├── mode-manager.js # mode picker, startMode, kiosk integration
+│   │   ├── demo.js         # background demo cards on the picker
+│   │   ├── input.js        # keyboard/touch/pointer input handlers
+│   │   ├── logic.js        # core game rules and card advancement
+│   │   ├── card.js         # card rendering and object URL lifecycle
+│   │   └── ...
 │   ├── admin/              # admin logic modules
+│   │   ├── merge-objects.js # shared import/sync merge strategy
+│   │   └── ...
 │   └── styles/             # CSS: base.css, game.css, admin.css, main.css
 ├── public/
 │   ├── assets/             # bundled CC0 starter images + audio
@@ -64,9 +73,12 @@ TepuQ/
 bun install        # install dependencies
 bun run dev        # start Vite dev server at http://localhost:5173
 bun run build      # build static site to dist/
-bun run preview    # preview the build
+bun run preview    # preview the build on port 4173
 bun run test:unit  # run Vitest unit tests
-bun run test:e2e   # run Playwright E2E tests (builds and previews first)
+bun run test:e2e   # run Playwright E2E tests against the current dist/
+
+# Run E2E on a different port so multiple agents/worktrees don't collide:
+TEPUQ_E2E_PORT=4180 bun run test:e2e
 
 # For cloud sync local dev (serves Pages Functions + KV from wrangler.jsonc):
 bunx wrangler pages dev dist
@@ -153,7 +165,7 @@ For cloud sync, also set these repository secrets:
 - `TEPUQ_PASS` — shared family sync password.
 - `TEPUQ_JWT_SECRET` — JWT signing secret (long random string).
 
-The GitHub Action creates the `TEPUQ_SYNC` KV namespace automatically if it is missing and writes its ID into `wrangler.jsonc` before deploying. No manual Wrangler or Cloudflare dashboard setup is required.
+The GitHub Action creates the `TEPUQ_SYNC` KV namespace automatically if it is missing and writes its ID into `wrangler.jsonc` before deploying. The deploy step strips JSONC comments before parsing `wrangler.jsonc` so inline comments do not break the workflow. No manual Wrangler or Cloudflare dashboard setup is required.
 
 Wrangler is a pinned dev dependency (`wrangler` in `package.json`). Local data stays in the browser; the cloud deployment serves static files plus the optional sync API.
 
@@ -184,9 +196,13 @@ When changing styling, prefer editing `theme.css`. When changing game behavior t
 
 ## Useful References
 
+- Game state: `src/game/game-state.js`
+- Mode picker / startMode: `src/game/mode-manager.js`
+- Game input handlers: `src/game/input.js`
 - Game logic: `src/game/logic.js`
 - Card rendering (including border/no-border): `src/game/card.js`
 - Admin editor (camera, audio, key bindings): `src/admin/editor.js`
 - Settings form: `src/admin/settings-form.js`
 - Import/export ZIP: `src/admin/import-export.js`
-- Cloud sync: `src/admin/sync.js`, `functions/api/login.js`, `functions/api/sync.js`
+- Import/sync merge strategy: `src/admin/merge-objects.js`
+- Cloud sync: `src/admin/sync.js`, `functions/api/login.js`, `functions/api/me.js`, `functions/api/sync.js`

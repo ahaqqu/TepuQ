@@ -1,7 +1,8 @@
 import './styles/main.css';
 import { initDB, loadData } from './db.js';
 import { initSpeech } from './speech.js';
-import { initGame, bindGameInput } from './game/input.js';
+import { initGame } from './game/mode-manager.js';
+import { bindGameInput } from './game/input.js';
 import { renderAdmin } from './admin/index.js';
 import { loginAndPull } from './admin/sync.js';
 

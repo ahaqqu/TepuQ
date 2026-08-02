@@ -2,21 +2,23 @@ import { putSettings, resetDatabase } from '../db.js';
 import { showToast } from '../utils.js';
 import { DEFAULT_SETTINGS } from '../config.js';
 
-export function bindSettingsForm(settings) {
+export function bindSettingsForm(settings, onChange) {
   refreshSettingsForm(settings);
 
   document.getElementById('btnSaveSettings').onclick = async () => {
-    const newSettings = readSettingsForm();
-    Object.assign(settings, newSettings);
-    await putSettings({ ...settings, _source: 'user' });
+    const newSettings = { ...settings, ...readSettingsForm(), _source: 'user' };
+    await putSettings(newSettings);
+    if (onChange) onChange(newSettings);
+    refreshSettingsForm(newSettings);
     showToast('Pengaturan disimpan');
   };
 
   document.getElementById('btnResetSettings').onclick = async () => {
     if (!confirm('Kembalikan pengaturan default?')) return;
-    Object.assign(settings, DEFAULT_SETTINGS);
-    await putSettings({ ...settings, _source: 'default' });
-    refreshSettingsForm(settings);
+    const newSettings = { ...DEFAULT_SETTINGS, _source: 'default' };
+    await putSettings(newSettings);
+    if (onChange) onChange(newSettings);
+    refreshSettingsForm(newSettings);
     showToast('Pengaturan direset');
   };
 

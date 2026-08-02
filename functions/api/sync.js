@@ -42,6 +42,19 @@ export async function onRequestPost(context) {
     return error('Missing payload string');
   }
 
+  let parsed;
+  try {
+    parsed = JSON.parse(payload);
+  } catch {
+    return error('Invalid JSON payload', 400);
+  }
+  if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.objects)) {
+    return error('Malformed payload', 400);
+  }
+  if (parsed.version && parsed.version !== '3.0') {
+    return error('Unsupported payload version', 400);
+  }
+
   const encoder = new TextEncoder();
   const size = encoder.encode(payload).length;
   if (size > MAX_KV_SIZE) {

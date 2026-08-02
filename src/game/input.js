@@ -1,165 +1,7 @@
-import { applyBackground, applyCardSize } from './background.js';
-import { buildDemoCard } from './card.js';
-import { handleSuccess, handleTargetSuccess, resetGameState, getState, setState, resetAutoSmash, stopAutoSmash } from './logic.js';
-import { speak } from '../speech.js';
+import { handleSuccess } from './logic.js';
 import { hintCard } from './effects.js';
-import { enterFullscreen, exitFullscreen, unlockPointer, onFullscreenChange, warnIfKioskBlocked } from './fullscreen.js';
-
-let appState = null;
-let demoTimer = null;
-let fsUnsubscribe = null;
-
-export function initGame(state) {
-  appState = state;
-  resetGameState();
-  applyBackground(document.getElementById('bgEffects'), state.settings.backgroundStyle);
-  applyCardSize(state.settings.cardSize);
-  setState({ currentMode: null });
-  showKioskWarningOnce();
-  return setupModeSelection();
-}
-
-export function showModePicker() {
-  if (!appState) return;
-  stopAutoSmash();
-  if (fsUnsubscribe) {
-    fsUnsubscribe();
-    fsUnsubscribe = null;
-  }
-  unlockPointer();
-  document.body.classList.remove('cursor-idle');
-  // Don't force-exit fullscreen on the picker so parents can navigate,
-  // but expose an obvious Exit Fullscreen button if active.
-  updateExitHint();
-
-  const elModePicker = document.getElementById('modePicker');
-  const elCard = document.getElementById('card');
-  elCard.className = 'hidden';
-  document.querySelectorAll('.card-pop').forEach((c) => c.remove());
-  elModePicker.classList.remove('hidden');
-  setState({ currentMode: null });
-  sessionStorage.removeItem('tepuq-mode');
-  const enabled = appState.settings.enabledModes || ['bebas', 'target'];
-  const btnBebas = document.getElementById('btnBebas');
-  const btnTarget = document.getElementById('btnTarget');
-  btnBebas.onclick = () => startMode('bebas');
-  btnTarget.onclick = () => startMode('target');
-  btnBebas.onpointerenter = () => speak('Main TepuQ Bebas yuk', appState.settings);
-  btnTarget.onpointerenter = () => speak('Ayo main TepuQ Target bersamaku', appState.settings);
-  btnBebas.classList.toggle('hidden', enabled.length === 1 && !enabled.includes('bebas'));
-  btnTarget.classList.toggle('hidden', enabled.length === 1 && !enabled.includes('target'));
-  startDemoCards();
-}
-
-async function setupModeSelection() {
-  const enabled = appState.settings.enabledModes || ['bebas', 'target'];
-  const saved = sessionStorage.getItem('tepuq-mode');
-
-  if (saved && enabled.includes(saved)) {
-    await startMode(saved);
-    return;
-  }
-
-  showModePicker();
-  if (enabled.length === 1) {
-    await startMode(enabled[0]);
-  }
-}
-
-function showModePickerSafe() {
-  unlockPointer();
-  exitFullscreen().finally(showModePicker);
-}
-
-export async function startMode(mode) {
-  if (!appState) return;
-  resetGameState();
-  setState({ currentMode: mode });
-  sessionStorage.setItem('tepuq-mode', mode);
-  document.getElementById('modePicker').classList.add('hidden');
-  stopDemoCards();
-
-  const active = appState.objects.filter((o) => o.active);
-  if (active.length === 0) {
-    document.getElementById('emptyState').classList.remove('hidden');
-    return;
-  }
-
-  document.getElementById('emptyState').classList.add('hidden');
-
-  // Try kiosk immersion when enabled (default on). Parents can disable fullscreen in admin.
-  // Do not await fullscreen so the game is responsive immediately; the mode picker is already
-  // hidden and input handlers are bound. Fullscreen is best-effort.
-  if (appState.settings.fullscreen !== false) {
-    enterKiosk().catch(() => {});
-  }
-  fsUnsubscribe = onFullscreenChange(async (active) => {
-    if (!active && getCurrentMode() !== null) {
-      // Child exited fullscreen via OS gesture; pull them back to the safe picker instead of staying in game.
-      showModePicker();
-    }
-  });
-
-  if (mode === 'target') {
-    handleTargetSuccess(appState.objects, appState.settings, document.getElementById('particles'));
-  }
-  resetAutoSmash(appState.objects, appState.settings);
-}
-
-async function enterKiosk() {
-  await enterFullscreen();
-  // No pointer lock: it hides the cursor. Instead the cursor is shown and
-  // auto-hides after inactivity (see initCursorAutoHide), so toddlers on a
-  // mouse can still see where they are tapping.
-}
-
-function showKioskWarningOnce() {
-  const warning = warnIfKioskBlocked();
-  if (warning && !sessionStorage.getItem('tepuq-fs-warned')) {
-    sessionStorage.setItem('tepuq-fs-warned', '1');
-    // eslint-disable-next-line no-console
-    console.warn('TepuQ:', warning);
-  }
-}
-
-function isFullscreen() {
-  return !!(document.fullscreenElement || document.webkitFullscreenElement);
-}
-
-export function isKioskActive() {
-  return getCurrentMode() !== null && isFullscreen();
-}
-
-function startDemoCards() {
-  stopDemoCards();
-  const active = appState.objects.filter((o) => o.active);
-  if (active.length === 0) return;
-
-  const elModePicker = document.getElementById('modePicker');
-  const game = document.getElementById('game');
-
-  const showDemo = () => {
-    if (elModePicker.classList.contains('hidden')) return;
-    const obj = active[Math.floor(Math.random() * active.length)];
-    const card = buildDemoCard(obj, appState.settings);
-    game.appendChild(card);
-    setTimeout(() => {
-      card.animate(
-        [{ opacity: 0.75, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(0.6)' }],
-        { duration: 500, easing: 'ease-in' }
-      ).onfinish = () => card.remove();
-    }, 1600);
-    demoTimer = setTimeout(showDemo, 900 + Math.random() * 700);
-  };
-
-  showDemo();
-}
-
-function stopDemoCards() {
-  if (demoTimer) clearTimeout(demoTimer);
-  demoTimer = null;
-  document.querySelectorAll('.demo-card').forEach((c) => c.remove());
-}
+import { exitFullscreen, unlockPointer } from './fullscreen.js';
+import { showModePicker, startMode, getCurrentMode, getAppState } from './mode-manager.js';
 
 export function bindGameInput() {
   document.addEventListener('keydown', onKeyDown, { passive: false });
@@ -169,7 +11,6 @@ export function bindGameInput() {
   document.addEventListener('touchend', onTouchEnd, { passive: false });
   document.addEventListener('wheel', onWheel, { passive: false });
   document.addEventListener('contextmenu', (e) => {
-    // Keep paste/long-press menu working inside text fields (sync login).
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
     e.preventDefault();
@@ -177,7 +18,6 @@ export function bindGameInput() {
   document.addEventListener('dragstart', (e) => e.preventDefault());
   window.addEventListener('beforeunload', onBeforeUnload);
   bindBackTrigger();
-  bindExitButton();
   initCursorAutoHide();
 }
 
@@ -199,21 +39,17 @@ function initCursorAutoHide() {
 function onKeyDown(e) {
   if (document.body.classList.contains('admin')) return;
 
-  // Let parents type in text fields (e.g. sync login) without triggering cards.
   const target = e.target;
   if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
     return;
   }
 
-  // In game, allow only the "M" hint shortcut and the safe exit gesture.
-  // Every other key becomes an input so the child does not exit by accident.
   if (e.key === 'Escape') {
     e.preventDefault();
     if (getCurrentMode() !== null) showModePicker();
     return;
   }
 
-  // Block common browser / OS accelerator keys that toddlers can hit.
   if (isBlockedKey(e)) {
     e.preventDefault();
     e.stopPropagation();
@@ -222,16 +58,12 @@ function onKeyDown(e) {
   }
 
   e.preventDefault();
+  const appState = getAppState();
   if (!appState) return;
-  if (getCurrentMode() === 'target') {
-    handleTargetSuccess(appState.objects, appState.settings, document.getElementById('particles'));
-  } else {
-    handleSuccess('keyboard', appState.objects, appState.settings, document.getElementById('particles'), e.key);
-  }
+  handleSuccess('keyboard', appState.objects, appState.settings, document.getElementById('particles'), e.key);
 }
 
 function isBlockedKey(e) {
-  // Browser tab/window/address controls.
   if (e.ctrlKey || e.metaKey) return true;
   if (e.altKey) return true;
 
@@ -240,13 +72,13 @@ function isBlockedKey(e) {
       key === 'F6' || key === 'F7' || key === 'F8' || key === 'F9' || key === 'F10' ||
       key === 'F11' || key === 'F12') return true;
   if (key === 'Tab') return true;
-  // OS/system navigation; most cannot be trapped, but prevent default where allowed.
   return false;
 }
 
 function onTouchStart(e) {
   if (document.body.classList.contains('admin')) return;
   e.preventDefault();
+  const appState = getAppState();
   if (!appState) return;
   const modePicker = document.getElementById('modePicker');
   if (!modePicker.classList.contains('hidden')) return;
@@ -257,12 +89,8 @@ function onTouchStart(e) {
   const card = targetCard || document.getElementById('card');
   const isCard = e.target === card || card?.contains(e.target);
 
-  if (getCurrentMode() === 'target') {
-    if (!isCard) {
-      hintCard(card);
-      return;
-    }
-    handleTargetSuccess(appState.objects, appState.settings, document.getElementById('particles'), point);
+  if (getCurrentMode() === 'target' && !isCard) {
+    hintCard(card);
     return;
   }
 
@@ -271,7 +99,6 @@ function onTouchStart(e) {
 
 function onTouchMove(e) {
   if (document.body.classList.contains('admin')) return;
-  // Disable two-finger scroll / swipe gestures that can switch apps.
   if (e.touches.length > 1) {
     e.preventDefault();
   }
@@ -284,14 +111,12 @@ function onTouchEnd(e) {
 function onWheel(e) {
   if (document.body.classList.contains('admin')) return;
   if (getCurrentMode() === null) return;
-  // Block touchpad two-finger scroll and magic-mouse swipes during game.
   e.preventDefault();
 }
 
 function onBeforeUnload(e) {
   if (document.body.classList.contains('admin')) return;
   if (getCurrentMode() !== null) {
-    // Warn if the parent tries to close while the child is mid-game in fullscreen.
     e.preventDefault();
     e.returnValue = '';
   }
@@ -309,25 +134,19 @@ function onPointerDown(e) {
     return;
   }
 
-  // Clicking the Exit Fullscreen button on the picker is handled separately.
-  if (e.target.closest('#exitFullscreenBtn')) return;
-
   const modePicker = document.getElementById('modePicker');
   if (!modePicker.classList.contains('hidden')) return;
 
   e.preventDefault();
+  const appState = getAppState();
   if (!appState) return;
 
   const point = { x: e.clientX, y: e.clientY };
   const clickedCard = document.querySelector('.card-pop.target-card') || document.getElementById('card');
   const isCard = e.target === clickedCard || clickedCard?.contains(e.target);
 
-  if (getCurrentMode() === 'target') {
-    if (!isCard) {
-      hintCard(clickedCard);
-      return;
-    }
-    handleTargetSuccess(appState.objects, appState.settings, document.getElementById('particles'), point);
+  if (getCurrentMode() === 'target' && !isCard) {
+    hintCard(clickedCard);
     return;
   }
 
@@ -382,8 +201,6 @@ function bindBackTrigger() {
       finish();
     }, PRESS_MS);
 
-    // Only show visual feedback once the press is sustained, so a quick tap
-    // in the top-left corner does not flash the white rectangle.
     visualTimer = setTimeout(() => {
       visualTimer = null;
       trigger.classList.add('back-active');
@@ -437,14 +254,6 @@ function bindBackTrigger() {
   });
 }
 
-function bindExitButton() {
-  const btn = document.getElementById('exitFullscreenBtn');
-  if (!btn) return;
-  btn.addEventListener('click', () => {
-    exitFullscreen().finally(showModePicker);
-  });
-}
-
 let blockedToastTimer = null;
 function showBlockedToast(kind) {
   const toast = document.getElementById('toast');
@@ -459,12 +268,4 @@ function showBlockedToast(kind) {
   }, 1600);
 }
 
-function updateExitHint() {
-  const hint = document.getElementById('fsExitHint');
-  if (!hint) return;
-  hint.classList.toggle('show', isFullscreen());
-}
 
-function getCurrentMode() {
-  return getState().currentMode;
-}

@@ -1,6 +1,6 @@
-import { initDB, loadData, getAllObjects, getSettings, putObject, putSettings, putMeta, deleteObject, getMeta } from '../db.js';
-import { extFromBlob, placeholderToBlob, showToast, keyStringToBindings } from '../utils.js';
-import { DEFAULT_SETTINGS } from '../config.js';
+import { initDB, getAllObjects, putSettings, putMeta } from '../db.js';
+import { extFromBlob, showToast, keyStringToBindings } from '../utils.js';
+import { mergeImportedObjects } from './merge-objects.js';
 
 export async function exportZip(objects, settings) {
   const JSZip = window.JSZip;
@@ -59,10 +59,13 @@ export async function importZip(file) {
   const config = JSON.parse(configText);
   if (!config.objects || !Array.isArray(config.objects)) throw new Error('config.json tidak valid');
 
-    const imported = [];
+  const imported = [];
   for (const o of config.objects) {
-    const imgExt = o.image ? o.image.split('.').pop() : 'png';
-    const audioExt = o.audio ? o.audio.split('.').pop() : 'webm';
+    if (!o.id || typeof o.id !== 'string' || o.id.includes('/') || o.id.includes('\\')) {
+      throw new Error('ID objek tidak valid: ' + (o.id || '?'));
+    }
+    const imgExt = sanitizeExt(o.image ? o.image.split('.').pop() : 'png');
+    const audioExt = sanitizeExt(o.audio ? o.audio.split('.').pop() : 'webm');
     const imgFile = zip.file(`images/${o.id}.${imgExt}`);
     const audioFile = zip.file(`audio/${o.id}.${audioExt}`);
     imported.push({
@@ -84,53 +87,17 @@ export async function importZip(file) {
     });
   }
 
-  // Merge imported custom objects with the current default starter objects.
-  // Matching by id first, then by normalized name, keeps defaults intact and
-  // only replaces/updates objects the user actually customized.
   const existing = await getAllObjects();
-  const existingById = Object.fromEntries(existing.map((o) => [o.id, o]));
-  const existingByName = Object.fromEntries(existing.map((o) => [normalizeImportKey(o.name), o]));
-
-  const merged = [];
-  for (const o of existing) {
-    const importedById = imported.find((i) => i.id === o.id);
-    const importedByName = imported.find((i) => normalizeImportKey(i.name) === normalizeImportKey(o.name));
-    const custom = importedById || importedByName;
-    if (custom) {
-      merged.push({
-        ...o,
-        name: custom.name,
-        ttsText: custom.ttsText,
-        color: custom.color,
-        animation: custom.animation,
-        imageUrl: custom.imageBlob ? null : o.imageUrl,
-        imageBlob: custom.imageBlob || o.imageBlob,
-        imageSource: custom.imageBlob || o.imageBlob ? 'custom' : 'starter',
-        audioBlob: custom.audioBlob || o.audioBlob,
-        useRecording: custom.audioBlob ? custom.useRecording : (o.audioBlob ? o.useRecording : false),
-        audioType: custom.audioBlob ? (custom.useRecording ? 'recording' : 'tts') : o.audioType,
-        active: custom.active,
-        order: typeof custom.order === 'number' ? custom.order : o.order,
-        keyBindings: custom.keyBindings?.length ? custom.keyBindings : o.keyBindings,
-        source: 'custom',
-      });
-    } else {
-      merged.push(o);
-    }
-  }
-
-  // Add any brand-new custom objects that do not match a default.
-  for (const i of imported) {
-    if (!existingById[i.id] && !existingByName[normalizeImportKey(i.name)]) {
-      merged.push({ ...i, source: 'custom' });
-    }
-  }
+  const merged = mergeImportedObjects(existing, imported);
 
   const db = await initDB();
   const tx = db.transaction(['objects', 'settings', 'meta'], 'readwrite');
   tx.objectStore('objects').clear();
   merged.forEach((o) => tx.objectStore('objects').put(o));
-  tx.objectStore('settings').put({ key: 'settings', ...(config.settings || {}) });
+
+  const settings = config.settings || {};
+  const hasSettings = Object.keys(settings).length > 0;
+  tx.objectStore('settings').put({ key: 'settings', ...(hasSettings ? settings : {}), _source: hasSettings ? 'user' : 'default' });
   tx.objectStore('meta').put({ key: 'meta', version: config.version || '3.0', lastModified: Date.now() });
   await new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
@@ -138,6 +105,8 @@ export async function importZip(file) {
   });
 }
 
-function normalizeImportKey(name) {
-  return (name || '').toLowerCase().trim().replace(/\s+/g, ' ');
+function sanitizeExt(ext) {
+  if (!ext) return '';
+  const clean = ext.toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+  return clean || '';
 }

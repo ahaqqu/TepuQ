@@ -1,7 +1,37 @@
-import { json, error, signToken, setSessionCookie, getCookieValue } from './_utils.js';
+import { json, error, signToken, setSessionCookie, constantTimeStringEquals, getClientIP } from './_utils.js';
+
+const MAX_ATTEMPTS = 10;
+const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const attempts = new Map();
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const record = attempts.get(ip);
+  if (!record) return false;
+  if (now - record.firstAttempt > WINDOW_MS) {
+    attempts.delete(ip);
+    return false;
+  }
+  return record.count >= MAX_ATTEMPTS;
+}
+
+function recordAttempt(ip) {
+  const now = Date.now();
+  const record = attempts.get(ip);
+  if (!record || now - record.firstAttempt > WINDOW_MS) {
+    attempts.set(ip, { firstAttempt: now, count: 1 });
+  } else {
+    record.count += 1;
+  }
+}
 
 export async function onRequestPost(context) {
   const { request, env } = context;
+  const clientIP = getClientIP(request);
+  if (isRateLimited(clientIP)) {
+    return error('Too many attempts', 429);
+  }
+
   let body = {};
   try {
     body = await request.json();
@@ -20,7 +50,10 @@ export async function onRequestPost(context) {
     return error('Sync not configured', 500);
   }
 
-  if (user !== expectedUser || pass !== expectedPass) {
+  const userOk = await constantTimeStringEquals(user, expectedUser);
+  const passOk = await constantTimeStringEquals(pass, expectedPass);
+  if (!userOk || !passOk) {
+    recordAttempt(clientIP);
     return error('Invalid credentials', 401);
   }
 

@@ -132,10 +132,6 @@ test.describe('Game mode default settings', () => {
       await papaItem.locator('[data-action="edit"]').click({ force: true });
       await expect(page.locator('#editorTitle')).toHaveText('Edit Objek');
       await page.locator('#inpPhoto').setInputFiles(path.join(__dirname, 'fixtures', 'papa.png'));
-      // The file input handler resizes the image asynchronously. Wait for the
-      // blob preview to appear before saving, otherwise pendingImageBlob may
-      // still be null and the object is saved without a custom image.
-      await page.waitForTimeout(300);
       await expect(page.locator('#photoPreview img[src^="blob:"]')).toBeVisible();
       await page.locator('#objectForm button[type="submit"]').click({ force: true });
       await expect(page.locator('text=Objek disimpan')).toBeVisible();
@@ -165,8 +161,6 @@ test.describe('Game mode default settings', () => {
       await page.locator('#inpTts').fill('Ini Apel');
       await page.locator('#inpKeys').fill('1');
       await page.locator('#inpPhoto').setInputFiles(path.join(__dirname, 'fixtures', 'papa.png'));
-      // Wait for the async image resize before saving so the blob is available.
-      await page.waitForTimeout(300);
       await expect(page.locator('#photoPreview img[src^="blob:"]')).toBeVisible();
       await page.locator('#objectForm button[type="submit"]').click({ force: true });
       await expect(page.locator('text=Objek disimpan')).toBeVisible();
@@ -180,8 +174,6 @@ test.describe('Game mode default settings', () => {
       await page.locator('#inpTts').fill('Ini Pisang');
       await page.locator('#inpKeys').fill('2');
       await page.locator('#inpPhoto').setInputFiles(path.join(__dirname, 'fixtures', 'papa.png'));
-      // Wait for the async image resize before saving so the blob is available.
-      await page.waitForTimeout(300);
       await expect(page.locator('#photoPreview img[src^="blob:"]')).toBeVisible();
       await page.locator('#objectForm button[type="submit"]').click({ force: true });
       await expect(page.locator('text=Objek disimpan')).toBeVisible();

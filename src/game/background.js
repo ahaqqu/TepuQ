@@ -1,4 +1,4 @@
-import { SLIDE_DIRECTIONS } from '../config.js';
+
 
 const BALLOON_COLORS = ['#4CAF50', '#FFC107', '#B0BEC5', '#FF69B4', '#42A5F5'];
 

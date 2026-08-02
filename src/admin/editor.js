@@ -2,18 +2,23 @@ import { putObject, putMeta, getMeta } from '../db.js';
 import { showToast, getPlaceholder, keyStringToBindings, normalizeKey, resizeImage } from '../utils.js';
 import { speakOrPlay } from '../speech.js';
 
-let selectedObjectId = null;
-let recorder = null;
-let recordedChunks = [];
-let audioPreviewURL = null;
-let pendingImageBlob = null;
+const editorSession = {
+  selectedObjectId: null,
+  recorder: null,
+  recordedChunks: [],
+  audioPreviewURL: null,
+  pendingImageBlob: null,
+  pendingAudioBlob: null,
+  previewImageURL: null,
+};
 
-export function initEditor(objects, settings, refreshList, refreshMeta) {
-  bindObjectForm(objects, settings, refreshList, refreshMeta);
+export function initEditor(objects, settingsOrGetter, refreshList, refreshMeta) {
+  const getSettings = () => typeof settingsOrGetter === 'function' ? settingsOrGetter() : settingsOrGetter;
+  bindObjectForm(objects, getSettings, refreshList, refreshMeta);
 }
 
 export function selectObject(id, objects) {
-  selectedObjectId = id;
+  editorSession.selectedObjectId = id;
   const obj = objects.find((o) => o.id === id);
   if (!obj) return;
   document.getElementById('editorTitle').textContent = 'Edit Objek';
@@ -30,14 +35,15 @@ export function selectObject(id, objects) {
   }
   document.getElementById('inpPhoto').value = '';
   document.getElementById('inpPhotoUrl').value = '';
-  pendingImageBlob = null;
+  editorSession.pendingImageBlob = null;
+  editorSession.pendingAudioBlob = null;
   renderPreview(obj);
   renderAudioSection(obj);
   switchEditorTab('editor');
 }
 
 export function addNewObject() {
-  selectedObjectId = null;
+  editorSession.selectedObjectId = null;
   const form = document.getElementById('objectForm');
   if (form) form.reset();
   const colorInput = document.getElementById('inpColor');
@@ -58,7 +64,8 @@ export function addNewObject() {
   if (objForm) objForm.classList.remove('hidden');
   const urlInput = document.getElementById('inpPhotoUrl');
   if (urlInput) urlInput.value = '';
-  pendingImageBlob = null;
+  editorSession.pendingImageBlob = null;
+  editorSession.pendingAudioBlob = null;
   const preview = document.getElementById('photoPreview');
   if (preview) preview.innerHTML = '<span style="color:#888;font-size:14px">Belum ada foto</span>';
   renderAudioSection({ audioBlob: null, useRecording: false });
@@ -68,6 +75,8 @@ export function addNewObject() {
 function renderPreview(obj) {
   const box = document.getElementById('photoPreview');
   box.style.setProperty('--preview-color', obj.color || '#4A90D9');
+  if (editorSession.previewImageURL) URL.revokeObjectURL(editorSession.previewImageURL);
+  editorSession.previewImageURL = null;
   box.innerHTML = '';
   const card = document.createElement('div');
   card.style.width = '100%';
@@ -84,19 +93,57 @@ function renderPreview(obj) {
 
   if (obj.imageUrl) {
     card.style.background = obj.color || '#4A90D9';
-    card.innerHTML = `<img src="${escapeAttr(obj.imageUrl)}" alt="${escapeAttr(obj.name)}" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+    const img = document.createElement('img');
+    img.src = obj.imageUrl;
+    img.alt = obj.name || '';
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'cover';
+    img.style.display = 'block';
+    img.onerror = () => { img.style.display = 'none'; };
+    card.appendChild(img);
   } else if (obj.imageBlob) {
     const safeBlob = normalizeImageBlob(obj.imageBlob);
-    const imgSrc = URL.createObjectURL(safeBlob);
+    editorSession.previewImageURL = URL.createObjectURL(safeBlob);
     card.style.background = obj.color || '#4A90D9';
-    card.innerHTML = `<img src="${imgSrc}" alt="${escapeAttr(obj.name)}" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+    const img = document.createElement('img');
+    img.src = editorSession.previewImageURL;
+    img.alt = obj.name || '';
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'cover';
+    img.style.display = 'block';
+    img.onerror = () => { img.style.display = 'none'; };
+    card.appendChild(img);
   } else {
     card.style.background = obj.color || '#4A90D9';
-    card.innerHTML = `
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;height:100%;padding:16px;text-align:center;">
-        <span style="font-size:72px;font-weight:800;color:rgba(255,255,255,0.95);text-shadow:0 2px 6px rgba(0,0,0,0.2);">${(obj.name || '?').charAt(0).toUpperCase()}</span>
-        <span style="font-size:18px;font-weight:700;color:rgba(255,255,255,0.95);text-shadow:0 1px 4px rgba(0,0,0,0.2);">${escapeHtml(obj.name || '')}</span>
-      </div>`;
+    const wrap = document.createElement('div');
+    wrap.style.display = 'flex';
+    wrap.style.flexDirection = 'column';
+    wrap.style.alignItems = 'center';
+    wrap.style.justifyContent = 'center';
+    wrap.style.gap = '6px';
+    wrap.style.width = '100%';
+    wrap.style.height = '100%';
+    wrap.style.padding = '16px';
+    wrap.style.textAlign = 'center';
+
+    const big = document.createElement('span');
+    big.style.fontSize = '72px';
+    big.style.fontWeight = '800';
+    big.style.color = 'rgba(255,255,255,0.95)';
+    big.style.textShadow = '0 2px 6px rgba(0,0,0,0.2)';
+    big.textContent = (obj.name || '?').charAt(0).toUpperCase();
+
+    const small = document.createElement('span');
+    small.style.fontSize = '18px';
+    small.style.fontWeight = '700';
+    small.style.color = 'rgba(255,255,255,0.95)';
+    small.style.textShadow = '0 1px 4px rgba(0,0,0,0.2)';
+    small.textContent = obj.name || '';
+
+    wrap.append(big, small);
+    card.appendChild(wrap);
   }
   box.appendChild(card);
 }
@@ -105,22 +152,82 @@ function renderAudioSection(obj) {
   const container = document.getElementById('audioSection');
   if (!container) return;
   const hasAudio = !!obj.audioBlob;
-  container.innerHTML = `
-    <div class="form-group">
-      <label>Suara</label>
-      <div class="toggle-row">
-        <input type="checkbox" id="inpUseRecording" ${obj.useRecording ? 'checked' : ''}>
-        <label for="inpUseRecording" style="margin:0">Gunakan rekaman suara (jika ada)</label>
-      </div>
-      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-        <button type="button" class="btn ${recorder ? 'danger' : 'success'}" id="btnRecord">${recorder ? 'Berhenti' : 'Rekam Suara'}</button>
-        ${hasAudio ? `<button type="button" class="btn" id="btnPlayRecording">Putar</button>
-        <button type="button" class="btn danger small" id="btnDeleteRecording">Hapus</button>` : ''}
-      </div>
-      ${recorder ? '<div style="margin-top:6px;color:#e74c3c;font-weight:600;">● Sedang merekam...</div>' : ''}
-      ${hasAudio ? '<div style="margin-top:6px;color:#27ae60;font-size:12px;">✓ Sudah ada rekaman</div>' : '<div style="margin-top:6px;color:#888;font-size:12px;">Belum ada rekaman</div>'}
-    </div>
-  `;
+  container.innerHTML = '';
+
+  const group = document.createElement('div');
+  group.className = 'form-group';
+
+  const label = document.createElement('label');
+  label.textContent = 'Suara';
+  group.appendChild(label);
+
+  const toggleRow = document.createElement('div');
+  toggleRow.className = 'toggle-row';
+  const useRecCheckbox = document.createElement('input');
+  useRecCheckbox.type = 'checkbox';
+  useRecCheckbox.id = 'inpUseRecording';
+  useRecCheckbox.checked = !!obj.useRecording;
+  const useRecLabel = document.createElement('label');
+  useRecLabel.htmlFor = 'inpUseRecording';
+  useRecLabel.style.margin = '0';
+  useRecLabel.textContent = 'Gunakan rekaman suara (jika ada)';
+  toggleRow.append(useRecCheckbox, useRecLabel);
+  group.appendChild(toggleRow);
+
+  const btnRow = document.createElement('div');
+  btnRow.style.marginTop = '8px';
+  btnRow.style.display = 'flex';
+  btnRow.style.gap = '8px';
+  btnRow.style.flexWrap = 'wrap';
+
+  const btnRecord = document.createElement('button');
+  btnRecord.type = 'button';
+  btnRecord.className = 'btn ' + (editorSession.recorder ? 'danger' : 'success');
+  btnRecord.id = 'btnRecord';
+  btnRecord.textContent = editorSession.recorder ? 'Berhenti' : 'Rekam Suara';
+  btnRow.appendChild(btnRecord);
+
+  let btnPlay = null;
+  let btnDelete = null;
+  if (hasAudio) {
+    btnPlay = document.createElement('button');
+    btnPlay.type = 'button';
+    btnPlay.className = 'btn';
+    btnPlay.id = 'btnPlayRecording';
+    btnPlay.textContent = 'Putar';
+
+    btnDelete = document.createElement('button');
+    btnDelete.type = 'button';
+    btnDelete.className = 'btn danger small';
+    btnDelete.id = 'btnDeleteRecording';
+    btnDelete.textContent = 'Hapus';
+
+    btnRow.append(btnPlay, btnDelete);
+  }
+  group.appendChild(btnRow);
+
+  if (editorSession.recorder) {
+    const recordingMsg = document.createElement('div');
+    recordingMsg.style.marginTop = '6px';
+    recordingMsg.style.color = '#e74c3c';
+    recordingMsg.style.fontWeight = '600';
+    recordingMsg.textContent = '● Sedang merekam...';
+    group.appendChild(recordingMsg);
+  }
+
+  const statusMsg = document.createElement('div');
+  statusMsg.style.marginTop = '6px';
+  statusMsg.style.fontSize = '12px';
+  if (hasAudio) {
+    statusMsg.style.color = '#27ae60';
+    statusMsg.textContent = '✓ Sudah ada rekaman';
+  } else {
+    statusMsg.style.color = '#888';
+    statusMsg.textContent = 'Belum ada rekaman';
+  }
+  group.appendChild(statusMsg);
+
+  container.appendChild(group);
   bindAudioButtons(obj);
 }
 
@@ -134,27 +241,30 @@ function bindAudioButtons(obj) {
 }
 
 async function toggleRecording(obj) {
-  if (recorder) {
-    recorder.stop();
+  if (editorSession.recorder) {
+    editorSession.recorder.stop();
     return;
   }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    recorder = new MediaRecorder(stream);
-    recordedChunks = [];
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) recordedChunks.push(e.data);
+    editorSession.recorder = new MediaRecorder(stream);
+    editorSession.recordedChunks = [];
+    editorSession.recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) editorSession.recordedChunks.push(e.data);
     };
-    recorder.onstop = () => {
+    editorSession.recorder.onstop = () => {
       stream.getTracks().forEach((t) => t.stop());
-      const blob = new Blob(recordedChunks, { type: 'audio/webm' });
-      obj.audioBlob = blob;
-      obj.audioType = 'recording';
-      obj.useRecording = true;
-      recorder = null;
-      renderAudioSection(obj);
+      const blob = new Blob(editorSession.recordedChunks, { type: 'audio/webm' });
+      editorSession.pendingAudioBlob = blob;
+      if (obj) {
+        obj.audioBlob = blob;
+        obj.audioType = 'recording';
+        obj.useRecording = true;
+      }
+      editorSession.recorder = null;
+      renderAudioSection({ audioBlob: editorSession.pendingAudioBlob, useRecording: true });
     };
-    recorder.start();
+    editorSession.recorder.start();
     renderAudioSection(obj);
   } catch (err) {
     showToast('Tidak bisa mengakses mikrofon: ' + err.message, true);
@@ -163,21 +273,24 @@ async function toggleRecording(obj) {
 
 async function playCurrentAudio(obj) {
   if (!obj.audioBlob) return;
-  if (audioPreviewURL) URL.revokeObjectURL(audioPreviewURL);
-  audioPreviewURL = URL.createObjectURL(obj.audioBlob);
-  const audio = new Audio(audioPreviewURL);
+  if (editorSession.audioPreviewURL) URL.revokeObjectURL(editorSession.audioPreviewURL);
+  editorSession.audioPreviewURL = URL.createObjectURL(obj.audioBlob);
+  const audio = new Audio(editorSession.audioPreviewURL);
   await audio.play();
 }
 
 function deleteRecording(obj) {
   if (!confirm('Hapus rekaman suara?')) return;
-  obj.audioBlob = null;
-  obj.useRecording = false;
-  obj.audioType = 'tts';
-  renderAudioSection(obj);
+  editorSession.pendingAudioBlob = null;
+  if (obj) {
+    obj.audioBlob = null;
+    obj.useRecording = false;
+    obj.audioType = 'tts';
+  }
+  renderAudioSection({ audioBlob: null, useRecording: false });
 }
 
-function bindObjectForm(objects, settings, refreshList, refreshMeta) {
+function bindObjectForm(objects, getSettings, refreshList, refreshMeta) {
   document.getElementById('btnAddObject').onclick = addNewObject;
 
   document.getElementById('btnPlay').onclick = () => {
@@ -188,12 +301,13 @@ function bindObjectForm(objects, settings, refreshList, refreshMeta) {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      pendingImageBlob = await resizeImage(file);
-      const url = URL.createObjectURL(pendingImageBlob);
-      document.getElementById('photoPreview').innerHTML = `<img src="${url}" alt="preview" style="max-width:100%;max-height:100%;object-fit:contain;">`;
+      editorSession.pendingImageBlob = await resizeImage(file);
+      if (editorSession.previewImageURL) URL.revokeObjectURL(editorSession.previewImageURL);
+      editorSession.previewImageURL = URL.createObjectURL(editorSession.pendingImageBlob);
+      document.getElementById('photoPreview').innerHTML = `<img src="${editorSession.previewImageURL}" alt="preview" style="max-width:100%;max-height:100%;object-fit:contain;">`;
     } catch (err) {
       showToast('Gagal memproses foto: ' + err.message, true);
-      pendingImageBlob = null;
+      editorSession.pendingImageBlob = null;
     }
   });
 
@@ -205,13 +319,14 @@ function bindObjectForm(objects, settings, refreshList, refreshMeta) {
       if (!res.ok) throw new Error('Gagal mengunduh gambar');
       const blob = await res.blob();
       if (!blob.type.startsWith('image/')) throw new Error('URL bukan gambar');
-      pendingImageBlob = await resizeImage(blob);
-      const objectUrl = URL.createObjectURL(pendingImageBlob);
-      document.getElementById('photoPreview').innerHTML = `<img src="${objectUrl}" alt="preview" style="max-width:100%;max-height:100%;object-fit:contain;">`;
+      editorSession.pendingImageBlob = await resizeImage(blob);
+      if (editorSession.previewImageURL) URL.revokeObjectURL(editorSession.previewImageURL);
+      editorSession.previewImageURL = URL.createObjectURL(editorSession.pendingImageBlob);
+      document.getElementById('photoPreview').innerHTML = `<img src="${editorSession.previewImageURL}" alt="preview" style="max-width:100%;max-height:100%;object-fit:contain;">`;
       showToast('Foto dari URL siap');
     } catch (err) {
       showToast('Gagal memuat foto dari URL: ' + err.message, true);
-      pendingImageBlob = null;
+      editorSession.pendingImageBlob = null;
     }
   });
 
@@ -224,12 +339,13 @@ function bindObjectForm(objects, settings, refreshList, refreshMeta) {
 
   document.getElementById('objectForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const isNew = !selectedObjectId;
-    const id = selectedObjectId || ('obj_' + Date.now());
+    const isNew = !editorSession.selectedObjectId;
+    const id = editorSession.selectedObjectId || ('obj_' + Date.now());
     const existing = objects.find((o) => o.id === id);
     const file = document.getElementById('inpPhoto').files[0];
     const keyInput = document.getElementById('inpKeys').value;
     const useRecording = document.getElementById('inpUseRecording')?.checked || false;
+    const finalAudioBlob = editorSession.pendingAudioBlob !== null ? editorSession.pendingAudioBlob : (existing?.audioBlob || null);
 
     const newObj = {
       id,
@@ -237,12 +353,12 @@ function bindObjectForm(objects, settings, refreshList, refreshMeta) {
       ttsText: document.getElementById('inpTts').value.trim() || document.getElementById('inpName').value.trim(),
       color: document.getElementById('inpColor').value,
       animation: document.getElementById('inpAnimation').value,
-      imageUrl: pendingImageBlob ? null : (existing?.imageUrl || null),
-      imageBlob: pendingImageBlob || (existing?.imageBlob || null),
-      imageSource: pendingImageBlob ? 'custom' : (existing?.imageSource || 'custom'),
-      audioBlob: existing?.audioBlob || null,
-      useRecording: existing?.audioBlob ? useRecording : false,
-      audioType: existing?.audioBlob && useRecording ? 'recording' : 'tts',
+      imageUrl: editorSession.pendingImageBlob ? null : (existing?.imageUrl || null),
+      imageBlob: editorSession.pendingImageBlob || (existing?.imageBlob || null),
+      imageSource: editorSession.pendingImageBlob ? 'custom' : (existing?.imageSource || 'custom'),
+      audioBlob: finalAudioBlob,
+      useRecording: finalAudioBlob ? useRecording : false,
+      audioType: finalAudioBlob && useRecording ? 'recording' : 'tts',
       active: document.getElementById('inpActive').checked,
       order: existing ? existing.order : objects.length,
       keyBindings: keyStringToBindings(keyInput),
@@ -252,9 +368,10 @@ function bindObjectForm(objects, settings, refreshList, refreshMeta) {
     const idx = objects.findIndex((o) => o.id === id);
     if (idx >= 0) objects[idx] = newObj;
     else objects.push(newObj);
-    selectedObjectId = id;
+    editorSession.selectedObjectId = id;
     document.getElementById('editorTitle').textContent = 'Edit Objek';
-    pendingImageBlob = null;
+    editorSession.pendingImageBlob = null;
+    editorSession.pendingAudioBlob = null;
     refreshList();
     renderPreview(newObj);
     renderAudioSection(newObj);
@@ -266,16 +383,16 @@ function bindObjectForm(objects, settings, refreshList, refreshMeta) {
       ttsText: document.getElementById('inpTts').value.trim() || document.getElementById('inpName').value.trim() || 'Halo',
       audioBlob: null,
       useRecording: false,
-    }, settings);
+    }, getSettings());
   };
 
   document.getElementById('btnDeleteObject').onclick = async () => {
-    if (!selectedObjectId) return;
+    if (!editorSession.selectedObjectId) return;
     if (!confirm('Yakin hapus objek ini?')) return;
-    const idx = objects.findIndex((o) => o.id === selectedObjectId);
+    const idx = objects.findIndex((o) => o.id === editorSession.selectedObjectId);
     if (idx >= 0) objects.splice(idx, 1);
-    await deleteObject(selectedObjectId);
-    selectedObjectId = null;
+    await deleteObject(editorSession.selectedObjectId);
+    editorSession.selectedObjectId = null;
     document.getElementById('objectForm').classList.add('hidden');
     document.getElementById('noSelection').classList.remove('hidden');
     refreshList();
@@ -283,7 +400,7 @@ function bindObjectForm(objects, settings, refreshList, refreshMeta) {
   };
 
   document.getElementById('btnCancel').onclick = () => {
-    selectedObjectId = null;
+    editorSession.selectedObjectId = null;
     document.getElementById('objectForm').classList.add('hidden');
     document.getElementById('noSelection').classList.remove('hidden');
   };

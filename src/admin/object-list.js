@@ -1,9 +1,13 @@
-import { getPlaceholder, escapeHtml, showToast } from '../utils.js';
+import { getPlaceholder, escapeHtml, showToast, revokeObjectURLs } from '../utils.js';
 import { putObject, getAllObjects, getSettings, deleteObject } from '../db.js';
 import { speakOrPlay } from '../speech.js';
 
+let listObjectUrls = [];
+
 export function renderObjectList(objects, selectFn) {
   const list = document.getElementById('objectList');
+  revokeObjectURLs(listObjectUrls);
+  listObjectUrls = [];
   list.innerHTML = '';
   const sorted = [...objects].sort((a, b) => a.order - b.order);
   sorted.forEach((obj) => {
@@ -12,21 +16,61 @@ export function renderObjectList(objects, selectFn) {
     item.style.setProperty('--obj-color', obj.color || '#ddd');
     item.draggable = true;
     item.dataset.id = obj.id;
-    item.innerHTML = `
-      <img class="obj-thumb" src="${obj.imageUrl || (obj.imageBlob ? URL.createObjectURL(obj.imageBlob) : getPlaceholder(obj))}" alt="">
-      <div class="obj-info">
-        <div class="obj-name">${escapeHtml(obj.name)} <span class="obj-source ${obj.source === 'custom' ? 'custom' : 'starter'}">${obj.source === 'custom' ? 'custom' : 'default'}</span></div>
-        <div style="font-size:11px;color:#666">${escapeHtml(obj.ttsText || obj.name)}${(obj.keyBindings || []).length ? ' · keys: ' + obj.keyBindings.join(', ') : ''}</div>
-      </div>
-      <div class="obj-actions">
-        <button class="btn small" data-action="edit">Edit</button>
-        <button class="btn small secondary" data-action="test">Test</button>
-        <button class="btn small danger" data-action="delete">Hapus</button>
-      </div>
-    `;
-    item.querySelector('[data-action="edit"]').onclick = (e) => { e.stopPropagation(); selectFn(obj.id); };
-    item.querySelector('[data-action="test"]').onclick = (e) => { e.stopPropagation(); testObject(obj); };
-    item.querySelector('[data-action="delete"]').onclick = (e) => { e.stopPropagation(); deleteFromList(obj.id); };
+
+    const thumb = document.createElement('img');
+    thumb.className = 'obj-thumb';
+    thumb.alt = '';
+    if (obj.imageUrl) {
+      thumb.src = obj.imageUrl;
+    } else if (obj.imageBlob) {
+      const url = URL.createObjectURL(obj.imageBlob);
+      listObjectUrls.push(url);
+      thumb.src = url;
+    } else {
+      thumb.src = getPlaceholder(obj);
+    }
+    item.appendChild(thumb);
+
+    const info = document.createElement('div');
+    info.className = 'obj-info';
+
+    const nameLine = document.createElement('div');
+    nameLine.className = 'obj-name';
+    nameLine.textContent = obj.name;
+    const sourceBadge = document.createElement('span');
+    sourceBadge.className = 'obj-source ' + (obj.source === 'custom' ? 'custom' : 'starter');
+    sourceBadge.textContent = obj.source === 'custom' ? 'custom' : 'default';
+    nameLine.appendChild(sourceBadge);
+    info.appendChild(nameLine);
+
+    const meta = document.createElement('div');
+    meta.style.fontSize = '11px';
+    meta.style.color = '#666';
+    const keys = obj.keyBindings || [];
+    meta.textContent = (obj.ttsText || obj.name) + (keys.length ? ' · keys: ' + keys.map((k) => k.toString()).join(', ') : '');
+    info.appendChild(meta);
+    item.appendChild(info);
+
+    const actions = document.createElement('div');
+    actions.className = 'obj-actions';
+    const btnEdit = document.createElement('button');
+    btnEdit.className = 'btn small';
+    btnEdit.dataset.action = 'edit';
+    btnEdit.textContent = 'Edit';
+    const btnTest = document.createElement('button');
+    btnTest.className = 'btn small secondary';
+    btnTest.dataset.action = 'test';
+    btnTest.textContent = 'Test';
+    const btnDelete = document.createElement('button');
+    btnDelete.className = 'btn small danger';
+    btnDelete.dataset.action = 'delete';
+    btnDelete.textContent = 'Hapus';
+    actions.append(btnEdit, btnTest, btnDelete);
+    item.appendChild(actions);
+
+    btnEdit.onclick = (e) => { e.stopPropagation(); selectFn(obj.id); };
+    btnTest.onclick = (e) => { e.stopPropagation(); testObject(obj); };
+    btnDelete.onclick = (e) => { e.stopPropagation(); deleteFromList(obj.id); };
     item.addEventListener('click', () => selectFn(obj.id));
     bindDrag(item);
     list.appendChild(item);
