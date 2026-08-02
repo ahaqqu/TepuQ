@@ -111,12 +111,37 @@ function refreshStarterImageUrlsInTransaction(tx) {
   });
 }
 
+// Starter image URLs must always carry the current DB_VERSION query string:
+// when bundled assets change, the new version forces the browser to fetch the
+// updated file instead of serving a stale cached image (Brave/Android cache
+// aggressively). Normalizing on every load — not only on DB upgrade — keeps
+// stored and in-memory URLs in sync the moment the new build runs.
+async function normalizeStarterImageUrls(objs) {
+  const starterById = Object.fromEntries(
+    STARTER_OBJECTS.map((s, i) => ['obj_' + String(i + 1).padStart(3, '0'), s])
+  );
+  const changed = [];
+  for (const o of objs) {
+    const s = starterById[o.id];
+    if (!s || !o.imageUrl) continue;
+    if (o.imageUrl.split('?')[0] !== (s.image || '')) continue;
+    const expected = starterImageUrl(s);
+    if (o.imageUrl !== expected) {
+      o.imageUrl = expected;
+      changed.push(o);
+    }
+  }
+  for (const o of changed) await putObject(o);
+  return objs;
+}
+
 export async function loadData() {
   let [objs, sets] = await Promise.all([getAllObjects(), getSettings()]);
   if (objs.length === 0) {
     await seedDefaults();
     return loadData();
   }
+  objs = await normalizeStarterImageUrls(objs);
   await reconcileObjectSources(objs);
   const settings = await reconcileSettings(sets);
   return { objects: objs, settings };

@@ -201,7 +201,7 @@ Default images and audio are bundled in `public/assets/` and seeded into Indexed
 
 ### Cache-busting rule
 
-Starter images are served as plain HTTP URLs and cached by the browser; IndexedDB only stores the URL string. **Whenever a bundled starter image (or any `public/assets/starter/` file) changes, bump `DB_VERSION` in `src/config.js` in the same commit.** The version is baked into the stored starter URLs (`?v=<DB_VERSION>`), so the DB upgrade rewrites the URLs and browsers fetch the new files. Changing an asset without bumping the version leaves browsers serving the old cached image.
+Starter images are served as plain HTTP URLs and cached by the browser; IndexedDB only stores the URL string. **Whenever a bundled starter image (or any `public/assets/starter/` file) changes, bump `DB_VERSION` in `src/config.js` in the same commit.** The version is baked into the stored starter URLs (`?v=<DB_VERSION>`), and `src/db.js` normalizes the URLs on every load — so the moment the new build runs, browsers request the new URL and fetch the updated file instead of serving a stale cached image. Changing an asset without bumping the version leaves browsers serving the old cached image.
 
 See `docs/assets-sources.md` for the full list of files, URLs, and licenses.
 
