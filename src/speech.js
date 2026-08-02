@@ -2,6 +2,18 @@ let idVoice = null;
 let voiceRetryTimer = null;
 let speechUnlocked = false;
 let gestureCleanup = null;
+let audioCtx = null;
+
+export async function unlockAudioContext() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    audioCtx = new AC();
+  }
+  if (audioCtx.state === 'suspended') {
+    try { await audioCtx.resume(); } catch { /* ignore */ }
+  }
+}
 
 function loadVoices() {
   const synth = window.speechSynthesis;

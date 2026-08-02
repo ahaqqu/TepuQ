@@ -1,6 +1,6 @@
 import { putObject, putMeta, getMeta } from '../db.js';
 import { showToast, getPlaceholder, keyStringToBindings, normalizeKey, resizeImage } from '../utils.js';
-import { speakOrPlay } from '../speech.js';
+import { speakOrPlay, unlockAudioContext } from '../speech.js';
 
 const editorSession = {
   selectedObjectId: null,
@@ -293,9 +293,12 @@ function deleteRecording(obj) {
 function bindObjectForm(objects, getSettings, refreshList, refreshMeta) {
   document.getElementById('btnAddObject').onclick = addNewObject;
 
-  document.getElementById('btnPlay').onclick = () => {
-    window.open('index.html', '_blank');
-  };
+  const btnPlay = document.getElementById('btnPlay');
+  if (btnPlay) {
+    btnPlay.onclick = () => {
+      window.open('index.html', '_blank');
+    };
+  }
 
   document.getElementById('inpPhoto').addEventListener('change', async (e) => {
     const file = e.target.files[0];
@@ -378,7 +381,8 @@ function bindObjectForm(objects, getSettings, refreshList, refreshMeta) {
     showToast('Objek disimpan');
   });
 
-  document.getElementById('btnTestTts').onclick = () => {
+  document.getElementById('btnTestTts').onclick = async () => {
+    await unlockAudioContext();
     speakOrPlay({
       ttsText: document.getElementById('inpTts').value.trim() || document.getElementById('inpName').value.trim() || 'Halo',
       audioBlob: null,

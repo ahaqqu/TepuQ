@@ -80,6 +80,13 @@ body:not(.admin) #admin { display: none; }
 .btn.success { background: #27ae60; }
 .btn.small { padding: 4px 8px; font-size: 12px; }
 
+.play-link {
+  font-size: 15px;
+  font-weight: 700;
+  padding: 8px 14px;
+  text-decoration: none;
+}
+
 .toolbar {
   display: flex;
   gap: 8px;

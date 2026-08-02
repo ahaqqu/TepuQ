@@ -2,7 +2,7 @@ import { applyBackground, applyCardSize } from './background.js';
 import { startDemoCards, stopDemoCards } from './demo.js';
 import { handleSuccess, resetAutoSmash, stopAutoSmash } from './logic.js';
 import { resetGameState, getState, setState } from './game-state.js';
-import { speak, unlockSpeechForGameplay } from '../speech.js';
+import { speak, unlockSpeechForGameplay, unlockAudioContext } from '../speech.js';
 import { enterFullscreen, exitFullscreen, unlockPointer, onFullscreenChange, warnIfKioskBlocked } from './fullscreen.js';
 import { revokeCardURL } from './card.js';
 
@@ -79,6 +79,7 @@ function showModePickerSafe() {
 
 export async function startMode(mode) {
   if (!appState) return;
+  await unlockAudioContext();
   unlockSpeechForGameplay();
   resetGameState();
   setState({ currentMode: mode });
