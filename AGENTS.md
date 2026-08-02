@@ -144,7 +144,7 @@ Before creating a PR, the agent must:
 
 The GitHub Action in `.github/workflows/deploy.yml` deploys the `dist/` folder to Cloudflare Pages. It will create the Pages project automatically if it does not already exist. Required repository secrets:
 
-- `CLOUDFLARE_API_TOKEN` — with `Cloudflare Pages:Edit` permission.
+- `CLOUDFLARE_API_TOKEN` — with `Cloudflare Pages:Edit` and `Workers KV Storage:Edit` (account-wide) permissions. The deploy workflow lists/creates the `TEPUQ_SYNC` KV namespace with this token, so KV permissions are required; a Pages-only token fails with `Authentication error [code: 10000]`.
 - `CLOUDFLARE_ACCOUNT_ID` — from Cloudflare dashboard.
 - `CLOUDFLARE_PROJECT_NAME` — optional, defaults to `tepuq`.
 

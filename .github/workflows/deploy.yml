@@ -36,7 +36,7 @@ jobs:
           set -e
           bunx wrangler whoami || true
           find_kv_ns_id() {
-            bunx wrangler kv namespace list | tee /tmp/kv_list.json >/dev/null
+            bunx wrangler kv namespace list >/tmp/kv_list.json
             node -e "
               const fs = require('fs');
               const data = JSON.parse(fs.readFileSync('/tmp/kv_list.json', 'utf8'));
