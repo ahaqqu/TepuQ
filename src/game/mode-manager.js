@@ -45,8 +45,13 @@ export function showModePicker() {
   const btnTarget = document.getElementById('btnTarget');
   btnBebas.onclick = () => startMode('bebas');
   btnTarget.onclick = () => startMode('target');
-  btnBebas.onpointerenter = () => speak('Main TepuQ Bebas yuk', appState.settings);
-  btnTarget.onpointerenter = () => speak('Ayo main TepuQ Target bersamaku', appState.settings);
+  // Speak the mode intro only on hover-capable devices. On touch screens
+  // pointerenter fires BEFORE the user gesture, so iOS Safari silently drops
+  // the utterance (and it would double-speak when a mode is started).
+  if (window.matchMedia('(hover: hover)').matches) {
+    btnBebas.onpointerenter = () => speak('Main TepuQ Bebas yuk', appState.settings);
+    btnTarget.onpointerenter = () => speak('Ayo main TepuQ Target bersamaku', appState.settings);
+  }
   btnBebas.classList.toggle('hidden', enabled.length === 1 && !enabled.includes('bebas'));
   btnTarget.classList.toggle('hidden', enabled.length === 1 && !enabled.includes('target'));
   startDemoCards(appState.objects, appState.settings);
