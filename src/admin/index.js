@@ -44,7 +44,6 @@ function bindAdminTabs() {
       document.querySelectorAll('.panel-left .tab').forEach((x) => x.classList.remove('active'));
       t.classList.add('active');
       document.getElementById('tabObjects').classList.toggle('hidden', t.dataset.tab !== 'objects');
-      document.getElementById('tabSettings').classList.toggle('hidden', t.dataset.tab !== 'settings');
       document.getElementById('tabSync').classList.toggle('hidden', t.dataset.tab !== 'sync');
       if (t.dataset.tab === 'sync') {
         refreshSyncUI();

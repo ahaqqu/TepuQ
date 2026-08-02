@@ -79,17 +79,11 @@
     <div class="panel panel-left">
       <div class="admin-header">
         <h1 style="font-size:22px">TepuQ Admin</h1>
-        <a class="btn secondary small" href="index.html">Main</a>
-      </div>
-
-      <div id="backupReminder" class="backup-reminder">
-        <span>📦 Data tersimpan hanya di browser ini.</span>
-        <span>Klik <strong>Export ZIP</strong> untuk backup agar tidak hilang.</span>
+        <a class="btn primary play-link" href="index.html">▶️ Main</a>
       </div>
 
       <div class="toolbar">
         <button class="btn success" id="btnAddObject">+ Objek</button>
-        <button class="btn" id="btnPlay">Mainkan 🎮</button>
         <button class="btn" id="btnExport">Export ZIP</button>
         <button class="btn secondary" id="btnImport">Import</button>
         <input type="file" id="importFile" accept=".zip" class="hidden">
@@ -97,19 +91,14 @@
 
       <div class="tabs">
         <div class="tab active" data-tab="objects">Objek</div>
-        <div class="tab" data-tab="settings">Pengaturan</div>
         <div class="tab" data-tab="sync">Sinkron</div>
       </div>
 
       <div id="tabObjects" class="tab-pane">
         <div class="privacy-note">
-          Privasi: semua foto dan rekaman disimpan di HP/perangkat ini saja. Tidak dikirim ke server mana pun.
+          📦 Data tersimpan di HP ini saja. Klik <strong>Export ZIP</strong> untuk backup. Privasi: foto &amp; rekaman tidak dikirim ke server mana pun.
         </div>
         <div class="object-list" id="objectList"></div>
-      </div>
-
-      <div id="tabSettings" class="tab-pane hidden">
-        <p style="color:#666">Pilih objek untuk mengeditnya.</p>
       </div>
 
       <div id="tabSync" class="tab-pane hidden">
