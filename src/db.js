@@ -111,8 +111,44 @@ export async function loadData() {
     await seedDefaults();
     return loadData();
   }
+  await reconcileObjectSources(objs);
   const settings = await reconcileSettings(sets);
   return { objects: objs, settings };
+}
+
+// A starter object that is still byte-for-byte identical to its bundled
+// definition counts as untouched. Any deviation (name, photo, audio, keys,
+// color, ...) means the parent customized it, so it must sync and export.
+export function isStarterObjectUntouched(o, s) {
+  return (
+    o.name === s.name &&
+    o.ttsText === s.name &&
+    o.color === s.color &&
+    o.imageUrl === (s.image || null) &&
+    o.imageBlob == null &&
+    o.imageSource === 'starter' &&
+    o.audioBlob == null &&
+    o.useRecording === false &&
+    (o.keyBindings || []).length === 0 &&
+    o.active === true
+  );
+}
+
+// Mark previously edited starter objects as custom so they are included in
+// cloud push and ZIP export. Runs on every load; already-custom objects are
+// skipped, so it only writes once per customized object.
+export async function reconcileObjectSources(objs) {
+  const starterById = Object.fromEntries(
+    STARTER_OBJECTS.map((s, i) => ['obj_' + String(i + 1).padStart(3, '0'), s])
+  );
+  for (const o of objs) {
+    const s = starterById[o.id];
+    if (!s || o.source === 'custom') continue;
+    if (!isStarterObjectUntouched(o, s)) {
+      await putObject({ ...o, source: 'custom' });
+      o.source = 'custom';
+    }
+  }
 }
 
 async function reconcileSettings(stored) {
