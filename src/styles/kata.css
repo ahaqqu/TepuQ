@@ -6,8 +6,8 @@
 
 :root {
   --kata-text: #1e293b;
-  --kata-tile-size: clamp(80px, 16vmin, 150px);
-  --kata-slot-size: clamp(88px, 17vmin, 160px);
+  --kata-tile-size: clamp(96px, 20vmin, 180px);
+  --kata-slot-size: clamp(104px, 21vmin, 190px);
 }
 
 /* ---- Game Picker (top-level menu) ---------------------------------------- */
@@ -83,13 +83,30 @@
 }
 .kata-back-btn:hover { background: #fff; }
 
+/* ---- Bottom area: photo + slot row (targets at the bottom) --------------- */
+.kata-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2vmin;
+  padding-bottom: 2vmin;
+}
+
+.kata-photo {
+  width: clamp(100px, 22vmin, 200px);
+  height: clamp(100px, 22vmin, 200px);
+  object-fit: cover;
+  border-radius: 20px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+  border: 4px solid #fff;
+}
+
 /* ---- Slot row (letter-outline targets) ----------------------------------- */
 .kata-slot-row {
   display: flex;
   gap: 2.5vmin;
   justify-content: center;
   flex-wrap: wrap;
-  margin-top: 8vmin;
 }
 
 /* A slot is the letter itself drawn as a large outlined target — no box. */

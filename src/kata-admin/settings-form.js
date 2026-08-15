@@ -50,6 +50,7 @@ export function bindKataSettingsForm(settings, onChange) {
         audioType: 'tts',
         useRecording: false,
         source: 'starter',
+        image: KATA_STARTER_WORDS[i].image || null,
       });
     }
     showToast('Kata direset ke bawaan');

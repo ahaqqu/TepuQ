@@ -96,8 +96,11 @@ test.describe('TepuQ Kata', () => {
     });
 
     await Then('all slots are filled', async () => {
+      // Read the count once, immediately after the drags, so the assertion does
+      // not race the game's 2s auto-advance (which clears the completed word).
       const total = await page.locator('.kata-slot-row .kata-slot').count();
-      await expect(page.locator('.kata-slot.filled')).toHaveCount(total);
+      const filled = await page.locator('.kata-slot.filled').count();
+      expect(filled).toBe(total);
     });
   });
 

@@ -400,6 +400,7 @@ export async function seedKataDefaults() {
       audioType: 'tts',
       useRecording: false,
       source: 'starter',
+      image: s.image || null,
     });
   });
   tx.objectStore(KATA_DB_STORES.settings).put({ key: 'kata_settings', ...KATA_DEFAULT_SETTINGS, _source: 'default' });
@@ -445,6 +446,7 @@ export function isStarterWordUntouched(w, s) {
     w.audioBlob == null &&
     w.useRecording === false &&
     w.source === 'starter' &&
-    w.enabled === true
+    w.enabled === true &&
+    (w.image || null) === (s.image || null)
   );
 }

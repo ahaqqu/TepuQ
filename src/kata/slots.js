@@ -26,15 +26,19 @@ export function scatterLetters(word, area, tileSize, rng = Math.random) {
 
   const order = shuffledIndices(letters.length, rng);
   for (let i = 0; i < letters.length; i++) {
-    let pos;
-    let attempts = 0;
-    do {
-      pos = {
+    let pos = null;
+    // Prefer random spots with a little breathing room between tiles.
+    for (let attempts = 0; attempts < 80 && pos === null; attempts++) {
+      const candidate = {
         x: minX + rng() * (maxX - minX),
         y: minY + rng() * (maxY - minY),
       };
-      attempts++;
-    } while (attempts < 60 && overlapsAny(pos, positions, tileSize * 1.15));
+      if (!overlapsAny(candidate, positions, tileSize * 1.15)) pos = candidate;
+    }
+    // Random placement can run out of room in a short scatter area (longer
+    // words on the photo layout). Fall back to a packed grid so no tile is ever
+    // hidden behind another and every letter stays tappable.
+    if (pos === null) pos = packedPosition(positions, minX, maxX, minY, tileSize);
     positions.push(pos);
   }
 
@@ -44,6 +48,19 @@ export function scatterLetters(word, area, tileSize, rng = Math.random) {
     ordered[tileIndex] = positions[scatterIndex];
   });
   return ordered;
+}
+
+// Deterministic last resort: scan a left-to-right, top-to-bottom grid at
+// `tileSize` spacing for the first free spot. Guarantees no two tiles overlap
+// even when the scatter area is too cramped for random placement to find room.
+function packedPosition(existing, minX, maxX, minY, tileSize) {
+  const cols = Math.max(1, Math.floor((maxX - minX) / tileSize) + 1);
+  for (let row = 0; ; row++) {
+    for (let col = 0; col < cols; col++) {
+      const pos = { x: minX + col * tileSize, y: minY + row * tileSize };
+      if (!overlapsAny(pos, existing, tileSize)) return pos;
+    }
+  }
 }
 
 // Find the slot a dragged tile should snap into, given the tile's center and

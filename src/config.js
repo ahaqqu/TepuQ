@@ -1,8 +1,9 @@
 export const DB_NAME = 'tepuq_db';
 // Bump DB_VERSION when bundled starter images change OR when the schema
 // changes (new object stores). v5 adds the TepuQ Kata stores
-// (kata_words, kata_settings, kata_progress).
-export const DB_VERSION = 5;
+// (kata_words, kata_settings, kata_progress). v6 re-seeds Kata starter words
+// to match Gambar's starter objects (same words + photos).
+export const DB_VERSION = 6;
 
 export const DEFAULT_SETTINGS = {
   backgroundStyle: 'combined',
@@ -74,17 +75,26 @@ export const KATA_DEFAULT_PROGRESS = {
   totalSessions: 0,
 };
 
-// Starter words: short Indonesian toddler words, spelled exactly as pronounced
-// in id-ID so the shared Indonesian TTS voice says them correctly. See ADR 0003.
+// Starter words: the same Indonesian words and photos as TepuQ Gambar's
+// STARTER_OBJECTS, so the toddler sees a familiar photo while spelling the word.
+// Multi-word Gambar objects ("Sikat Gigi") are skipped (not spellable as one
+// word). Each entry carries the Gambar image path so the renderer can show the
+// photo alongside the slot targets. See ADR 0003.
 export const KATA_STARTER_WORDS = [
-  { word: 'mama', category: 'keluarga' },
-  { word: 'papa', category: 'keluarga' },
-  { word: 'kucing', category: 'hewan' },
-  { word: 'mobil', category: 'benda' },
-  { word: 'bola', category: 'benda' },
-  { word: 'buku', category: 'benda' },
-  { word: 'susu', category: 'makanan' },
-  { word: 'air', category: 'alam' },
-  { word: 'mata', category: 'tubuh' },
-  { word: 'api', category: 'alam' },
+  { word: 'papa', category: 'keluarga', image: 'assets/starter/papa.jpg' },
+  { word: 'mama', category: 'keluarga', image: 'assets/starter/mama.jpg' },
+  { word: 'saya', category: 'keluarga', image: 'assets/starter/saya.jpg' },
+  { word: 'kucing', category: 'hewan', image: 'assets/starter/kucing.jpg' },
+  { word: 'mobil', category: 'benda', image: 'assets/starter/mobil.jpg' },
+  { word: 'pisang', category: 'makanan', image: 'assets/starter/pisang.jpg' },
+  { word: 'bola', category: 'benda', image: 'assets/starter/bola.jpg' },
+  { word: 'boneka', category: 'benda', image: 'assets/starter/boneka.jpg' },
+  { word: 'buku', category: 'benda', image: 'assets/starter/buku.jpg' },
+  { word: 'air', category: 'alam', image: 'assets/starter/air.jpg' },
+  { word: 'susu', category: 'makanan', image: 'assets/starter/susu.jpg' },
+  { word: 'mandi', category: 'aktivitas', image: 'assets/starter/mandi.jpg' },
+  { word: 'main', category: 'aktivitas', image: 'assets/starter/main.jpg' },
+  { word: 'makan', category: 'aktivitas', image: 'assets/starter/makan.jpg' },
+  { word: 'minum', category: 'aktivitas', image: 'assets/starter/minum.jpg' },
+  { word: 'tidur', category: 'aktivitas', image: 'assets/starter/tidur.jpg' },
 ];
