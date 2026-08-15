@@ -53,6 +53,9 @@ jobs:
         id: smoke
         env:
           PLAYWRIGHT_BASE_URL: ${{ steps.url.outputs.deploy_url }}
+          # Tell playwright.config.js not to start its own preview server;
+          # we test against the live deployed URL instead.
+          TEPUQ_E2E_NO_WEBSERVER: 'true'
         run: |
           bunx playwright test tests/e2e/deploy-smoke.spec.js
 
