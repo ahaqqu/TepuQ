@@ -62,6 +62,23 @@ function resetUsedTiles() {
 }
 
 test.describe('TepuQ Kata', () => {
+  test('the back-to-menu button returns to the Game Picker', async ({ page }) => {
+    await Given('TepuQ Kata is started', async () => {
+      await startKata(page);
+      await expect(page.locator('#kataStage')).toBeVisible();
+    });
+
+    await When('the child taps the back-to-menu button', async () => {
+      await expect(page.locator('.kata-back-btn')).toBeVisible();
+      await page.locator('.kata-back-btn').click({ force: true });
+    });
+
+    await Then('the Game Picker is visible again', async () => {
+      await expect(page.locator('#gamePicker')).toBeVisible();
+      await expect(page.locator('#kataStage')).toHaveClass(/hidden/);
+    });
+  });
+
   test('completing all letters of a word fills every slot', async ({ page }) => {
     await Given('TepuQ Kata is started', async () => {
       await startKata(page);

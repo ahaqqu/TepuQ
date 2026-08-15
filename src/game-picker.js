@@ -18,6 +18,9 @@ export function initGamePicker(appState) {
 
   btnGambar.onclick = () => startGambar(appState);
   btnKata.onclick = () => startKata(appState);
+
+  // Kata's in-game back button dispatches this event to avoid a circular import.
+  window.addEventListener('tepuq:kata-back-to-menu', () => showGamePicker());
 }
 
 export function showGamePicker() {

@@ -6,6 +6,21 @@
 import { scatterLetters } from './slots.js';
 import { bindDrag, snapToSlot } from './drag-engine.js';
 
+// A fun, bright palette so each letter gets its own color — more engaging for a
+// toddler than a single color. The color is assigned by letter so a tile and
+// its matching slot share the same hue.
+const LETTER_COLORS = {
+  a: '#ef4444', b: '#f97316', c: '#f59e0b', d: '#eab308', e: '#84cc16',
+  f: '#22c55e', g: '#10b981', h: '#14b8a6', i: '#06b6d4', j: '#0ea5e9',
+  k: '#3b82f6', l: '#6366f1', m: '#8b5cf6', n: '#a855f7', o: '#d946ef',
+  p: '#ec4899', q: '#f43f5e', r: '#fb7185', s: '#fda4af', t: '#fbbf24',
+  u: '#a3e635', v: '#34d399', w: '#22d3ee', x: '#60a5fa', y: '#818cf8',
+  z: '#c084fc',
+};
+function colorForLetter(letter) {
+  return LETTER_COLORS[letter] || '#3b82f6';
+}
+
 let stage = null;
 let cleanups = [];
 let onSnapCb = null;
@@ -53,6 +68,7 @@ export function renderWord(wordRecord, settings, state) {
     slot.dataset.letter = letter;
     slot.style.width = `${settings.slotSize}px`;
     slot.style.height = `${settings.slotSize}px`;
+    slot.style.setProperty('--kata-letter-color', colorForLetter(letter));
     const slotLetter = document.createElement('span');
     slotLetter.className = 'kata-slot-letter';
     slotLetter.textContent = letter.toUpperCase();
@@ -76,6 +92,7 @@ export function renderWord(wordRecord, settings, state) {
       tile.className = 'kata-tile';
       tile.dataset.letter = letter;
       tile.dataset.tileIndex = tileIndex;
+      tile.style.setProperty('--kata-letter-color', colorForLetter(letter));
       const tileLetter = document.createElement('span');
       tileLetter.className = 'kata-tile-letter';
       tileLetter.textContent = letter.toUpperCase();

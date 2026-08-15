@@ -10,7 +10,6 @@ import {
   initRenderer, renderWord, fireConfetti, showWinScreen, showEmptyState,
   clearStage, setKataStateRef,
 } from './renderer.js';
-import { showGamePicker } from '../game-picker.js';
 import {
   initKataAudio, speakLetter, speakWord, playSuccessChime,
 } from './audio.js';
@@ -118,8 +117,10 @@ export function destroyKata() {
   clearStage();
 }
 
-// Return to the Game Picker (called by the in-game back button).
+// Return to the Game Picker (called by the in-game back button). We dispatch a
+// custom event instead of importing showGamePicker directly, to avoid a circular
+// import (game-picker.js imports initKata from this module).
 function backToMenu() {
   destroyKata();
-  showGamePicker();
+  window.dispatchEvent(new CustomEvent('tepuq:kata-back-to-menu'));
 }
