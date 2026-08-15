@@ -56,6 +56,21 @@ describe('scatterLetters', () => {
       expect(p).toHaveProperty('y');
     });
   });
+
+  it('never overlaps tiles, even for long words in a short area', () => {
+    // The photo layout gives the scatter area a short vertical range; a long
+    // word must still scatter without any tile hiding behind another.
+    const area = { width: 900, height: 334 };
+    const tileSize = 110;
+    for (let trial = 0; trial < 500; trial++) {
+      const positions = scatterLetters('kucing', area, tileSize, Math.random);
+      for (let i = 0; i < positions.length; i++) {
+        for (let j = i + 1; j < positions.length; j++) {
+          expect(distance(positions[i], positions[j])).toBeGreaterThanOrEqual(tileSize);
+        }
+      }
+    }
+  });
 });
 
 describe('findSnapSlot', () => {
