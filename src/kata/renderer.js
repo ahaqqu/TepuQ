@@ -5,6 +5,7 @@
 
 import { scatterLetters } from './slots.js';
 import { bindDrag, snapToSlot } from './drag-engine.js';
+import { DB_VERSION } from '../config.js';
 
 // A fun, bright palette so each letter gets its own color — more engaging for a
 // toddler than a single color. The color is assigned by letter so a tile and
@@ -40,7 +41,9 @@ export function clearStage() {
   if (stage) stage.innerHTML = '';
 }
 
-// Render one word: slot row at top, scattered tiles below.
+// Render one word: scatter tiles on top, photo + slot row at the bottom.
+// The photo (from the word's Gambar starter image) helps the toddler learn what
+// the word means while spelling it.
 export function renderWord(wordRecord, settings, state) {
   clearStage();
   if (!stage || !wordRecord) return;
@@ -57,7 +60,25 @@ export function renderWord(wordRecord, settings, state) {
   const word = wordRecord.word.toLowerCase();
   const letters = word.split('');
 
-  // Slot row
+  // Scatter area (top, flexible — tiles are dragged here).
+  const scatter = document.createElement('div');
+  scatter.className = 'kata-scatter';
+  stage.appendChild(scatter);
+
+  // Bottom area: photo of the word + slot row (targets at the bottom).
+  const bottomArea = document.createElement('div');
+  bottomArea.className = 'kata-bottom';
+
+  // Photo: the word's starter image, so the child sees what the word means.
+  if (wordRecord.image) {
+    const photo = document.createElement('img');
+    photo.className = 'kata-photo';
+    photo.src = `/${wordRecord.image}?v=${DB_VERSION}`;
+    photo.alt = wordRecord.word;
+    photo.onerror = () => { photo.style.display = 'none'; };
+    bottomArea.appendChild(photo);
+  }
+
   const slotRow = document.createElement('div');
   slotRow.className = 'kata-slot-row';
   slotRow.dataset.word = word;
@@ -75,12 +96,8 @@ export function renderWord(wordRecord, settings, state) {
     slot.appendChild(slotLetter);
     slotRow.appendChild(slot);
   });
-  stage.appendChild(slotRow);
-
-  // Scatter area
-  const scatter = document.createElement('div');
-  scatter.className = 'kata-scatter';
-  stage.appendChild(scatter);
+  bottomArea.appendChild(slotRow);
+  stage.appendChild(bottomArea);
 
   // Defer measuring until the scatter area is laid out.
   requestAnimationFrame(() => {
