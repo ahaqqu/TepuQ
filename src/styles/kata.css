@@ -1,7 +1,12 @@
 /* TepuQ Kata game styles: game picker, slot row, scattered letter tiles, drag
    states, confetti canvas, win screen, empty state. Shares base.css reset and
    the #game background; defines its own --kata-* palette per the design spec.
-   See ADR 0002 (separate kata.css) and the visual decision. */
+   See ADR 0002 (separate kata.css) and the visual decision.
+
+   Tiles and slots are letter-shaped blocks (like wooden alphabet pieces), not
+   plain squares: each shows a big bold letter, and the slot shows the same
+   letter as a light outlined target. Sizes scale with clamp() so they stay
+   toddler-big across viewports. */
 
 :root {
   --kata-bg: #f0f4f8;
@@ -12,6 +17,12 @@
   --kata-letter-correct: #22c55e;
   --kata-accent: #f59e0b;
   --kata-text: #1e293b;
+  /* Responsive tile/slot sizes: big enough for toddler fingers, scaling with
+     the viewport. These override the px settings applied inline from settings
+     so the layout stays proportional; the inline px values remain the source of
+     truth for snap-distance math. */
+  --kata-tile-size: clamp(72px, 14vmin, 130px);
+  --kata-slot-size: clamp(80px, 15vmin, 140px);
 }
 
 /* ---- Game Picker (top-level menu) ---------------------------------------- */
@@ -65,62 +76,109 @@
   overscroll-behavior: none;
 }
 
+/* Back-to-menu button (top-left) */
+.kata-back-btn {
+  position: absolute;
+  top: 3vmin;
+  left: 3vmin;
+  font-size: clamp(16px, 2.6vmin, 22px);
+  padding: 12px 22px;
+  min-height: 60px;
+  min-width: 60px;
+  background: rgba(255,255,255,0.92);
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  color: var(--kata-text);
+  font-weight: 700;
+  z-index: 20;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+}
+.kata-back-btn:hover { background: #fff; }
+
+/* ---- Slot row (target letter outlines) ---------------------------------- */
 .kata-slot-row {
   display: flex;
-  gap: 2vmin;
+  gap: 2.5vmin;
   justify-content: center;
   flex-wrap: wrap;
-  margin-top: 6vmin;
+  margin-top: 8vmin;
 }
 .kata-slot {
-  border: 3px dashed var(--kata-slot-border);
+  width: var(--kata-slot-size);
+  height: var(--kata-slot-size);
+  border: 4px dashed var(--kata-slot-border);
   background: var(--kata-slot-bg);
-  border-radius: 16px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.7;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  opacity: 0.85;
+  transition: border-color 0.2s ease, background 0.2s ease, border-style 0.2s ease;
+}
+/* The slot shows the target letter as a large faint outline so the child
+   knows which letter goes where — matching the reference game's letter-shaped
+   targets rather than empty squares. */
+.kata-slot-letter {
+  font-size: calc(var(--kata-slot-size) * 0.62);
+  font-weight: 900;
+  font-family: system-ui, "Comic Sans MS", sans-serif;
+  color: #e2e8f0;
+  line-height: 1;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .kata-slot.filled {
   border-style: solid;
   border-color: var(--kata-letter-correct);
   background: #dcfce7;
 }
+.kata-slot.filled .kata-slot-letter {
+  color: transparent;
+}
 
+/* ---- Scatter area ------------------------------------------------------- */
 .kata-scatter {
   position: relative;
   flex: 1;
   width: 100%;
   max-width: 900px;
-  min-height: 40vmin;
+  min-height: 44vmin;
 }
 
+/* ---- Letter tiles (wooden-letter-style blocks) -------------------------- */
 .kata-tile {
   position: absolute;
-  background: var(--kata-letter-bg);
+  width: var(--kata-tile-size);
+  height: var(--kata-tile-size);
+  background: linear-gradient(160deg, #4f8ef7 0%, #3b82f6 100%);
   color: var(--kata-letter-text);
-  border-radius: 16px;
+  border-radius: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
-  font-size: 60%;
-  font-family: system-ui, "Comic Sans MS", sans-serif;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  box-shadow: 0 5px 14px rgba(59,130,246,0.35), inset 0 2px 0 rgba(255,255,255,0.25);
   cursor: grab;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
 }
+.kata-tile-letter {
+  font-size: calc(var(--kata-tile-size) * 0.62);
+  font-weight: 900;
+  font-family: system-ui, "Comic Sans MS", sans-serif;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
 .kata-tile.dragging {
   cursor: grabbing;
-  box-shadow: 0 10px 24px rgba(0,0,0,0.3);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.35), inset 0 2px 0 rgba(255,255,255,0.3);
   transition: none;
 }
 .kata-tile.snapped {
-  background: var(--kata-letter-correct);
+  background: linear-gradient(160deg, #4ade80 0%, #22c55e 100%);
+  box-shadow: 0 5px 14px rgba(34,197,94,0.4), inset 0 2px 0 rgba(255,255,255,0.25);
   cursor: default;
 }
 .kata-tile.placed { pointer-events: none; }

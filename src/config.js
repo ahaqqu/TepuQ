@@ -59,9 +59,9 @@ export const KATA_DB_STORES = {
 };
 
 export const KATA_DEFAULT_SETTINGS = {
-  letterSize: 90,         // px, letter tile min size
-  slotSize: 100,          // px, slot size
-  snapDistance: 60,       // px, magnetic-snap threshold from slot center
+  letterSize: 110,        // px, letter tile size (drives scatter math)
+  slotSize: 120,          // px, slot size
+  snapDistance: 80,       // px, magnetic-snap threshold from slot center
   sessionLength: 10,      // words per session before the Win Screen
   showDistractors: false, // MVP: only correct letters are scattered
   enableLetterSpeech: true, // speak the letter ("a!") on a correct snap

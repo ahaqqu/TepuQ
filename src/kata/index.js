@@ -10,6 +10,7 @@ import {
   initRenderer, renderWord, fireConfetti, showWinScreen, showEmptyState,
   clearStage, setKataStateRef,
 } from './renderer.js';
+import { showGamePicker } from '../game-picker.js';
 import {
   initKataAudio, speakLetter, speakWord, playSuccessChime,
 } from './audio.js';
@@ -33,6 +34,7 @@ export async function initKata(words, settings, gambarSpeechSettings) {
   initRenderer(stage, {
     onSnap: handleSnap,
     onReject: () => { /* visual only; state unchanged */ },
+    onBackToMenu: () => backToMenu(),
   });
 
   const enabled = words.filter((w) => w.enabled);
@@ -114,4 +116,10 @@ async function handleVictory() {
 export function destroyKata() {
   destroyed = true;
   clearStage();
+}
+
+// Return to the Game Picker (called by the in-game back button).
+function backToMenu() {
+  destroyKata();
+  showGamePicker();
 }

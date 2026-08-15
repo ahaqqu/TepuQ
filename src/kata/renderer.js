@@ -4,17 +4,19 @@
 // so the drag engine works in real pixels.
 
 import { scatterLetters } from './slots.js';
-import { bindDrag, bounceBack, snapToSlot } from './drag-engine.js';
+import { bindDrag, snapToSlot } from './drag-engine.js';
 
 let stage = null;
 let cleanups = [];
 let onSnapCb = null;
 let onRejectCb = null;
+let destroyKataCallback = null;
 
-export function initRenderer(container, { onSnap, onReject } = {}) {
+export function initRenderer(container, { onSnap, onReject, onBackToMenu } = {}) {
   stage = container;
   onSnapCb = onSnap;
   onRejectCb = onReject;
+  destroyKataCallback = onBackToMenu;
 }
 
 export function clearStage() {
@@ -27,6 +29,15 @@ export function clearStage() {
 export function renderWord(wordRecord, settings, state) {
   clearStage();
   if (!stage || !wordRecord) return;
+
+  // Back-to-menu button (top-left, toddler-safe minimum size).
+  const backBtn = document.createElement('button');
+  backBtn.className = 'kata-back-btn';
+  backBtn.textContent = '‹ Menu';
+  backBtn.addEventListener('click', () => {
+    destroyKataCallback?.();
+  });
+  stage.appendChild(backBtn);
 
   const word = wordRecord.word.toLowerCase();
   const letters = word.split('');
@@ -42,6 +53,10 @@ export function renderWord(wordRecord, settings, state) {
     slot.dataset.letter = letter;
     slot.style.width = `${settings.slotSize}px`;
     slot.style.height = `${settings.slotSize}px`;
+    const slotLetter = document.createElement('span');
+    slotLetter.className = 'kata-slot-letter';
+    slotLetter.textContent = letter.toUpperCase();
+    slot.appendChild(slotLetter);
     slotRow.appendChild(slot);
   });
   stage.appendChild(slotRow);
@@ -55,14 +70,16 @@ export function renderWord(wordRecord, settings, state) {
   requestAnimationFrame(() => {
     const area = { width: scatter.clientWidth, height: scatter.clientHeight };
     const origins = scatterLetters(word, area, settings.letterSize);
-    const containerRect = stage.getBoundingClientRect();
 
     letters.forEach((letter, tileIndex) => {
       const tile = document.createElement('div');
       tile.className = 'kata-tile';
       tile.dataset.letter = letter;
       tile.dataset.tileIndex = tileIndex;
-      tile.textContent = letter.toUpperCase();
+      const tileLetter = document.createElement('span');
+      tileLetter.className = 'kata-tile-letter';
+      tileLetter.textContent = letter.toUpperCase();
+      tile.appendChild(tileLetter);
       tile.style.width = `${settings.letterSize}px`;
       tile.style.height = `${settings.letterSize}px`;
       const origin = origins[tileIndex] || { x: 0, y: 0 };
@@ -74,7 +91,7 @@ export function renderWord(wordRecord, settings, state) {
         container: scatter,
         getSlots: () => getSlotList(slotRow),
         snapDistance: () => settings.snapDistance,
-        onSnap: (ti, si) => handleSnap(ti, si, state, settings, slotRow, scatter, containerRect),
+        onSnap: (ti, si) => handleSnap(ti, si, state, settings, slotRow, scatter),
         onReject: (ti) => handleReject(ti, scatter),
       });
       cleanups.push(cleanup);
@@ -98,27 +115,38 @@ function getSlotList(slotRow) {
   });
 }
 
-function handleSnap(tileIndex, slotIndex, state, settings, slotRow, scatter, containerRect) {
+function handleSnap(tileIndex, slotIndex, state, settings, slotRow, scatter) {
   const slotEl = slotRow.querySelector(`.kata-slot[data-index="${slotIndex}"]`);
   const tileEl = scatter.querySelector(`.kata-tile[data-tile-index="${tileIndex}"]`);
   if (!slotEl || !tileEl) return;
   // Update state via the game loop callback rather than touching state here.
-  const wordDone = onSnapCb?.(tileIndex, slotIndex);
+  onSnapCb?.(tileIndex, slotIndex);
   slotEl.classList.add('filled');
+  // Move the tile to the slot's center, relative to the scatter container.
+  const scatterRect = scatter.getBoundingClientRect();
   const slotRect = slotEl.getBoundingClientRect();
   const slotCenter = {
-    x: slotRect.left + slotRect.width / 2 - containerRect.left,
-    y: slotRect.top + slotRect.height / 2 - containerRect.top,
+    x: slotRect.left + slotRect.width / 2 - scatterRect.left,
+    y: slotRect.top + slotRect.height / 2 - scatterRect.top,
   };
-  // snap relative to the scatter container
-  const scatterRect = scatter.getBoundingClientRect();
-  snapToSlot(tileEl, { x: slotCenter.x, y: slotCenter.y }, scatterRect);
+  snapToSlot(tileEl, slotCenter, scatterRect);
   tileEl.classList.add('placed');
 }
 
+// On a free drop (no slot nearby), the tile stays exactly where the child
+// released it — no bounce-back. The child can re-grab and try again.
 function handleReject(tileIndex, scatter) {
   const tileEl = scatter.querySelector(`.kata-tile[data-tile-index="${tileIndex}"]`);
-  if (tileEl) bounceBack(tileEl);
+  if (!tileEl) return;
+  const scatterRect = scatter.getBoundingClientRect();
+  const tileRect = tileEl.getBoundingClientRect();
+  // Commit the current dragged position as the new left/top, clear transform.
+  const newLeft = tileRect.left - scatterRect.left;
+  const newTop = tileRect.top - scatterRect.top;
+  tileEl.style.left = `${newLeft}px`;
+  tileEl.style.top = `${newTop}px`;
+  tileEl.style.transform = '';
+  tileEl.style.zIndex = '';
   onRejectCb?.(tileIndex);
 }
 

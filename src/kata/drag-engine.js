@@ -101,14 +101,6 @@ export function bindDrag(tileEl, opts) {
   };
 }
 
-// Animate a tile back to its origin (wrong/free drop) with a shake.
-export function bounceBack(tileEl) {
-  tileEl.classList.add('shake');
-  tileEl.style.transform = '';
-  tileEl.style.zIndex = '';
-  setTimeout(() => tileEl.classList.remove('shake'), 420);
-}
-
 // Animate a tile snapping into a slot center (container-relative coordinates).
 export function snapToSlot(tileEl, slotCenter, containerRect) {
   const tileRect = tileEl.getBoundingClientRect();
