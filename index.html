@@ -24,23 +24,23 @@
     <div class="bg-layer bg-gradient" id="bgGradient"></div>
     <div class="bg-layer" id="bgEffects"></div>
 
-    <div id="modePicker">
+    <!-- GAME PICKER: top-level menu (TepuQ Gambar / TepuQ Kata) -->
+    <div id="gamePicker">
       <span class="pick-sparkle s1">✨</span>
       <span class="pick-sparkle s2">⭐</span>
       <span class="pick-sparkle s3">🌈</span>
       <span class="pick-sparkle s4">🎈</span>
-      <span class="pick-sparkle s5">✨</span>
       <h1><span class="spin">🌟</span> TepuQ <span class="spin">🌟</span></h1>
       <div class="mode-buttons">
-        <button class="mode-btn" id="btnBebas" aria-label="TepuQ Bebas">
-          <span class="mode-icon">✋</span>
-          <span>TepuQ Bebas</span>
-          <small style="font-size:2.2vmin;font-weight:400;opacity:.9">Tekan tombol atau ketuk mana saja</small>
+        <button class="mode-btn" id="btnGameGambar" aria-label="TepuQ Gambar">
+          <span class="mode-icon">🖼️</span>
+          <span>TepuQ Gambar</span>
+          <small style="font-size:2.2vmin;font-weight:400;opacity:.9">Lihat foto &amp; dengar namanya</small>
         </button>
-        <button class="mode-btn" id="btnTarget" aria-label="TepuQ Target">
-          <span class="mode-icon">👆</span>
-          <span>TepuQ Target</span>
-          <small style="font-size:2.2vmin;font-weight:400;opacity:.9">Ketuk fotonya!</small>
+        <button class="mode-btn" id="btnGameKata" aria-label="TepuQ Kata">
+          <span class="mode-icon">🔤</span>
+          <span>TepuQ Kata</span>
+          <small style="font-size:2.2vmin;font-weight:400;opacity:.9">Susun huruf jadi kata</small>
         </button>
       </div>
       <div id="mainSync" class="main-sync">
@@ -57,6 +57,30 @@
       <a href="?mode=admin" class="admin-link" aria-label="Buka Admin">⚙️ Admin</a>
     </div>
 
+    <!-- GAMBAR SUB-PICKER: Bebas / Target (second menu level) -->
+    <div id="modePicker" class="hidden">
+      <span class="pick-sparkle s1">✨</span>
+      <span class="pick-sparkle s2">⭐</span>
+      <span class="pick-sparkle s3">🌈</span>
+      <span class="pick-sparkle s4">🎈</span>
+      <span class="pick-sparkle s5">✨</span>
+      <h1><span class="spin">🌟</span> TepuQ Gambar <span class="spin">🌟</span></h1>
+      <div class="mode-buttons">
+        <button class="mode-btn" id="btnBebas" aria-label="TepuQ Bebas">
+          <span class="mode-icon">✋</span>
+          <span>TepuQ Bebas</span>
+          <small style="font-size:2.2vmin;font-weight:400;opacity:.9">Tekan tombol atau ketuk mana saja</small>
+        </button>
+        <button class="mode-btn" id="btnTarget" aria-label="TepuQ Target">
+          <span class="mode-icon">👆</span>
+          <span>TepuQ Target</span>
+          <small style="font-size:2.2vmin;font-weight:400;opacity:.9">Ketuk fotonya!</small>
+        </button>
+      </div>
+      <button class="btn back-to-games" id="btnBackToGames">‹ Pilih Game</button>
+      <div id="fsNote" class="fs-note">Tekan lama pojok kiri atas untuk keluar dari layar penuh.</div>
+    </div>
+
     <div id="backTrigger"></div>
     <div id="backHint">Tahan lama pojok kiri atas untuk kembali ke menu</div>
     <div id="fsExitHint" class="fs-exit-hint">
@@ -66,6 +90,10 @@
 
     <div id="card" class="hidden"></div>
     <div id="particles"></div>
+
+    <!-- KATA GAME STAGE: spelling game renders here -->
+    <div id="kataStage" class="hidden"></div>
+    <canvas id="kataConfetti" class="kata-confetti hidden" aria-hidden="true"></canvas>
 
     <div id="emptyState" class="hidden">
       <h2>Belum ada objek</h2>
@@ -82,6 +110,14 @@
         <a class="btn primary play-link" href="index.html">▶️ Main</a>
       </div>
 
+      <!-- GAME SWITCHER: Gambar vs Kata admin -->
+      <div class="game-tabs" id="adminGameTabs">
+        <div class="game-tab active" data-game="gambar">🖼️ Gambar</div>
+        <div class="game-tab" data-game="kata">🔤 Kata</div>
+      </div>
+
+      <!-- GAMBAR ADMIN -->
+      <div id="adminGambar">
       <div class="toolbar">
         <button class="btn success" id="btnAddObject">+ Objek</button>
         <button class="btn" id="btnExport">Export ZIP</button>
@@ -136,6 +172,22 @@
           </div>
         </div>
       </div>
+      </div><!-- /adminGambar -->
+
+      <!-- KATA ADMIN -->
+      <div id="adminKata" class="hidden">
+      <div class="toolbar">
+        <button class="btn success" id="btnAddKataWord">+ Kata</button>
+        <button class="btn" id="btnKataExport">Export ZIP</button>
+        <button class="btn secondary" id="btnKataImport">Import</button>
+        <input type="file" id="kataImportFile" accept=".zip" class="hidden">
+      </div>
+
+      <div class="privacy-note">
+        📦 Data Kata tersimpan di HP ini saja. Klik <strong>Export ZIP</strong> untuk backup.
+      </div>
+      <div class="object-list" id="kataWordList"></div>
+      </div><!-- /adminKata -->
 
       <div class="admin-footer" id="adminFooter">
         Mode admin: <code>?mode=admin</code>
@@ -143,6 +195,8 @@
     </div>
 
     <div class="panel panel-right" id="editorPanel">
+      <!-- GAMBAR EDITOR -->
+      <div id="editorGambar">
       <div class="tabs" id="editorTabs">
         <div class="tab active" data-editortab="editor">Editor Objek</div>
         <div class="tab" data-editortab="settings">Pengaturan Game</div>
@@ -356,6 +410,107 @@
         </div>
         <p id="resetAllHint" style="margin-top:8px;font-size:12px;color:#666">Menghapus semua objek, foto, rekaman, dan pengaturan. Seperti baru pertama kali dibuka.</p>
       </div>
+      </div><!-- /editorGambar -->
+
+      <!-- KATA EDITOR -->
+      <div id="editorKata" class="hidden">
+        <div class="tabs" id="kataEditorTabs">
+          <div class="tab active" data-kataeditortab="editor">Editor Kata</div>
+          <div class="tab" data-kataeditortab="settings">Pengaturan Kata</div>
+        </div>
+
+        <div id="kataEditorTabEditor" class="editor-pane">
+          <div id="kataNoSelection">
+            <h2>Admin TepuQ Kata</h2>
+            <p>Tambah kata baru, atur kategori dan audio. Klik <b>+ Kata</b> untuk memulai.</p>
+          </div>
+
+          <form id="kataWordForm" class="hidden">
+            <h2 id="kataEditorTitle">Kata Baru</h2>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="inpKataWord">Kata</label>
+                <input type="text" id="inpKataWord" required placeholder="Contoh: mama">
+              </div>
+              <div class="form-group">
+                <label for="inpKataCategory">Kategori</label>
+                <input type="text" id="inpKataCategory" placeholder="default">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Audio Kata</label>
+              <span class="field-desc">Rekam suara sendiri, unggah file audio, atau gunakan TTS. Klik Simpan setelahnya.</span>
+              <input type="file" id="inpKataAudioFile" accept="audio/*" style="margin:6px 0">
+              <div id="kataAudioSection">
+                <div style="color:#888;font-size:14px">Belum ada audio</div>
+              </div>
+            </div>
+
+            <div class="form-group toggle-row">
+              <input type="checkbox" id="inpKataActive" checked>
+              <label for="inpKataActive" style="margin:0">Aktif (tampil di game)</label>
+            </div>
+
+            <div class="toolbar" style="margin-top:8px">
+              <button type="submit" class="btn success">Simpan</button>
+              <button type="button" class="btn" id="btnKataTestTts">Test Suara</button>
+              <button type="button" class="btn danger" id="btnKataDeleteWord">Hapus</button>
+              <button type="button" class="btn secondary" id="btnKataCancel">Batal</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="kataEditorTabSettings" class="editor-pane hidden">
+          <h2>Pengaturan TepuQ Kata</h2>
+          <div class="settings-grid" id="kataSettingsForm">
+            <div class="form-group">
+              <label for="setKataLetterSize">Ukuran Huruf (px)</label>
+              <span class="field-desc">Besar kotak huruf yang diseret.</span>
+              <input type="number" id="setKataLetterSize" min="60" max="120" step="5">
+            </div>
+            <div class="form-group">
+              <label for="setKataSlotSize">Ukuran Slot (px)</label>
+              <span class="field-desc">Besar kotak slot tujuan.</span>
+              <input type="number" id="setKataSlotSize" min="80" max="140" step="5">
+            </div>
+            <div class="form-group">
+              <label for="setKataSnapDistance">Jarak Snap (px)</label>
+              <span class="field-desc">Seberapa dekat huruf harus ke slot agar tersnap otomatis.</span>
+              <input type="number" id="setKataSnapDistance" min="30" max="100" step="5">
+            </div>
+            <div class="form-group">
+              <label for="setKataSessionLength">Jumlah Kata per Sesi</label>
+              <span class="field-desc">Jumlah kata sebelum layar kemenangan.</span>
+              <input type="number" id="setKataSessionLength" min="5" max="20" step="1">
+            </div>
+            <div class="form-group">
+              <label for="setKataLanguage">Bahasa TTS</label>
+              <span class="field-desc">Lokal suara TTS untuk Kata.</span>
+              <select id="setKataLanguage">
+                <option value="id-ID">Indonesia (id-ID)</option>
+                <option value="en-US">English (en-US)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Opsi</label>
+              <div class="toggle-row">
+                <input type="checkbox" id="setKataLetterSpeech" checked>
+                <label for="setKataLetterSpeech" style="margin:0">Sebut huruf saat snap</label>
+              </div>
+              <div class="toggle-row">
+                <input type="checkbox" id="setKataDistractors" disabled>
+                <label for="setKataDistractors" style="margin:0">Huruf pengganggu (segera)</label>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:18px">
+            <button class="btn success" id="btnSaveKataSettings">Simpan Pengaturan</button>
+            <button class="btn secondary" id="btnResetKataSettings">Reset Default</button>
+            <button class="btn danger" id="btnResetKataWords">Reset Kata ke Bawaan</button>
+          </div>
+        </div>
+      </div><!-- /editorKata -->
     </div>
   </div>
 

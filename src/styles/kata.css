@@ -1,0 +1,203 @@
+/* TepuQ Kata game styles: game picker, slot row, scattered letter tiles, drag
+   states, confetti canvas, win screen, empty state. Shares base.css reset and
+   the #game background; defines its own --kata-* palette per the design spec.
+   See ADR 0002 (separate kata.css) and the visual decision. */
+
+:root {
+  --kata-bg: #f0f4f8;
+  --kata-slot-border: #cbd5e1;
+  --kata-slot-bg: #ffffff;
+  --kata-letter-bg: #3b82f6;
+  --kata-letter-text: #ffffff;
+  --kata-letter-correct: #22c55e;
+  --kata-accent: #f59e0b;
+  --kata-text: #1e293b;
+}
+
+/* ---- Game Picker (top-level menu) ---------------------------------------- */
+#gamePicker {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+  z-index: 10;
+  padding: 20px;
+}
+#gamePicker h1 {
+  font-size: clamp(28px, 7vmin, 56px);
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  margin: 0;
+}
+#gamePicker .mode-buttons { gap: 18px; }
+.back-to-games {
+  font-size: 16px;
+  padding: 10px 22px;
+  min-height: 60px;
+  min-width: 60px;
+  background: rgba(255,255,255,0.9);
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  color: var(--kata-text);
+  font-weight: 600;
+}
+.back-to-games:hover { background: #fff; }
+
+/* ---- Kata stage ---------------------------------------------------------- */
+#kataStage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 4vmin;
+  gap: 3vmin;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+.kata-slot-row {
+  display: flex;
+  gap: 2vmin;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 6vmin;
+}
+.kata-slot {
+  border: 3px dashed var(--kata-slot-border);
+  background: var(--kata-slot-bg);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.kata-slot.filled {
+  border-style: solid;
+  border-color: var(--kata-letter-correct);
+  background: #dcfce7;
+}
+
+.kata-scatter {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  max-width: 900px;
+  min-height: 40vmin;
+}
+
+.kata-tile {
+  position: absolute;
+  background: var(--kata-letter-bg);
+  color: var(--kata-letter-text);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 60%;
+  font-family: system-ui, "Comic Sans MS", sans-serif;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+.kata-tile.dragging {
+  cursor: grabbing;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.3);
+  transition: none;
+}
+.kata-tile.snapped {
+  background: var(--kata-letter-correct);
+  cursor: default;
+}
+.kata-tile.placed { pointer-events: none; }
+.kata-tile.shake { animation: kata-shake 0.4s ease-in-out; }
+
+@keyframes kata-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+
+/* ---- Confetti + win screen ---------------------------------------------- */
+.kata-confetti {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 40;
+}
+.kata-confetti.hidden { display: none; }
+
+.kata-win {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  z-index: 60;
+}
+.kata-win__content {
+  background: #fff;
+  border-radius: 24px;
+  padding: 40px 48px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+}
+.kata-win__emoji { font-size: 64px; animation: kata-bounce 1s ease infinite; }
+.kata-win__content h2 { font-size: 36px; color: var(--kata-text); margin: 0; }
+.kata-win__btn {
+  font-size: 22px;
+  padding: 16px 36px;
+  min-height: 60px;
+  border: none;
+  border-radius: 16px;
+  background: var(--kata-letter-bg);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 700;
+}
+.kata-win__btn:hover { background: #2563eb; }
+
+@keyframes kata-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+/* ---- Empty state -------------------------------------------------------- */
+.kata-empty {
+  text-align: center;
+  color: var(--kata-text);
+  margin-top: 20vmin;
+}
+.kata-empty a {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 12px 24px;
+  background: var(--kata-letter-bg);
+  color: #fff;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 600;
+}

@@ -2,7 +2,7 @@
 
 ## Project Purpose
 
-TepuQ is a fun and simple browser game for toddlers (15+ months) and their parents. It shows photo cards and speaks Indonesian names when the child taps the screen or presses keys. Parents configure everything through an admin mode. An optional cloud-sync feature lets a family share custom objects and settings across devices.
+TepuQ is a fun and simple browser game for toddlers (15+ months) and their parents. It is a multi-game shell: **TepuQ Gambar** (the original photo-card game) and **TepuQ Kata** (a drag-and-drop spelling game). The main page shows a Game Picker; picking a game routes into it. Parents configure everything through a shared admin mode with per-game tabs. An optional cloud-sync feature lets a family share custom objects, settings, and Kata words across devices.
 
 **Core principles (do not break):**
 - **Fun and simple** — keep the experience joyful and easy.
@@ -29,28 +29,43 @@ TepuQ is a fun and simple browser game for toddlers (15+ months) and their paren
 
 ```
 TepuQ/
-├── index.html              # Vite shell
+├── index.html              # Vite shell (Game Picker + Gambar + Kata + Admin)
 ├── functions/              # Cloudflare Pages Functions
 │   └── api/                # /api/login, /api/logout, /api/me, /api/sync
 ├── scripts/                # helper scripts (e.g. dynamic E2E port runner)
 ├── src/
-│   ├── main.js             # bootstrap
-│   ├── config.js           # defaults and constants
-│   ├── db.js               # IndexedDB
+│   ├── main.js             # bootstrap (admin vs game; game -> Game Picker)
+│   ├── game-picker.js      # top-level Game Picker (TepuQ Gambar / TepuQ Kata)
+│   ├── config.js           # defaults + constants (Gambar + Kata)
+│   ├── db.js               # IndexedDB (shared + kata_* stores + Kata CRUD)
 │   ├── utils.js            # helpers
-│   ├── speech.js           # TTS + recorded audio
-│   ├── game/               # game logic modules
+│   ├── speech.js           # TTS + recorded audio (shared by both games)
+│   ├── game/               # TepuQ Gambar game logic modules
 │   │   ├── game-state.js   # centralized mutable game state
-│   │   ├── mode-manager.js # mode picker, startMode, kiosk integration
+│   │   ├── mode-manager.js # Gambar sub-picker (Bebas/Target), startMode
 │   │   ├── demo.js         # background demo cards on the picker
 │   │   ├── input.js        # keyboard/touch/pointer input handlers
 │   │   ├── logic.js        # core game rules and card advancement
 │   │   ├── card.js         # card rendering and object URL lifecycle
 │   │   └── ...
-│   ├── admin/              # admin logic modules
+│   ├── kata/               # TepuQ Kata (spelling game) modules
+│   │   ├── index.js        # game loop + state machine
+│   │   ├── game-state.js   # Kata state machine (LOADING/PLAYING/VICTORY)
+│   │   ├── slots.js        # slot derivation + snap hit-testing (pure)
+│   │   ├── drag-engine.js  # touch+mouse drag with magnetic snap
+│   │   ├── renderer.js     # DOM: slots, tiles, confetti, win screen
+│   │   └── audio.js        # TTS letters/word + success chime
+│   ├── admin/              # TepuQ Gambar admin logic modules
 │   │   ├── merge-objects.js # shared import/sync merge strategy
 │   │   └── ...
-│   └── styles/             # CSS: base.css, game.css, admin.css, main.css
+│   ├── kata-admin/         # TepuQ Kata admin logic modules
+│   │   ├── index.js        # Kata admin shell (rendered in the Kata admin tab)
+│   │   ├── word-list.js    # word CRUD list with drag reorder
+│   │   ├── editor.js       # word editor + audio record/upload
+│   │   ├── settings-form.js# Kata settings (letter/slot/snap/session)
+│   │   ├── merge-words.js  # Kata import/sync merge strategy (pure)
+│   │   └── import-export.js# Kata ZIP export/import
+│   └── styles/             # CSS: base, gameplay, theme, admin, kata, kata-admin
 ├── public/
 │   ├── assets/             # bundled CC0 starter images + audio
 │   └── vendor/             # third-party JS libraries
@@ -96,14 +111,14 @@ After any change, verify at least these default-setting flows:
 
 1. `bun run dev`
 2. Open `http://localhost:5173`
-3. See the mode picker with both buttons.
-4. Click **TepuQ Bebas** → press any key → a card appears and audio speaks.
-5. Long-press top-left corner → return to mode picker.
-6. Click **TepuQ Target** → tap the card → it advances.
-7. Open `http://localhost:5173?mode=admin`
-8. Add a new object, save, and see it in the list.
-9. Export ZIP and confirm `config.json` only contains custom objects/recordings; import merges them with defaults.
-10. (If sync is implemented) Open admin, log in with the shared family credentials, push, then pull; custom objects and settings round-trip across Devices.
+3. See the **Game Picker** with TepuQ Gambar and TepuQ Kata buttons.
+4. Click **TepuQ Gambar** → see the Bebas/Target sub-picker → click **TepuQ Bebas** → press any key → a card appears and audio speaks.
+5. Long-press top-left corner → return to mode picker; "Pilih Game" returns to the Game Picker.
+6. Click **TepuQ Kata** → a word appears as empty slots with scattered letter tiles → drag a letter into its slot → it snaps and turns green.
+7. Open `http://localhost:5173?mode=admin` → see the Gambar/Kata game tabs.
+8. Add a new object (Gambar) and a new word (Kata), save, and see each in its list.
+9. Export ZIP (Gambar) and confirm `config.json` only contains custom objects/recordings; export ZIP (Kata) and confirm `kata-words.json` only contains custom words. Import merges each with defaults.
+10. (If sync is implemented) Open admin, log in with the shared family credentials, push, then pull; custom objects, settings, and Kata words round-trip across Devices.
 11. Build passes: `bun run build`.
 12. Unit tests pass: `bun run test:unit`.
 
@@ -111,14 +126,16 @@ After any change, verify at least these default-setting flows:
 
 ## What Must Not Break
 
-- Default settings in `src/config.js`.
-- Starter objects list and seeding in `src/db.js`.
-- Game mode: Bebas and Target must both work.
-- Admin mode: add/edit/delete object, settings, export/import ZIP.
-- Import/export of images and recorded audio.
-- Key bindings (case-insensitive).
-- No-border rule when an image is set.
-- Optional cloud sync: login, push, pull, and logout (when implemented).
+- Default settings in `src/config.js` (Gambar + Kata).
+- Starter objects list and seeding in `src/db.js`; starter words in `KATA_STARTER_WORDS`.
+- Game Picker: both games must launch from the main page.
+- TepuQ Gambar: Bebas and Target must both work.
+- TepuQ Kata: drag a letter into the correct slot snaps it; wrong slot bounces back; completing the session shows the win screen.
+- Admin mode: add/edit/delete object (Gambar) and word (Kata), settings, export/import ZIP for each game.
+- Import/export of images and recorded audio (Gambar); import/export of per-word audio (Kata).
+- Key bindings (case-insensitive, Gambar).
+- No-border rule when an image is set (Gambar).
+- Optional cloud sync: login, push, pull, and logout (when implemented). Push/pull now carries Kata custom words + settings alongside Gambar data.
 
 ---
 

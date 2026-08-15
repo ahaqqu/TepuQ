@@ -1,8 +1,8 @@
 export const DB_NAME = 'tepuq_db';
-// Bump DB_VERSION when bundled starter images change: the version is baked
-// into the stored starter image URLs as a cache-busting query string, and the
-// upgrade handler refreshes those URLs so browsers fetch the new images.
-export const DB_VERSION = 4;
+// Bump DB_VERSION when bundled starter images change OR when the schema
+// changes (new object stores). v5 adds the TepuQ Kata stores
+// (kata_words, kata_settings, kata_progress).
+export const DB_VERSION = 5;
 
 export const DEFAULT_SETTINGS = {
   backgroundStyle: 'combined',
@@ -44,3 +44,47 @@ export const STARTER_OBJECTS = [
 export const ENTRY_ANIMATIONS = ['bounce', 'pop', 'spin', 'slide', 'flip', 'wobble', 'zoom'];
 export const EXIT_ANIMATIONS = ['fade', 'zoom', 'slide', 'shrink'];
 export const SLIDE_DIRECTIONS = ['left', 'right', 'top', 'bottom'];
+
+// ---- TepuQ Kata (spelling game) -------------------------------------------
+// Kata-specific config lives here next to the Gambar config so both games share
+// one source of constants. Kata's runtime knobs (letter/slot size, snap
+// distance, session length, ...) are stored in the kata_settings store; the
+// TTS rate/pitch/volume are NOT here — Kata reuses Gambar's shared speech
+// settings via src/speech.js.
+
+export const KATA_DB_STORES = {
+  words: 'kata_words',
+  settings: 'kata_settings',
+  progress: 'kata_progress',
+};
+
+export const KATA_DEFAULT_SETTINGS = {
+  letterSize: 90,         // px, letter tile min size
+  slotSize: 100,          // px, slot size
+  snapDistance: 60,       // px, magnetic-snap threshold from slot center
+  sessionLength: 10,      // words per session before the Win Screen
+  showDistractors: false, // MVP: only correct letters are scattered
+  enableLetterSpeech: true, // speak the letter ("a!") on a correct snap
+  language: 'id-ID',      // TTS locale for Kata (matches Gambar's id-ID)
+};
+
+export const KATA_DEFAULT_PROGRESS = {
+  completedWords: [],     // array of word ids completed this session
+  currentStreak: 0,
+  totalSessions: 0,
+};
+
+// Starter words: short Indonesian toddler words, spelled exactly as pronounced
+// in id-ID so the shared Indonesian TTS voice says them correctly. See ADR 0003.
+export const KATA_STARTER_WORDS = [
+  { word: 'mama', category: 'keluarga' },
+  { word: 'papa', category: 'keluarga' },
+  { word: 'kucing', category: 'hewan' },
+  { word: 'mobil', category: 'benda' },
+  { word: 'bola', category: 'benda' },
+  { word: 'buku', category: 'benda' },
+  { word: 'susu', category: 'makanan' },
+  { word: 'air', category: 'alam' },
+  { word: 'mata', category: 'tubuh' },
+  { word: 'api', category: 'alam' },
+];

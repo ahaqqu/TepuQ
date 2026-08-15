@@ -27,17 +27,31 @@ async function startBebasMode(page) {
   await page.evaluate(() => { sessionStorage.clear(); });
   await page.goto('/');
   await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
+  // The Game Picker is the top-level menu; pick TepuQ Gambar first.
+  await expect(page.locator('#gamePicker')).toBeVisible();
+  await page.locator('#btnGameGambar').click({ force: true });
+  await expect(page.locator('#modePicker')).toBeVisible();
   await page.locator('#btnBebas').click({ force: true });
   await expect(page.locator('#modePicker')).toHaveClass(/hidden/);
 }
 
 test.describe('Game mode default settings', () => {
-  test('loads and shows mode picker', async ({ page }) => {
+  test('loads and shows the game picker, then the Gambar mode picker', async ({ page }) => {
     await Given('the game is opened', async () => {
       await page.goto('/');
     });
 
-    await Then('the mode picker with both buttons is visible', async () => {
+    await Then('the game picker with both games is visible', async () => {
+      await expect(page.locator('#gamePicker')).toBeVisible();
+      await expect(page.locator('#btnGameGambar')).toBeVisible();
+      await expect(page.locator('#btnGameKata')).toBeVisible();
+    });
+
+    await When('the user picks TepuQ Gambar', async () => {
+      await page.locator('#btnGameGambar').click({ force: true });
+    });
+
+    await Then('the Gambar mode picker with Bebas and Target is visible', async () => {
       await expect(page.locator('#modePicker')).toBeVisible();
       await expect(page.locator('#btnBebas')).toBeVisible();
       await expect(page.locator('#btnTarget')).toBeVisible();
@@ -68,6 +82,8 @@ test.describe('Game mode default settings', () => {
     await Given('the user starts TepuQ Target mode', async () => {
       await page.goto('/');
       await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
+      await page.locator('#btnGameGambar').click({ force: true });
+      await expect(page.locator('#modePicker')).toBeVisible();
       await page.locator('#btnTarget').click({ force: true });
       await expect(page.locator('#modePicker')).toHaveClass(/hidden/);
     });

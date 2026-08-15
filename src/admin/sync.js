@@ -1,6 +1,7 @@
-import { initDB, loadData, getAllObjects, putSettings, putMeta, getMeta } from '../db.js';
+import { initDB, loadData, getAllObjects, putSettings, putMeta, getMeta, loadKataData, getAllKataWords, clearKataWords, putKataWord, putKataSettings } from '../db.js';
 import { buildSyncPayload, parseSyncPayload, configToLogString } from './sync-serializer.js';
 import { mergeImportedObjects } from './merge-objects.js';
+import { mergeImportedWords } from '../kata-admin/merge-words.js';
 import { showToast } from '../utils.js';
 
 const API_BASE = '/api';
@@ -99,8 +100,8 @@ export async function loginAndPull(user, pass) {
     return { ok: true, pulled: false };
   }
 
-  const { settings, objects } = await parseSyncPayload(data.payload);
-  await applyPulledData(objects, settings);
+  const { settings, objects, kata } = await parseSyncPayload(data.payload);
+  await applyPulledData(objects, settings, kata);
   await updateLastSyncTime();
   return { ok: true, pulled: true };
 }
@@ -119,7 +120,8 @@ async function handlePush() {
   showSyncStatus('Mempersiapkan data...');
   try {
     const { objects, settings } = await loadData();
-    const payload = await buildSyncPayload(objects, settings);
+    const kataData = await loadKataData();
+    const payload = await buildSyncPayload(objects, settings, kataData);
     const { config } = await parseSyncPayload(payload);
     const jsonSize = new TextEncoder().encode(JSON.stringify(config)).length;
     const res = await fetch(`${API_BASE}/sync`, {
@@ -134,10 +136,11 @@ async function handlePush() {
       showSyncStatus(data.error || 'Push gagal', true);
       return;
     }
+    const kataCount = config.kata?.words?.length || 0;
     appendSyncLog(
       'PUSH',
       config,
-      `${config.objects?.length || 0} objek, JSON ${jsonSize} byte, terkirim ${data.size} byte`
+      `${config.objects?.length || 0} objek, ${kataCount} kata, JSON ${jsonSize} byte, terkirim ${data.size} byte`
     );
     showSyncStatus(`Push berhasil (${data.size} bytes)`);
     await updateLastSyncTime();
@@ -172,9 +175,10 @@ async function handlePull() {
       return;
     }
 
-    const { settings, objects, config } = await parseSyncPayload(data.payload);
-    appendSyncLog('PULL', config, `${objects.length} objek`);
-    await applyPulledData(objects, settings);
+    const { settings, objects, kata, config } = await parseSyncPayload(data.payload);
+    const kataCount = kata?.words?.length || 0;
+    appendSyncLog('PULL', config, `${objects.length} objek, ${kataCount} kata`);
+    await applyPulledData(objects, settings, kata);
     showSyncStatus('Pull berhasil. Memuat ulang halaman...');
     await updateLastSyncTime();
     location.reload();
@@ -185,18 +189,37 @@ async function handlePull() {
   }
 }
 
-async function applyPulledData(importedObjects, settings) {
+async function applyPulledData(importedObjects, settings, kata = null) {
   const existing = await getAllObjects();
   const merged = mergeImportedObjects(existing, importedObjects);
 
+  const storeNames = ['objects', 'settings', 'meta'];
+  // Include kata stores in the transaction only when there is kata data to
+  // apply, so legacy pulls (no kata block) don't touch kata_* stores.
+  if (kata) storeNames.push('kata_words', 'kata_settings');
+
   const db = await initDB();
-  const tx = db.transaction(['objects', 'settings', 'meta'], 'readwrite');
+  const tx = db.transaction(storeNames, 'readwrite');
   tx.objectStore('objects').clear();
   merged.forEach((o) => tx.objectStore('objects').put(o));
 
   const hasSettings = settings && Object.keys(settings).length > 0;
   tx.objectStore('settings').put({ key: 'settings', ...(hasSettings ? settings : {}), _source: hasSettings ? 'user' : 'default' });
   tx.objectStore('meta').put({ key: 'meta', version: '3.0', lastModified: Date.now() });
+
+  if (kata) {
+    const existingKata = await getAllKataWords();
+    const mergedKata = mergeImportedWords(existingKata, kata.words || []);
+    tx.objectStore('kata_words').clear();
+    mergedKata.forEach((w) => tx.objectStore('kata_words').put(w));
+    const hasKataSettings = kata.settings && Object.keys(kata.settings).length > 0;
+    tx.objectStore('kata_settings').put({
+      key: 'kata_settings',
+      ...(hasKataSettings ? kata.settings : {}),
+      _source: hasKataSettings ? 'user' : 'default',
+    });
+  }
+
   await new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);

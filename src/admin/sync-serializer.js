@@ -1,9 +1,11 @@
 // Serialize local custom objects + settings into a JSON-safe compressed string,
 // and restore it back into the same shape expected by importZip.
+// Since ADR 0003, the payload also carries TepuQ Kata custom words + settings
+// in a top-level `kata` block. Older payloads without `kata` still parse.
 
 import { extFromBlob } from '../utils.js';
 
-export async function buildSyncPayload(objects, settings) {
+export async function buildSyncPayload(objects, settings, kataData = null) {
   const customObjects = objects.filter((o) => o.source === 'custom');
 
   const config = {
@@ -31,6 +33,29 @@ export async function buildSyncPayload(objects, settings) {
       }))
     ),
   };
+
+  // Kata block: custom words (starter words excluded) + Kata settings.
+  if (kataData) {
+    const customKataWords = (kataData.words || []).filter((w) => w.source === 'custom');
+    config.kata = {
+      settings: { ...kataData.settings },
+      words: await Promise.all(
+        customKataWords.map(async (w) => ({
+          id: w.id,
+          word: w.word,
+          display: w.display,
+          category: w.category,
+          order: w.order,
+          enabled: w.enabled,
+          audio: w.audioBlob ? `audio/kata/${w.id}.${extFromBlob(w.audioBlob) || 'webm'}` : '',
+          audioData: w.audioBlob ? await blobToBase64(w.audioBlob) : '',
+          useRecording: !!w.useRecording,
+          audioType: w.useRecording && w.audioBlob ? 'recording' : 'tts',
+          source: w.source || 'custom',
+        }))
+      ),
+    };
+  }
 
   const json = JSON.stringify(config);
   const compressed = await compressString(json);
@@ -66,7 +91,30 @@ export async function parseSyncPayload(compressedString) {
     version: config.version || '3.0',
     settings: config.settings || {},
     objects: imported,
+    kata: parseKataBlock(config.kata),
     config,
+  };
+}
+
+// Parse the optional Kata block of a sync payload. Returns null when absent
+// (legacy payloads), so callers can no-op Kata on pull for old data.
+function parseKataBlock(kata) {
+  if (!kata || !Array.isArray(kata.words)) return null;
+  const words = kata.words.map((w) => ({
+    id: w.id,
+    word: (w.word || '').toLowerCase(),
+    display: w.display || w.word,
+    category: w.category || 'default',
+    order: typeof w.order === 'number' ? w.order : 0,
+    enabled: w.enabled !== false,
+    audioBlob: w.audioData ? base64ToBlob(w.audioData, mimeFromExt(w.audio)) : null,
+    useRecording: !!w.useRecording,
+    audioType: w.audioType || 'tts',
+    source: w.source || 'custom',
+  }));
+  return {
+    settings: kata.settings || {},
+    words,
   };
 }
 
@@ -81,6 +129,11 @@ export function configToLogString(config) {
     }
     if (typeof o.audioData === 'string' && o.audioData) {
       o.audioData = `[base64 ${o.audioData.length} chars]`;
+    }
+  }
+  for (const w of copy.kata?.words || []) {
+    if (typeof w.audioData === 'string' && w.audioData) {
+      w.audioData = `[base64 ${w.audioData.length} chars]`;
     }
   }
   return JSON.stringify(copy, null, 2);

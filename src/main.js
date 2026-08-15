@@ -1,8 +1,7 @@
 import './styles/main.css';
 import { initDB, loadData } from './db.js';
 import { initSpeech } from './speech.js';
-import { initGame } from './game/mode-manager.js';
-import { bindGameInput } from './game/input.js';
+import { initGamePicker, showGamePicker, backToGamePicker } from './game-picker.js';
 import { renderAdmin } from './admin/index.js';
 import { loginAndPull, fetchCurrentUser } from './admin/sync.js';
 
@@ -85,10 +84,14 @@ async function bootstrap() {
       await renderAdmin(objects, settings);
     } else {
       document.body.classList.remove('admin');
-      bindGameInput();
       bindMainSyncLogin();
       await applyMainSyncState();
-      await initGame({ objects, settings });
+      initGamePicker({ objects, settings });
+      // The Game Picker is the new top-level menu; start on it.
+      showGamePicker();
+      // "Pilih Game" back button inside the Gambar sub-picker returns here.
+      const backBtn = document.getElementById('btnBackToGames');
+      if (backBtn) backBtn.addEventListener('click', backToGamePicker);
     }
   } finally {
     document.documentElement.classList.remove('bootstrapping');

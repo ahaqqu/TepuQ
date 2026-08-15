@@ -8,10 +8,12 @@ test.describe('Post-deploy smoke tests', () => {
   test('TepuQ Bebas advances on keypress with default HTTP image', async ({ page }) => {
     await Given('the game is opened on the deployed site', async () => {
       await page.goto('/');
-      await expect(page.locator('#modePicker')).toBeVisible();
+      await expect(page.locator('#gamePicker')).toBeVisible();
     });
 
-    await When('the user starts TepuQ Bebas and presses a key', async () => {
+    await When('the user picks TepuQ Gambar, starts Bebas, and presses a key', async () => {
+      await page.locator('#btnGameGambar').click({ force: true });
+      await expect(page.locator('#modePicker')).toBeVisible();
       await page.locator('#btnBebas').click({ force: true });
       await expect(page.locator('#modePicker')).toHaveClass(/hidden/);
       await page.keyboard.press('a');
@@ -31,10 +33,12 @@ test.describe('Post-deploy smoke tests', () => {
   test('TepuQ Target advances on card click with default HTTP image', async ({ page }) => {
     await Given('the game is opened on the deployed site', async () => {
       await page.goto('/');
-      await expect(page.locator('#modePicker')).toBeVisible();
+      await expect(page.locator('#gamePicker')).toBeVisible();
     });
 
-    await When('the user starts TepuQ Target', async () => {
+    await When('the user picks TepuQ Gambar and starts TepuQ Target', async () => {
+      await page.locator('#btnGameGambar').click({ force: true });
+      await expect(page.locator('#modePicker')).toBeVisible();
       await page.locator('#btnTarget').click({ force: true });
       await expect(page.locator('#modePicker')).toHaveClass(/hidden/);
     });
@@ -59,6 +63,27 @@ test.describe('Post-deploy smoke tests', () => {
       const nextSrc = await nextCard.getAttribute('src');
       expect(nextSrc).toMatch(/assets\/starter\/.+\.jpg/);
       expect(nextSrc).not.toMatch(/^blob:/);
+    });
+  });
+
+  test('TepuQ Kata shows slot row and letter tiles from starter words', async ({ page }) => {
+    await Given('the game is opened on the deployed site', async () => {
+      await page.goto('/');
+      await expect(page.locator('#gamePicker')).toBeVisible();
+    });
+
+    await When('the user picks TepuQ Kata', async () => {
+      await page.locator('#btnGameKata').click({ force: true });
+      await expect(page.locator('#kataStage')).toBeVisible();
+    });
+
+    await Then('a word is shown as empty slots with scattered letter tiles', async () => {
+      await expect(page.locator('.kata-slot-row .kata-slot').first()).toBeVisible();
+      const slotCount = await page.locator('.kata-slot-row .kata-slot').count();
+      expect(slotCount).toBeGreaterThanOrEqual(2);
+      await expect(page.locator('.kata-scatter .kata-tile').first()).toBeVisible();
+      const tileCount = await page.locator('.kata-scatter .kata-tile').count();
+      expect(tileCount).toEqual(slotCount);
     });
   });
 });
