@@ -140,3 +140,28 @@ export function getCurrentMode() {
 export function getAppState() {
   return appState;
 }
+
+// Clean teardown when the player leaves TepuQ Gambar entirely (back to the
+// Game Picker). Stops timers, removes visual cards, and clears mode state.
+export function destroyGame() {
+  stopAutoSmash();
+  stopDemoCards();
+  if (fsUnsubscribe) {
+    fsUnsubscribe();
+    fsUnsubscribe = null;
+  }
+  unlockPointer();
+  document.body.classList.remove('cursor-idle');
+
+  const elModePicker = document.getElementById('modePicker');
+  const elCard = document.getElementById('card');
+  if (elCard) elCard.className = 'hidden';
+  document.querySelectorAll('.card-pop').forEach((c) => {
+    revokeCardURL(c);
+    c.remove();
+  });
+  if (elModePicker) elModePicker.classList.add('hidden');
+  setState({ currentMode: null });
+  sessionStorage.removeItem('tepuq-mode');
+  appState = null;
+}

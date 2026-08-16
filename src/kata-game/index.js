@@ -105,8 +105,12 @@ async function handleWordComplete() {
   getKataState().phase = 'CELEBRATING';
   const word = currentWord();
   playSuccessChime();
-  if (word) speakWord(word, speechSettings);
   fireConfetti();
+  // Speak the completed word *after* the letter TTS finishes so the toddler
+  // hears the last character first, then the whole word.
+  if (word) {
+    setTimeout(() => speakWord(word, speechSettings), 700);
+  }
   // Persist progress (completed word id + streak).
   progress.completedWords = [...(progress.completedWords || []), word.id];
   progress.currentStreak = (progress.currentStreak || 0) + 1;

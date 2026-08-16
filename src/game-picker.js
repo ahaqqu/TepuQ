@@ -3,12 +3,13 @@
 // TepuQ Gambar then shows its existing Bebas/Target sub-picker (mode-manager.js).
 // See ADR 0002.
 
-import { initGame } from './gambar-game/mode-manager.js';
-import { bindGameInput } from './gambar-game/input.js';
+import { initGame, destroyGame } from './gambar-game/mode-manager.js';
+import { bindGameInput, unbindGameInput } from './gambar-game/input.js';
 import { initKata, destroyKata } from './kata-game/index.js';
 import { loadKataData } from './db.js';
 
 let currentGame = null; // 'gambar' | 'kata' | null
+let gambarInputCleanup = null;
 
 export function initGamePicker(appState) {
   const picker = document.getElementById('gamePicker');
@@ -39,7 +40,7 @@ async function startGambar(appState) {
   if (picker) picker.classList.add('hidden');
   currentGame = 'gambar';
   // Gambar owns its own input binding and mode picker.
-  bindGameInput();
+  gambarInputCleanup = bindGameInput();
   await initGame(appState);
 }
 
@@ -58,7 +59,11 @@ function destroyCurrentGame() {
   if (currentGame === 'kata') {
     destroyKata();
   }
-  // Gambar teardown is handled by showModePicker() in mode-manager.js.
+  if (currentGame === 'gambar') {
+    unbindGameInput();
+    destroyGame();
+    gambarInputCleanup = null;
+  }
 }
 
 // Exposed so a "back to games" gesture can return here from inside a game.

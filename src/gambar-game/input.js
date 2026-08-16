@@ -1,24 +1,51 @@
+// Touch + keyboard/pointer input for TepuQ Gambar.
+// bindGameInput() attaches the handlers and returns a cleanup function that
+// must be called when leaving the game so the listeners do not keep firing on
+// the Game Picker.
+
 import { handleSuccess } from './logic.js';
 import { hintCard } from './effects.js';
 import { exitFullscreen, unlockPointer } from './fullscreen.js';
 import { showModePicker, getCurrentMode, getAppState } from './mode-manager.js';
 
+// Keep handler references at module scope so unbindGameInput can remove them.
+let cleanup = null;
+
 export function bindGameInput() {
+  if (cleanup) cleanup();
+
   document.addEventListener('keydown', onKeyDown, { passive: false });
   document.addEventListener('pointerdown', onPointerDown, { passive: false });
   document.addEventListener('touchstart', onTouchStart, { passive: false });
   document.addEventListener('touchmove', onTouchMove, { passive: false });
   document.addEventListener('touchend', onTouchEnd, { passive: false });
   document.addEventListener('wheel', onWheel, { passive: false });
-  document.addEventListener('contextmenu', (e) => {
-    const t = e.target;
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
-    e.preventDefault();
-  });
-  document.addEventListener('dragstart', (e) => e.preventDefault());
+  document.addEventListener('contextmenu', onContextMenu);
+  document.addEventListener('dragstart', onDragStart);
   window.addEventListener('beforeunload', onBeforeUnload);
-  bindBackTrigger();
-  initCursorAutoHide();
+  const backCleanup = bindBackTrigger();
+  const cursorCleanup = initCursorAutoHide();
+
+  cleanup = () => {
+    document.removeEventListener('keydown', onKeyDown, { passive: false });
+    document.removeEventListener('pointerdown', onPointerDown, { passive: false });
+    document.removeEventListener('touchstart', onTouchStart, { passive: false });
+    document.removeEventListener('touchmove', onTouchMove, { passive: false });
+    document.removeEventListener('touchend', onTouchEnd, { passive: false });
+    document.removeEventListener('wheel', onWheel, { passive: false });
+    document.removeEventListener('contextmenu', onContextMenu);
+    document.removeEventListener('dragstart', onDragStart);
+    window.removeEventListener('beforeunload', onBeforeUnload);
+    backCleanup();
+    cursorCleanup();
+    cleanup = null;
+  };
+
+  return cleanup;
+}
+
+export function unbindGameInput() {
+  cleanup?.();
 }
 
 const CURSOR_IDLE_MS = 3000;
@@ -34,6 +61,14 @@ function initCursorAutoHide() {
   document.addEventListener('pointermove', wake, { passive: true });
   document.addEventListener('pointerdown', wake, { passive: true });
   document.addEventListener('keydown', wake, { passive: true });
+
+  return () => {
+    document.removeEventListener('pointermove', wake, { passive: true });
+    document.removeEventListener('pointerdown', wake, { passive: true });
+    document.removeEventListener('keydown', wake, { passive: true });
+    if (cursorHideTimer) clearTimeout(cursorHideTimer);
+    cursorHideTimer = null;
+  };
 }
 
 function onKeyDown(e) {
@@ -127,6 +162,16 @@ function onBeforeUnload(e) {
     e.preventDefault();
     e.returnValue = '';
   }
+}
+
+function onContextMenu(e) {
+  const t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+  e.preventDefault();
+}
+
+function onDragStart(e) {
+  e.preventDefault();
 }
 
 function onPointerDown(e) {
@@ -236,6 +281,13 @@ function bindBackTrigger() {
     trigger.classList.remove('back-active');
   };
 
+  const keyHandler = (e) => {
+    if (e.key === 'm' || e.key === 'M') {
+      e.preventDefault();
+      showHint();
+    }
+  };
+
   trigger.addEventListener('pointerdown', start, { passive: false });
   trigger.addEventListener('pointerup', cancel);
   trigger.addEventListener('pointerleave', cancel);
@@ -243,14 +295,24 @@ function bindBackTrigger() {
   trigger.addEventListener('touchstart', start, { passive: false });
   trigger.addEventListener('touchend', cancel);
   trigger.addEventListener('touchcancel', cancel);
-  trigger.addEventListener('contextmenu', (e) => e.preventDefault());
+  trigger.addEventListener('contextmenu', onContextMenu);
+  document.addEventListener('keydown', keyHandler);
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'm' || e.key === 'M') {
-      e.preventDefault();
-      showHint();
-    }
-  });
+  return () => {
+    trigger.removeEventListener('pointerdown', start, { passive: false });
+    trigger.removeEventListener('pointerup', cancel);
+    trigger.removeEventListener('pointerleave', cancel);
+    trigger.removeEventListener('pointercancel', cancel);
+    trigger.removeEventListener('touchstart', start, { passive: false });
+    trigger.removeEventListener('touchend', cancel);
+    trigger.removeEventListener('touchcancel', cancel);
+    trigger.removeEventListener('contextmenu', onContextMenu);
+    document.removeEventListener('keydown', keyHandler);
+    if (timer) clearTimeout(timer);
+    if (hintTimer) clearTimeout(hintTimer);
+    if (feedbackTimer) clearTimeout(feedbackTimer);
+    if (visualTimer) clearTimeout(visualTimer);
+  };
 }
 
 let blockedToastTimer = null;
@@ -266,5 +328,3 @@ function showBlockedToast(kind) {
     toast.classList.remove('show', 'error');
   }, 1600);
 }
-
-

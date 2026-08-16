@@ -10,7 +10,7 @@ async function setShortSession(page) {
   await page.goto('/?mode=admin');
   await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
   await page.locator('#editorTabs .tab[data-editortab="kata-settings"]').click({ force: true });
-  await page.locator('#setKataSessionLength').fill('5');
+  await page.locator('#setKataSessionLength').fill('3');
   await page.locator('#btnSaveKataSettings').click({ force: true });
   await expect(page.locator('text=Pengaturan Kata disimpan')).toBeVisible();
 }
@@ -204,13 +204,13 @@ test.describe('TepuQ Kata', () => {
   });
 
   test('completing the session length shows the win screen', async ({ page }) => {
-    await Given('Kata session length is set to 5 words', async () => {
+    await Given('Kata session length is set to 3 words', async () => {
       await setShortSession(page);
     });
 
-    await When('the child starts Kata and completes 5 words', async () => {
+    await When('the child starts Kata and completes 3 words', async () => {
       await startKata(page);
-      for (let w = 0; w < 5; w++) {
+      for (let w = 0; w < 3; w++) {
         if (w > 0) {
           // Wait for the auto-advance to clear the previous word's filled slots
           // before reading the new word's slots/tiles (2s auto-advance delay).

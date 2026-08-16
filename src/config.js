@@ -73,7 +73,7 @@ export const KATA_DEFAULT_SETTINGS = {
   letterSize: 110,        // px, letter tile size (drives scatter math)
   slotSize: 120,          // px, slot size
   snapDistance: 80,       // px, magnetic-snap threshold from slot center
-  sessionLength: 10,      // words per session before the Win Screen
+  sessionLength: 3,       // words per session before the Win Screen
   showDistractors: false, // MVP: only correct letters are scattered
   enableLetterSpeech: true, // speak the letter ("a!") on a correct snap
   language: 'id-ID',      // TTS locale for Kata (matches Gambar's id-ID)
