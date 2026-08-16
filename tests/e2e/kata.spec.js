@@ -234,4 +234,85 @@ test.describe('TepuQ Kata', () => {
       await expect(page.locator('.kata-win h2')).toHaveText('Hebat!');
     });
   });
+
+  test('Main Lagi continues the rotation with words not shown yet', async ({ page }) => {
+    let firstSessionIds = [];
+
+    await Given('a 3-word session has just been won', async () => {
+      await setShortSession(page);
+      await startKata(page);
+      await page.waitForFunction(() => window.__kataState && window.__kataState.words.length > 0);
+      firstSessionIds = await page.evaluate(() => window.__kataState.words.map((w) => w.id));
+      expect(firstSessionIds).toHaveLength(3);
+      for (let w = 0; w < 3; w++) {
+        if (w > 0) {
+          await expect(page.locator('.kata-slot.filled')).toHaveCount(0, { timeout: 5000 });
+        }
+        await expect(page.locator('.kata-scatter .kata-tile').first()).toBeVisible();
+        resetUsedTiles();
+        const slotCount = await page.locator('.kata-slot-row .kata-slot').count();
+        for (let i = 0; i < slotCount; i++) {
+          await dragTileToMatchingSlot(page);
+          await expect(page.locator('.kata-slot.filled').nth(i)).toBeVisible();
+        }
+      }
+      await expect(page.locator('.kata-win')).toBeVisible({ timeout: 8000 });
+    });
+
+    await When('the child taps Main Lagi', async () => {
+      await page.locator('#kataMainLagi').click({ force: true });
+    });
+
+    await Then('the next session has none of the words from the finished session', async () => {
+      await expect(page.locator('.kata-scatter .kata-tile').first()).toBeVisible();
+      const secondSessionIds = await page.evaluate(() => window.__kataState.words.map((w) => w.id));
+      expect(secondSessionIds).toHaveLength(3);
+      expect(secondSessionIds.filter((id) => firstSessionIds.includes(id))).toHaveLength(0);
+    });
+  });
+
+  test('an unfinished tile resting over the targets stays free to move', async ({ page }) => {
+    let droppedIndex = -1;
+
+    await Given('TepuQ Kata is started', async () => {
+      await startKata(page);
+    });
+
+    await When('the child drops a letter onto a target with a different letter', async () => {
+      await page.locator('.kata-tile').first().waitFor({ state: 'visible' });
+      const slots = await page.locator('.kata-slot-row .kata-slot').all();
+      expect(slots.length).toBeGreaterThan(1);
+      const slotLetters = await Promise.all(slots.map((s) => s.getAttribute('data-letter')));
+      const tiles = await page.locator('.kata-scatter .kata-tile').all();
+      const tileLetters = await Promise.all(tiles.map((t) => t.getAttribute('data-letter')));
+
+      // A tile whose letter does not match the first target, dropped dead on it.
+      // Its own targets are at least one full slot spacing away, so it free
+      // drops and rests exactly on top of the target row.
+      droppedIndex = tileLetters.findIndex((ltr) => ltr !== slotLetters[0]);
+      expect(droppedIndex).toBeGreaterThanOrEqual(0);
+      const tileBox = await tiles[droppedIndex].boundingBox();
+      const slot0Box = await slots[0].boundingBox();
+      await page.mouse.move(tileBox.x + tileBox.width / 2, tileBox.y + tileBox.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(slot0Box.x + slot0Box.width / 2, slot0Box.y + slot0Box.height / 2, { steps: 10 });
+      await page.mouse.up();
+      await expect(tiles[droppedIndex]).not.toHaveClass(/placed/);
+      // The dropped tile is now resting in the target row (bottom half of the screen).
+      const resting = await tiles[droppedIndex].boundingBox();
+      expect(resting.y).toBeGreaterThan(300);
+    });
+
+    await Then('the child can grab it again right over the targets and move it away', async () => {
+      const dropped = page.locator('.kata-scatter .kata-tile').nth(droppedIndex);
+      const resting = await dropped.boundingBox();
+      await page.mouse.move(resting.x + resting.width / 2, resting.y + resting.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(resting.x + resting.width / 2, resting.y - 90, { steps: 8 });
+      await page.mouse.up();
+      const moved = await dropped.boundingBox();
+      expect(Math.abs(moved.y - resting.y)).toBeGreaterThan(20);
+      await expect(dropped).not.toHaveClass(/placed/);
+    });
+  });
 });

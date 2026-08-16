@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  resetKataState, getKataState, prepareSession, loadCurrentWord,
-  placeTile, isWordComplete, advanceWord, currentWord,
+  resetKataState, resetExhaustedWords, getKataState, prepareSession,
+  loadCurrentWord, placeTile, isWordComplete, advanceWord, currentWord,
 } from '@/kata-game/game-state.js';
 
 const words = [
@@ -13,7 +13,10 @@ const settings = { sessionLength: 10 };
 
 const seqRng = (() => { let n = 0; return () => { n += 0.01; return n % 1; }; })();
 
-beforeEach(() => resetKataState());
+beforeEach(() => {
+  resetKataState();
+  resetExhaustedWords();
+});
 
 describe('prepareSession', () => {
   it('selects only enabled words', () => {
@@ -32,6 +35,59 @@ describe('prepareSession', () => {
   it('enters VICTORY when there are no enabled words', () => {
     prepareSession([{ id: 'x', word: 'x', enabled: false }], settings, seqRng);
     expect(getKataState().phase).toBe('VICTORY');
+  });
+
+  it('stops the session early instead of repeating when the rotation runs short', () => {
+    // 2 enabled words with a session length of 10: the session shows both
+    // words once and ends — no repeats before the list is exhausted.
+    prepareSession(words, settings, seqRng);
+    expect(getKataState().words.map((w) => w.id).sort()).toEqual(['kata_001', 'kata_002']);
+  });
+});
+
+describe('word rotation (putar semua)', () => {
+  const four = [
+    { id: 'a', word: 'a', enabled: true },
+    { id: 'b', word: 'b', enabled: true },
+    { id: 'c', word: 'c', enabled: true },
+    { id: 'd', word: 'd', enabled: true },
+  ];
+
+  it('shows every enabled word exactly once before any word repeats', () => {
+    prepareSession(four, { sessionLength: 2 }, seqRng);
+    const first = getKataState().words.map((w) => w.id);
+    prepareSession(four, { sessionLength: 2 }, seqRng);
+    const second = getKataState().words.map((w) => w.id);
+
+    expect(first).toHaveLength(2);
+    expect(second).toHaveLength(2);
+    // No repeats across the two sessions: together they cover the whole list.
+    expect(first.filter((id) => second.includes(id))).toHaveLength(0);
+    expect(new Set([...first, ...second]).size).toBe(4);
+  });
+
+  it('never repeats a word within a single session', () => {
+    prepareSession(four, { sessionLength: 4 }, seqRng);
+    const ids = getKataState().words.map((w) => w.id);
+    expect(new Set(ids).size).toBe(4);
+  });
+
+  it('ends the rotation short and starts a new one once the list is exhausted', () => {
+    prepareSession(four, { sessionLength: 2 }, seqRng); // 2 of 4 shown
+    prepareSession(four, { sessionLength: 2 }, seqRng); // last 2 shown -> list exhausted
+    prepareSession(four, { sessionLength: 2 }, seqRng); // new rotation: repeats allowed
+    const ids = getKataState().words.map((w) => w.id);
+    expect(ids).toHaveLength(2);
+    expect(ids.every((id) => ['a', 'b', 'c', 'd'].includes(id))).toBe(true);
+  });
+
+  it('restarts the rotation cleanly when resetExhaustedWords is called', () => {
+    prepareSession(four, { sessionLength: 4 }, seqRng); // whole list exhausted
+    resetExhaustedWords();
+    prepareSession(four, { sessionLength: 4 }, seqRng);
+    // A fresh rotation is a new random order, but still one of each word.
+    const ids = getKataState().words.map((w) => w.id);
+    expect(new Set(ids).size).toBe(4);
   });
 });
 

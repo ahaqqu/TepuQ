@@ -7,6 +7,7 @@
 import { buildSlots } from './slots.js';
 
 let state = null;
+let exhaustedIds = new Set(); // word ids already shown in this lifetime of the picker
 
 export function resetKataState() {
   state = {
@@ -20,6 +21,10 @@ export function resetKataState() {
   };
 }
 
+export function resetExhaustedWords() {
+  exhaustedIds.clear();
+}
+
 export function getKataState() {
   return state;
 }
@@ -30,16 +35,39 @@ export function setKataState(patch) {
   return state;
 }
 
-// Prepare the session: pick enabled words, shuffle, reset progress counters.
+// Prepare the session: pick enabled words in random order with no repeats
+// until every enabled word has been shown once ("putar semua"), then start a
+// new rotation. The rotation survives word celebrations and session restarts;
+// it resets only when the list is exhausted or when the game is started again
+// (initKata).
 export function prepareSession(words, settings, rng = Math.random) {
   const enabled = words.filter((w) => w.enabled);
-  const shuffled = shuffle(enabled, rng);
   const sessionLength = settings?.sessionLength || 10;
-  state.words = shuffled.slice(0, Math.min(sessionLength, shuffled.length));
+  state.words = pickSessionWords(enabled, sessionLength, rng);
   state.index = 0;
   state.completed = 0;
   state.phase = state.words.length > 0 ? 'PLAYING' : 'VICTORY';
   return state;
+}
+
+function pickSessionWords(enabled, sessionLength, rng) {
+  if (enabled.length === 0) return [];
+
+  // Words not yet shown in the current rotation cycle ("putar semua").
+  let fresh = enabled.filter((w) => !exhaustedIds.has(w.id));
+  if (fresh.length === 0) {
+    // Every word has been shown once: start a new rotation so words may repeat.
+    exhaustedIds.clear();
+    fresh = enabled;
+  }
+
+  // Random order, no repeats until every enabled word has been shown. If the
+  // session would need more words than remain in the cycle, the session simply
+  // ends early (the win screen shows) and the next session starts the new
+  // rotation — repeats are allowed only after the whole list was exhausted.
+  const selected = shuffle(fresh, rng).slice(0, Math.min(sessionLength, fresh.length));
+  selected.forEach((w) => exhaustedIds.add(w.id));
+  return selected;
 }
 
 // Load the current word: build its slots and tiles. Slot centers are filled in

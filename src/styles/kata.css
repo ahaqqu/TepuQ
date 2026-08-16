@@ -84,12 +84,15 @@
 .kata-back-btn:hover { background: #fff; }
 
 /* ---- Bottom area: photo + slot row (targets at the bottom) --------------- */
+/* The targets are display-only: touches pass through to any letter tile above
+   them, so a target can never block selecting an unfinished tile. */
 .kata-bottom {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2vmin;
   padding-bottom: 2vmin;
+  pointer-events: none;
 }
 
 .kata-photo {
@@ -179,6 +182,7 @@
 /* ---- Letter tiles (thick colored letter, no square) --------------------- */
 .kata-tile {
   position: absolute;
+  z-index: 27; /* above the target area, below the back button (30) and overlays */
   width: var(--kata-tile-size);
   height: var(--kata-tile-size);
   background: transparent;

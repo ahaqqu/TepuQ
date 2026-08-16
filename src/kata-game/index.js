@@ -3,8 +3,8 @@
 // Exposes initKata()/destroyKata() to the app router (src/game-picker.js).
 
 import {
-  resetKataState, getKataState, prepareSession, loadCurrentWord,
-  placeTile, isWordComplete, advanceWord, currentWord,
+  resetKataState, resetExhaustedWords, getKataState, prepareSession,
+  loadCurrentWord, placeTile, isWordComplete, advanceWord, currentWord,
 } from './game-state.js';
 import {
   initRenderer, renderWord, fireConfetti, showWinScreen, showEmptyState,
@@ -17,6 +17,7 @@ import { putKataProgress, getKataProgress } from '../db.js';
 import { fetchCurrentUser } from '../admin/sync.js';
 
 let stage = null;
+let allWords = null;
 let kataSettings = null;
 let speechSettings = null;
 let progress = null;
@@ -31,6 +32,8 @@ export async function initKata(words, settings, gambarSpeechSettings) {
   progress = await getKataProgress();
 
   resetKataState();
+  resetExhaustedWords(); // fresh "putar semua" rotation every time Kata starts
+  allWords = words;
   setKataStateRef(getKataState());
   initRenderer(stage, {
     onSnap: handleSnap,
@@ -130,7 +133,6 @@ async function handleWordComplete() {
 }
 
 async function handleVictory() {
-  const sessionWords = getKataState().words;
   getKataState().phase = 'VICTORY';
   // Celebration effects must not block or crash the win screen.
   try { fireConfetti(); } catch {}
@@ -141,10 +143,12 @@ async function handleVictory() {
     speak(text, speechSettings);
   } catch {}
   showWinScreen(() => {
-    // Main Lagi: restart the session with the same words reshuffled.
+    // Main Lagi: continue the rotation with the FULL word list. The victory
+    // celebration must not reset it — words keep coming in random order with
+    // no repeats until every enabled word has been shown.
     resetKataState();
     setKataStateRef(getKataState());
-    prepareSession(sessionWords, kataSettings);
+    prepareSession(allWords || [], kataSettings);
     startCurrentWord();
   });
   // Save progress in the background so the win screen appears immediately.
