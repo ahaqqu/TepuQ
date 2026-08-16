@@ -375,7 +375,7 @@ test.describe('TepuQ Kata', () => {
     });
   });
 
-  test('completing the session length shows the win screen', async ({ page }) => {
+  test('completing the session length celebrates and continues without a blocking screen', async ({ page }) => {
     await Given('Kata session length is set to 3 words', async () => {
       await setShortSession(page);
     });
@@ -398,17 +398,26 @@ test.describe('TepuQ Kata', () => {
       }
     });
 
-    await Then('the win screen with "Hebat!" appears', async () => {
-      await expect(page.locator('.kata-win')).toBeVisible({ timeout: 8000 });
-      await expect(page.locator('.kata-win h2')).toHaveText('Hebat!');
+    await Then('no win-screen popup appears and a new session starts automatically', async () => {
+      // The victory celebration (confetti + TTS + fanfare) must never block the
+      // game: the win-screen overlay is gone and the next session starts on
+      // its own. The old session's filled slots clear only on the restart.
+      await expect(page.locator('.kata-win')).toHaveCount(0);
+      await expect(page.locator('.kata-slot.filled')).toHaveCount(0, { timeout: 8000 });
+      await expect(page.locator('.kata-scatter .kata-tile').first()).toBeVisible();
+      const newWordId = await page.evaluate(() => window.__kataState?.words[0]?.id);
+      expect(newWordId).toBeTruthy();
     });
   });
 
-  test('Main Lagi continues the rotation with words not shown yet', async ({ page }) => {
+  test('the next session starts automatically with words not shown yet', async ({ page }) => {
     let firstSessionIds = [];
 
-    await Given('a 3-word session has just been won', async () => {
+    await Given('Kata session length is set to 3 words', async () => {
       await setShortSession(page);
+    });
+
+    await When('the child completes the 3-word session', async () => {
       await startKata(page);
       await page.waitForFunction(() => window.__kataState && window.__kataState.words.length > 0);
       firstSessionIds = await page.evaluate(() => window.__kataState.words.map((w) => w.id));
@@ -425,14 +434,12 @@ test.describe('TepuQ Kata', () => {
           await expect(page.locator('.kata-slot.filled').nth(i)).toBeVisible();
         }
       }
-      await expect(page.locator('.kata-win')).toBeVisible({ timeout: 8000 });
     });
 
-    await When('the child taps Main Lagi', async () => {
-      await page.locator('#kataMainLagi').click({ force: true });
-    });
-
-    await Then('the next session has none of the words from the finished session', async () => {
+    await Then('a new session with none of the finished session\'s words begins on its own', async () => {
+      // No "Main Lagi" button anymore: the rotation restarts automatically
+      // with the FULL word list after the victory celebration.
+      await expect(page.locator('.kata-slot.filled')).toHaveCount(0, { timeout: 8000 });
       await expect(page.locator('.kata-scatter .kata-tile').first()).toBeVisible();
       const secondSessionIds = await page.evaluate(() => window.__kataState.words.map((w) => w.id));
       expect(secondSessionIds).toHaveLength(3);
@@ -570,7 +577,10 @@ test.describe('TepuQ Kata', () => {
           await expect(page.locator('.kata-slot.filled').nth(i)).toBeVisible();
         }
       }
-      await expect(page.locator('.kata-win')).toBeVisible({ timeout: 8000 });
+      // The victory celebration is non-blocking: the next session's fresh,
+      // unfilled slots prove the game kept going without a win-screen popup.
+      await expect(page.locator('.kata-slot.filled')).toHaveCount(0, { timeout: 8000 });
+      await expect(page.locator('.kata-scatter .kata-tile').first()).toBeVisible();
     });
 
     await Then('the TTS congratulates the child', async () => {
@@ -583,7 +593,8 @@ test.describe('TepuQ Kata', () => {
     await Then('the success chime plays for each word and the victory fanfare for the session win', async () => {
       // Picking Kata on the menu plays the select sound first, then one
       // success-chime per completed word, then exactly one victory fanfare
-      // when the win screen appears. All are bundled Mixkit SFX played via
+      // when the session ends (no win-screen popup anymore — the celebration
+      // plays over the continuing game). All are bundled Mixkit SFX played via
       // <audio>, so the recorded play() order proves the celebration sequence.
       await expect.poll(
         () => page.evaluate(() => window.__plays.map((src) => src.split('/').pop())),

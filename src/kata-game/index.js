@@ -7,16 +7,17 @@ import {
   loadCurrentWord, placeTile, isWordComplete, advanceWord, currentWord,
 } from './game-state.js';
 import {
-  initRenderer, renderWord, fireConfetti, showWinScreen, showEmptyState,
+  initRenderer, renderWord, showEmptyState,
   clearStage, setKataStateRef, handleTypedLetter,
 } from './renderer.js';
 import {
-  initKataAudio, speakLetter, speakWord, playSuccessChime, playVictoryChime,
+  initKataAudio, speakLetter, speakWord,
   playEncourageSfx,
 } from './audio.js';
+import { playSuccessChime, playVictoryChime, speak } from '../speech.js';
+import { fireConfetti } from '../confetti.js';
 import { putKataProgress, getKataProgress } from '../db.js';
 import { fetchCurrentUser } from '../sync-client.js';
-import { speak } from '../speech.js';
 
 let stage = null;
 let allWords = null;
@@ -141,7 +142,8 @@ async function handleWordComplete() {
 
 async function handleVictory() {
   getKataState().phase = 'VICTORY';
-  // Celebration effects must not block or crash the win screen.
+  // Celebration is fully non-blocking: confetti waves, the congratulations TTS
+  // and the fanfare play over the stage while the game keeps running.
   try { fireConfetti(); } catch {}
   try {
     const user = await fetchCurrentUser();
@@ -152,20 +154,31 @@ async function handleVictory() {
   } catch {
     try { playVictoryChime(); } catch {}
   }
-  showWinScreen(() => {
-    // Main Lagi: continue the rotation with the FULL word list. The victory
-    // celebration must not reset it — words keep coming in random order with
-    // no repeats until every enabled word has been shown.
-    resetKataState();
-    setKataStateRef(getKataState());
-    prepareSession(allWords || [], kataSettings);
-    startCurrentWord();
-  });
-  // Save progress in the background so the win screen appears immediately.
+  // Second confetti wave for a richer celebration.
+  setTimeout(() => {
+    if (destroyed) return;
+    try { fireConfetti(); } catch {}
+  }, 900);
+  // Save progress in the background.
   progress.totalSessions = (progress.totalSessions || 0) + 1;
   progress.currentStreak = 0;
   progress.completedWords = [];
   putKataProgress(progress).catch(() => {});
+
+  // No win-screen popup: after the celebration beat the game starts a fresh
+  // session with the FULL word list on its own (what "Main Lagi" used to do).
+  setTimeout(() => {
+    if (destroyed) return;
+    const enabled = (allWords || []).filter((w) => w.enabled);
+    if (enabled.length === 0) {
+      showEmptyState();
+      return;
+    }
+    resetKataState();
+    setKataStateRef(getKataState());
+    prepareSession(allWords || [], kataSettings);
+    startCurrentWord();
+  }, 2600);
 }
 
 export function destroyKata() {

@@ -111,6 +111,7 @@ function showModePickerSafe() {
 export async function startMode(mode) {
   if (!appState) return;
   await unlockAudioContext();
+  playSfx('assets/sfx/select-game.mp3');
   unlockSpeechForGameplay();
   resetGameState();
   setState({ currentMode: mode });

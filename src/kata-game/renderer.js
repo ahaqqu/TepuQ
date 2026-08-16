@@ -5,7 +5,6 @@
 
 import { scatterLetters } from './slots.js';
 import { bindDrag, snapToSlot } from './drag-engine.js';
-import { playSfx } from '../speech.js';
 
 // A fun, bright palette so each letter gets its own color — more engaging for a
 // toddler than a single color. The color is assigned by letter so a tile and
@@ -318,67 +317,6 @@ function animateTileToSlot(tileEl, slotCenter, durationMs) {
   requestAnimationFrame(() => {
     tileEl.style.left = `${targetLeft}px`;
     tileEl.style.top = `${targetTop}px`;
-  });
-}
-
-// Confetti burst (canvas-based, no external library). Attached to #kataConfetti.
-export function fireConfetti() {
-  const canvas = document.getElementById('kataConfetti');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  canvas.width = canvas.clientWidth;
-  canvas.height = canvas.clientHeight;
-  const colors = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#a855f7', '#ec4899'];
-  const pieces = Array.from({ length: 80 }, () => ({
-    x: canvas.width / 2,
-    y: canvas.height / 2,
-    vx: (Math.random() - 0.5) * 12,
-    vy: (Math.random() - 1) * 10,
-    size: 6 + Math.random() * 6,
-    color: colors[Math.floor(Math.random() * colors.length)],
-    rot: Math.random() * Math.PI,
-    vr: (Math.random() - 0.5) * 0.3,
-  }));
-  let frame = 0;
-  const maxFrames = 90;
-  const draw = () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    pieces.forEach((p) => {
-      p.vy += 0.3;
-      p.x += p.vx;
-      p.y += p.vy;
-      p.rot += p.vr;
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(p.rot);
-      ctx.fillStyle = p.color;
-      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-      ctx.restore();
-    });
-    frame++;
-    if (frame < maxFrames) requestAnimationFrame(draw);
-    else ctx.clearRect(0, 0, canvas.width, canvas.height);
-  };
-  draw();
-}
-
-// Win screen overlay.
-export function showWinScreen(onMainLagi) {
-  if (!stage) return;
-  const overlay = document.createElement('div');
-  overlay.className = 'kata-win';
-  overlay.innerHTML = `
-    <div class="kata-win__content">
-      <div class="kata-win__emoji">🎉</div>
-      <h2>Hebat!</h2>
-      <button class="kata-win__btn" id="kataMainLagi">Main Lagi</button>
-    </div>
-  `;
-  stage.appendChild(overlay);
-  overlay.querySelector('#kataMainLagi').addEventListener('click', () => {
-    playSfx('assets/sfx/select-game.mp3');
-    overlay.remove();
-    onMainLagi?.();
   });
 }
 

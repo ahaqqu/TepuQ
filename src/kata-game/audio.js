@@ -31,34 +31,3 @@ export function speakWord(wordRecord, speechSettings) {
     speak(wordRecord.word, speechSettings);
   }
 }
-
-let successAudio = null;
-let victoryAudio = null;
-
-// Short pleasant bell when a word is completed.
-export function playSuccessChime() {
-  try {
-    if (!successAudio) {
-      successAudio = new Audio('assets/sfx/success-chime.mp3');
-      successAudio.volume = 0.55;
-    }
-    successAudio.currentTime = 0;
-    successAudio.play().catch(() => {});
-  } catch {
-    // Audio is decorative; never let it break the celebration flow.
-  }
-}
-
-// Bigger celebratory fanfare when the child finishes the whole session.
-export function playVictoryChime() {
-  try {
-    if (!victoryAudio) {
-      victoryAudio = new Audio('assets/sfx/victory-fanfare.mp3');
-      victoryAudio.volume = 0.20;
-    }
-    victoryAudio.currentTime = 0;
-    victoryAudio.play().catch(() => {});
-  } catch {
-    // Audio is decorative; never let it break the win screen.
-  }
-}
