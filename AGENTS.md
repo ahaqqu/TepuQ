@@ -32,7 +32,7 @@ TepuQ/
 ├── index.html              # Vite shell (Game Picker + Gambar + Kata + Admin)
 ├── functions/              # Cloudflare Pages Functions
 │   └── api/                # /api/login, /api/logout, /api/me, /api/sync
-├── scripts/                # helper scripts (e.g. dynamic E2E port runner)
+├── scripts/                # helper scripts (e.g. dynamic E2E port runner run-e2e.js)
 ├── src/
 │   ├── main.js             # bootstrap (admin vs game; game -> Game Picker)
 │   ├── game-picker.js      # top-level Game Picker (TepuQ Gambar / TepuQ Kata)
@@ -41,13 +41,17 @@ TepuQ/
 │   ├── utils.js            # helpers
 │   ├── speech.js           # TTS + recorded audio (shared by both games)
 │   ├── gambar-game/        # TepuQ Gambar game logic modules (Gambar-only)
+│   │   ├── index.js        # Gambar entry point
 │   │   ├── game-state.js   # centralized mutable game state
 │   │   ├── mode-manager.js # Gambar sub-picker (Bebas/Target), startMode
 │   │   ├── demo.js         # background demo cards on the picker
 │   │   ├── input.js        # keyboard/touch/pointer input handlers
 │   │   ├── logic.js        # core game rules and card advancement
 │   │   ├── card.js         # card rendering and object URL lifecycle
-│   │   └── ...
+│   │   ├── animations.js   # card animations
+│   │   ├── background.js   # background styling per settings
+│   │   ├── effects.js      # particle/burst effects
+│   │   └── fullscreen.js   # fullscreen toggling
 │   ├── kata-game/          # TepuQ Kata (spelling game) modules (Kata-only)
 │   │   ├── index.js        # game loop + state machine
 │   │   ├── game-state.js   # Kata state machine (LOADING/PLAYING/VICTORY)
@@ -60,8 +64,8 @@ TepuQ/
 │   │   ├── editor.js       # shared object editor (incl. "Aktif di TepuQ Kata" toggle)
 │   │   ├── object-list.js  # shared object list with Kata badge + drag reorder
 │   │   ├── import-export.js# shared ZIP export/import (objects carry kataEnabled)
-│   │   ├── sync.js         # cloud sync (objects + settings only)
-│   │   ├── sync-serializer.js
+│   │   ├── sync.js         # cloud sync UI (login/push/pull/logout)
+│   │   ├── sync-serializer.js # sync payload build/parse (gzip -> base64)
 │   │   └── merge-objects.js # shared import/sync merge strategy
 │   ├── gambar-admin/       # Gambar-specific admin tab ("Pengaturan Game")
 │   │   ├── index.js        # tab entry point
@@ -72,17 +76,26 @@ TepuQ/
 │   └── styles/             # CSS: base, gameplay, theme, admin, kata
 ├── public/
 │   ├── assets/             # bundled CC0 starter images + audio
+│   ├── icons/              # PWA icons
+│   ├── manifest.json       # web app manifest
 │   └── vendor/             # third-party JS libraries
 ├── tests/
 │   ├── unit/               # Vitest tests
 │   └── e2e/                # Playwright tests
+├── docs/
+│   ├── architecture.md     # architecture, tech stack, structure, sync mechanism
+│   ├── adr/                # Architecture Decision Records (0001-0005)
+│   └── assets-sources.md   # starter media provenance + licenses
 ├── AGENTS.md               # this file
+├── CONTEXT.md              # domain glossary (English)
 ├── package.json            # Bun scripts
 ├── vite.config.js
 ├── vitest.config.js
 ├── playwright.config.js
 ├── wrangler.jsonc          # Cloudflare Pages config
-└── .github/workflows/deploy.yml
+└── .github/workflows/
+    ├── deploy.yml          # unit tests -> build -> KV provision -> Pages deploy
+    └── deploy-smoke.yml    # Playwright smoke against the live pages.dev
 ```
 
 ---
@@ -122,7 +135,7 @@ After any change, verify at least these default-setting flows:
 7. Open `http://localhost:5173?mode=admin` → see the object list (shared library) with the Objek/Sinkron tabs and the Editor Objek / Pengaturan Game / Pengaturan Kata editor tabs.
 8. Add a new object, save it, and see it in the list; with a single-word name it is also a Kata word (🔤 badge); multi-word names are Kata-excluded automatically.
 9. Export ZIP and confirm `config.json` only contains custom objects/recordings and carries the `kataEnabled` toggle per object. Import merges with defaults.
-10. (If sync is implemented) Open admin, log in with the shared family credentials, push, then pull; custom objects, settings, and the kataEnabled toggles round-trip across Devices.
+10. Open admin, log in with the shared family credentials, push, then pull; custom objects, settings, and the kataEnabled toggles round-trip across Devices.
 11. Build passes: `bun run build`.
 12. Unit tests pass: `bun run test:unit`.
 
@@ -139,7 +152,7 @@ After any change, verify at least these default-setting flows:
 - Import/export of images and recorded audio (shared objects).
 - Key bindings (case-insensitive, Gambar).
 - No-border rule when an image is set (Gambar).
-- Optional cloud sync: login, push, pull, and logout (when implemented). Push/pull carries custom objects + settings; `kataEnabled` rides on each object.
+- Optional cloud sync: login, push, pull, and logout. Push/pull carries custom objects + settings; `kataEnabled` rides on each object.
 
 ---
 
@@ -209,7 +222,7 @@ Current correct behavior lives in `onTouchStart` in `src/gambar-game/input.js`. 
 
 ## Cloudflare Deployment Notes
 
-The GitHub Action in `.github/workflows/deploy.yml` deploys the `dist/` folder to Cloudflare Pages. It will create the Pages project automatically if it does not already exist. Required repository secrets:
+The GitHub Action in `.github/workflows/deploy.yml` deploys the `dist/` folder to Cloudflare Pages. It will create the Pages project automatically if it does not already exist. After a successful deploy, `.github/workflows/deploy-smoke.yml` runs Playwright smoke tests (Gambar + Kata) against the live `pages.dev` site and opens a GitHub issue on failure. Required repository secrets:
 
 - `CLOUDFLARE_API_TOKEN` — with `Cloudflare Pages:Edit` permission.
 - `CLOUDFLARE_ACCOUNT_ID` — from Cloudflare dashboard.
@@ -271,4 +284,6 @@ When changing styling, prefer editing `theme.css`. When changing game behavior t
 - Objects → Kata words adapter: `loadKataWordsFromObjects()` in `src/db.js`
 - Import/export ZIP: `src/admin/import-export.js`
 - Import/sync merge strategy: `src/admin/merge-objects.js`
-- Cloud sync: `src/admin/sync.js`, `functions/api/login.js`, `functions/api/me.js`, `functions/api/sync.js`
+- Cloud sync: `src/admin/sync.js`, `functions/api/login.js`, `functions/api/me.js`, `functions/api/sync.js`, `functions/api/logout.js`
+- Sync payload serializer: `src/admin/sync-serializer.js`
+- Architecture docs: `docs/architecture.md` (diagram, tech stack, structure, sync mechanism), `docs/adr/`, `CONTEXT.md` (domain glossary)
