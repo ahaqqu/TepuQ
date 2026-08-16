@@ -93,7 +93,7 @@ test.describe('TepuQ Gambar — Bebas mode', () => {
       const cardImg = page.locator('.card-pop img');
       await expect(cardImg).toBeVisible();
       const src = await cardImg.getAttribute('src');
-      expect(src).toMatch(/assets\/starter\/.+\.jpg/);
+      expect(src).toMatch(/assets\/starter\/.+\.webp/);
       expect(src).not.toMatch(/^blob:/);
     });
   });
@@ -166,7 +166,7 @@ test.describe('TepuQ Gambar — Bebas mode', () => {
       const previewImg = page.locator('#photoPreview img');
       await expect(previewImg).toBeVisible();
       const defaultSrc = await previewImg.getAttribute('src');
-      expect(defaultSrc).toMatch(/assets\/starter\/papa\.jpg/);
+      expect(defaultSrc).toMatch(/assets\/starter\/papa\.webp/);
     });
 
     await When('the parent binds key p to Papa and saves', async () => {
@@ -181,7 +181,7 @@ test.describe('TepuQ Gambar — Bebas mode', () => {
       const cardImg = page.locator('.card-pop img');
       await expect(cardImg).toBeVisible();
       const gameDefaultSrc = await cardImg.getAttribute('src');
-      expect(gameDefaultSrc).toMatch(/assets\/starter\/papa\.jpg/);
+      expect(gameDefaultSrc).toMatch(/assets\/starter\/papa\.webp/);
     });
 
     await When('the parent uploads a custom image for Papa', async () => {
@@ -204,7 +204,7 @@ test.describe('TepuQ Gambar — Bebas mode', () => {
       await expect(cardImg).toBeVisible();
       const src = await cardImg.getAttribute('src');
       expect(src).toBeTruthy();
-      expect(src).not.toMatch(/assets\/starter\/papa\.jpg/);
+      expect(src).not.toMatch(/assets\/starter\/papa\.webp/);
       expect(src).toMatch(/^blob:/);
     });
   });

@@ -1,10 +1,20 @@
 import { initDB, getAllObjects, putSettings, putMeta } from '../db.js';
-import { extFromBlob, showToast, keyStringToBindings } from '../utils.js';
+import { extFromBlob, showToast, keyStringToBindings, downloadBlob } from '../utils.js';
 import { mergeImportedObjects } from './merge-objects.js';
 
+// JSZip is lazy-loaded: it is only needed for ZIP export/import in admin mode,
+// so Vite keeps it in a separate chunk fetched on first use instead of blocking
+// the main game shell.
+let jszipPromise = null;
+function getJSZip() {
+  if (!jszipPromise) {
+    jszipPromise = import('jszip').then((m) => m.default || m);
+  }
+  return jszipPromise;
+}
+
 export async function exportZip(objects, settings) {
-  const JSZip = window.JSZip;
-  if (!JSZip) throw new Error('JSZip not loaded');
+  const JSZip = await getJSZip();
   const zip = new JSZip();
 
   // Only export custom objects (created by the parent). Starter objects
@@ -48,13 +58,12 @@ export async function exportZip(objects, settings) {
     }
   }
   const blob = await zip.generateAsync({ type: 'blob' });
-  window.saveAs(blob, 'tepuq-data.zip');
+  downloadBlob(blob, 'tepuq-data.zip');
   showToast('ZIP diunduh');
 }
 
 export async function importZip(file) {
-  const JSZip = window.JSZip;
-  if (!JSZip) throw new Error('JSZip not loaded');
+  const JSZip = await getJSZip();
   const zip = await JSZip.loadAsync(file);
   const configText = await zip.file('config.json').async('text');
   const config = JSON.parse(configText);

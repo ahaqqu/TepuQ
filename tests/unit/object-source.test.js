@@ -4,7 +4,7 @@ import { isStarterObjectUntouched, starterImageUrl } from '../../src/db.js';
 const STARTER_PAPA = {
   name: 'Papa',
   color: '#4A90D9',
-  image: '/assets/starter/papa.jpg',
+  image: '/assets/starter/papa.webp',
   kataEnabled: true,
 };
 

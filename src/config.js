@@ -5,7 +5,8 @@ export const DB_NAME = 'tepuq_db';
 // to match Gambar's starter objects (same words + photos). v7 merges the
 // Kata word list into the shared `objects` store (kataEnabled toggle) and
 // drops the `kata_words` store — one shared word/photo library for both games.
-export const DB_VERSION = 7;
+// v8 re-encodes all starter images from JPEG to WebP (quality 75).
+export const DB_VERSION = 8;
 
 export const DEFAULT_SETTINGS = {
   backgroundStyle: 'combined',
@@ -29,23 +30,23 @@ export const DEFAULT_SETTINGS = {
 // (kataEnabled: true); multi-word names ("Sikat Gigi") are not (kataEnabled:
 // false).
 export const STARTER_OBJECTS = [
-  { name: 'Papa', color: '#4A90D9', image: 'assets/starter/papa.jpg', source: 'starter', kataEnabled: true },
-  { name: 'Mama', color: '#E85D75', image: 'assets/starter/mama.jpg', source: 'starter', kataEnabled: true },
-  { name: 'Saya', color: '#F5C542', image: 'assets/starter/saya.jpg', source: 'starter', kataEnabled: true },
-  { name: 'Kucing', color: '#F5A623', image: 'assets/starter/kucing.jpg', source: 'starter', kataEnabled: true },
-  { name: 'Mobil', color: '#D0021B', image: 'assets/starter/mobil.jpg', source: 'starter', kataEnabled: true },
-  { name: 'Pisang', color: '#F8E71C', image: 'assets/starter/pisang.jpg', source: 'starter', kataEnabled: true },
-  { name: 'Bola', color: '#7ED321', image: 'assets/starter/bola.jpg', source: 'starter', kataEnabled: true },
-  { name: 'Boneka', color: '#BD10E0', image: 'assets/starter/boneka.jpg', source: 'starter', kataEnabled: true },
-  { name: 'Buku', color: '#800000', image: 'assets/starter/buku.jpg', source: 'starter', kataEnabled: true },
-  { name: 'Air', color: '#87CEEB', image: 'assets/starter/air.jpg', source: 'starter', kataEnabled: true },
-  { name: 'Susu', color: '#F5F5F5', image: 'assets/starter/susu.jpg', source: 'starter', kataEnabled: true },
-  { name: 'Sikat Gigi', color: '#00E5FF', image: 'assets/starter/sikat_gigi.jpg', source: 'starter', kataEnabled: false },
-  { name: 'Mandi', color: '#00BCD4', image: 'assets/starter/mandi.jpg', source: 'starter', kataEnabled: true },
-  { name: 'Main', color: '#FF6B6B', image: 'assets/starter/main.jpg', source: 'starter', kataEnabled: true },
-  { name: 'Makan', color: '#FF9800', image: 'assets/starter/makan.jpg', source: 'starter', kataEnabled: true },
-  { name: 'Minum', color: '#2196F3', image: 'assets/starter/minum.jpg', source: 'starter', kataEnabled: true },
-  { name: 'Tidur', color: '#9C27B0', image: 'assets/starter/tidur.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Papa', color: '#4A90D9', image: 'assets/starter/papa.webp', source: 'starter', kataEnabled: true },
+  { name: 'Mama', color: '#E85D75', image: 'assets/starter/mama.webp', source: 'starter', kataEnabled: true },
+  { name: 'Saya', color: '#F5C542', image: 'assets/starter/saya.webp', source: 'starter', kataEnabled: true },
+  { name: 'Kucing', color: '#F5A623', image: 'assets/starter/kucing.webp', source: 'starter', kataEnabled: true },
+  { name: 'Mobil', color: '#D0021B', image: 'assets/starter/mobil.webp', source: 'starter', kataEnabled: true },
+  { name: 'Pisang', color: '#F8E71C', image: 'assets/starter/pisang.webp', source: 'starter', kataEnabled: true },
+  { name: 'Bola', color: '#7ED321', image: 'assets/starter/bola.webp', source: 'starter', kataEnabled: true },
+  { name: 'Boneka', color: '#BD10E0', image: 'assets/starter/boneka.webp', source: 'starter', kataEnabled: true },
+  { name: 'Buku', color: '#800000', image: 'assets/starter/buku.webp', source: 'starter', kataEnabled: true },
+  { name: 'Air', color: '#87CEEB', image: 'assets/starter/air.webp', source: 'starter', kataEnabled: true },
+  { name: 'Susu', color: '#F5F5F5', image: 'assets/starter/susu.webp', source: 'starter', kataEnabled: true },
+  { name: 'Sikat Gigi', color: '#00E5FF', image: 'assets/starter/sikat_gigi.webp', source: 'starter', kataEnabled: false },
+  { name: 'Mandi', color: '#00BCD4', image: 'assets/starter/mandi.webp', source: 'starter', kataEnabled: true },
+  { name: 'Main', color: '#FF6B6B', image: 'assets/starter/main.webp', source: 'starter', kataEnabled: true },
+  { name: 'Makan', color: '#FF9800', image: 'assets/starter/makan.webp', source: 'starter', kataEnabled: true },
+  { name: 'Minum', color: '#2196F3', image: 'assets/starter/minum.webp', source: 'starter', kataEnabled: true },
+  { name: 'Tidur', color: '#9C27B0', image: 'assets/starter/tidur.webp', source: 'starter', kataEnabled: true },
 ];
 
 export const ENTRY_ANIMATIONS = ['bounce', 'pop', 'spin', 'slide', 'flip', 'wobble', 'zoom'];

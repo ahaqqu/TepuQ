@@ -2,8 +2,7 @@ import './styles/main.css';
 import { initDB, loadData } from './db.js';
 import { initSpeech } from './speech.js';
 import { initGamePicker, showGamePicker, backToGamePicker } from './game-picker.js';
-import { renderAdmin } from './admin/index.js';
-import { loginAndPull, fetchCurrentUser } from './admin/sync.js';
+import { loginAndPull, fetchCurrentUser } from './sync-client.js';
 
 function renderBuildInfo() {
   const el = document.getElementById('buildInfo');
@@ -76,11 +75,10 @@ async function bootstrap() {
     initSpeech();
     renderBuildInfo();
 
-    if (!window.JSZip && window.jszip) window.JSZip = window.jszip;
-
     const isAdmin = new URLSearchParams(location.search).get('mode') === 'admin';
     if (isAdmin) {
       document.body.classList.add('admin');
+      const { renderAdmin } = await import('./admin/index.js');
       await renderAdmin(objects, settings);
     } else {
       document.body.classList.remove('admin');
@@ -99,6 +97,7 @@ async function bootstrap() {
 }
 
 window.addEventListener('tepuq:refresh-admin', async () => {
+  const { renderAdmin } = await import('./admin/index.js');
   const { objects, settings } = await loadData();
   await renderAdmin(objects, settings);
 });

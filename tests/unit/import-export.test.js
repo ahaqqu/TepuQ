@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { exportZip } from '../../src/admin/import-export.js';
 import { mergeImportedObjects } from '../../src/admin/merge-objects.js';
+import { downloadBlob } from '../../src/utils.js';
 
-const instances = [];
-
-function makeJSZip() {
+const { makeJSZip, instances } = vi.hoisted(() => {
+  const instances = [];
   class JSZip {
     constructor() {
       this.files = {};
@@ -24,14 +24,20 @@ function makeJSZip() {
       return type === 'blob' ? new Blob([JSON.stringify(this.files)], { type: 'application/zip' }) : this.files;
     }
   }
-  return JSZip;
-}
+  return { makeJSZip: () => JSZip, instances };
+});
+
+vi.mock('jszip', () => ({ default: makeJSZip() }));
+
+vi.mock('../../src/utils.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, downloadBlob: vi.fn() };
+});
 
 describe('export/import behavior', () => {
   beforeEach(() => {
     instances.length = 0;
-    window.JSZip = makeJSZip();
-    window.saveAs = vi.fn();
+    downloadBlob.mockClear();
   });
 
   it('exports only custom objects with images or recordings', async () => {
@@ -42,8 +48,8 @@ describe('export/import behavior', () => {
     ];
     await exportZip(objects, { volume: 0.8 });
 
-    expect(window.saveAs).toHaveBeenCalledOnce();
-    expect(window.saveAs.mock.calls[0][1]).toBe('tepuq-data.zip');
+    expect(downloadBlob).toHaveBeenCalledOnce();
+    expect(downloadBlob.mock.calls[0][1]).toBe('tepuq-data.zip');
     const zipInstance = instances[0];
     const config = JSON.parse(zipInstance.files['config.json']);
     expect(config.partial).toBe(true);

@@ -4,6 +4,11 @@ const Given = test.step;
 const When = test.step;
 const Then = test.step;
 
+// A full Kata session (3 words x drags + auto-advance + celebration) takes
+// ~14s on an idle machine; under full-suite parallel load it has crossed the
+// default 30s budget. Give these session-length tests a bigger timeout.
+test.describe.configure({ timeout: 90000 });
+
 // Set Kata session length to the minimum (5) so the win screen is reachable
 // quickly in E2E, then return to the game.
 async function setShortSession(page) {
