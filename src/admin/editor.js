@@ -29,6 +29,12 @@ export function selectObject(id, objects) {
   document.getElementById('inpColor').value = obj.color || '#4A90D9';
   document.getElementById('inpAnimation').value = obj.animation || 'random';
   document.getElementById('inpActive').checked = !!obj.active;
+  const kataCheck = document.getElementById('inpKataEnabled');
+  if (kataCheck) {
+    const multiWord = isMultiWord(obj.name);
+    kataCheck.disabled = multiWord;
+    kataCheck.checked = !!obj.kataEnabled && !multiWord;
+  }
   document.getElementById('inpKeys').value = (obj.keyBindings || []).join(', ');
   if (document.getElementById('inpUseRecording')) {
     document.getElementById('inpUseRecording').checked = !!obj.useRecording;
@@ -52,6 +58,11 @@ export function addNewObject() {
   if (animInput) animInput.value = 'random';
   const activeInput = document.getElementById('inpActive');
   if (activeInput) activeInput.checked = true;
+  const kataCheck = document.getElementById('inpKataEnabled');
+  if (kataCheck) {
+    kataCheck.disabled = false;
+    kataCheck.checked = true;
+  }
   const keysInput = document.getElementById('inpKeys');
   if (keysInput) keysInput.value = '';
   const useRecInput = document.getElementById('inpUseRecording');
@@ -340,6 +351,16 @@ function bindObjectForm(objects, getSettings, refreshList, refreshMeta) {
     renderPreview({ id: 'preview', name, color, imageBlob: null });
   });
 
+  // Live Kata toggle guard: multi-word names are not spellable, so the
+  // "Aktif di TepuQ Kata" checkbox is disabled and unchecked for them.
+  document.getElementById('inpName').addEventListener('input', (e) => {
+    const check = document.getElementById('inpKataEnabled');
+    if (!check) return;
+    const multi = isMultiWord(e.target.value);
+    check.disabled = multi;
+    if (multi) check.checked = false;
+  });
+
   document.getElementById('objectForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const isNew = !editorSession.selectedObjectId;
@@ -363,6 +384,7 @@ function bindObjectForm(objects, getSettings, refreshList, refreshMeta) {
       useRecording: finalAudioBlob ? useRecording : false,
       audioType: finalAudioBlob && useRecording ? 'recording' : 'tts',
       active: document.getElementById('inpActive').checked,
+      kataEnabled: readKataEnabled(),
       order: existing ? existing.order : objects.length,
       keyBindings: keyStringToBindings(keyInput),
       source: 'custom',
@@ -414,6 +436,20 @@ function switchEditorTab(name) {
   document.querySelectorAll('#editorTabs .tab').forEach((t) => t.classList.toggle('active', t.dataset.editortab === name));
   document.getElementById('editorTabEditor').classList.toggle('hidden', name !== 'editor');
   document.getElementById('editorTabSettings').classList.toggle('hidden', name !== 'settings');
+  document.getElementById('editorTabKataSettings').classList.toggle('hidden', name !== 'kata-settings');
+}
+
+// Multi-word names ("Sikat Gigi") cannot be spelled as one word in TepuQ Kata.
+function isMultiWord(name) {
+  return String(name || '').trim().includes(' ');
+}
+
+// The Kata toggle is only meaningful for single-word names.
+function readKataEnabled() {
+  const name = document.getElementById('inpName').value.trim();
+  const check = document.getElementById('inpKataEnabled');
+  if (!check || isMultiWord(name)) return false;
+  return check.checked;
 }
 
 function normalizeImageBlob(blob) {

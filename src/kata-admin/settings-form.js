@@ -1,9 +1,11 @@
 // Kata admin settings form: letter/slot size, snap distance, session length,
 // distractor toggle, letter-speech toggle, language. TTS rate/pitch/volume
 // are NOT here — they're shared via Gambar's speech settings. See ADR 0003.
+// Since v7 the word list is the shared object library (managed in the shared
+// admin editor), so this form only manages Kata settings.
 
-import { KATA_DEFAULT_SETTINGS, KATA_STARTER_WORDS } from '../config.js';
-import { putKataSettings, getAllKataWords, putKataWord } from '../db.js';
+import { KATA_DEFAULT_SETTINGS } from '../config.js';
+import { putKataSettings } from '../db.js';
 import { showToast } from '../utils.js';
 
 export function bindKataSettingsForm(settings, onChange) {
@@ -25,36 +27,6 @@ export function bindKataSettingsForm(settings, onChange) {
     setFormValues(fresh);
     onChange(fresh);
     showToast('Pengaturan Kata direset');
-  };
-
-  document.getElementById('btnResetKataWords').onclick = async () => {
-    if (!confirm('Reset semua kata ke bawaan? Kata custom akan hilang.')) return;
-    const words = await getAllKataWords();
-    // Replace with starters.
-    for (const w of words) {
-      if (w.source !== 'starter') {
-        // soft-delete custom words by disabling; full reset re-seeds starters
-      }
-    }
-    // Re-seed starter words by overwriting starter ids.
-    for (let i = 0; i < KATA_STARTER_WORDS.length; i++) {
-      const id = 'kata_' + String(i + 1).padStart(3, '0');
-      await putKataWord({
-        id,
-        word: KATA_STARTER_WORDS[i].word,
-        display: KATA_STARTER_WORDS[i].word,
-        category: KATA_STARTER_WORDS[i].category || 'default',
-        order: i,
-        enabled: true,
-        audioBlob: null,
-        audioType: 'tts',
-        useRecording: false,
-        source: 'starter',
-        image: KATA_STARTER_WORDS[i].image || null,
-      });
-    }
-    showToast('Kata direset ke bawaan');
-    window.dispatchEvent(new CustomEvent('tepuq:refresh-admin'));
   };
 }
 

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   resetKataState, getKataState, prepareSession, loadCurrentWord,
   placeTile, isWordComplete, advanceWord, currentWord,
-} from '@/kata/game-state.js';
+} from '@/kata-game/game-state.js';
 
 const words = [
   { id: 'kata_001', word: 'mama', enabled: true },

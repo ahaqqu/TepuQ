@@ -9,8 +9,7 @@ const Then = test.step;
 async function setShortSession(page) {
   await page.goto('/?mode=admin');
   await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
-  await page.locator('#adminGameTabs .game-tab[data-game="kata"]').click({ force: true });
-  await page.locator('#kataEditorTabs .tab[data-kataeditortab="settings"]').click({ force: true });
+  await page.locator('#editorTabs .tab[data-editortab="kata-settings"]').click({ force: true });
   await page.locator('#setKataSessionLength').fill('5');
   await page.locator('#btnSaveKataSettings').click({ force: true });
   await expect(page.locator('text=Pengaturan Kata disimpan')).toBeVisible();
@@ -76,6 +75,19 @@ test.describe('TepuQ Kata', () => {
     await Then('the Game Picker is visible again', async () => {
       await expect(page.locator('#gamePicker')).toBeVisible();
       await expect(page.locator('#kataStage')).toHaveClass(/hidden/);
+    });
+  });
+
+  test('the shared word photo is shown during gameplay', async ({ page }) => {
+    await Given('TepuQ Kata is started', async () => {
+      await startKata(page);
+    });
+
+    await Then('the current word shows its shared library photo', async () => {
+      const photo = page.locator('.kata-photo');
+      await expect(photo).toBeVisible();
+      const src = await photo.getAttribute('src');
+      expect(src).toContain('assets/starter');
     });
   });
 

@@ -1,6 +1,6 @@
 // Centralized mutable Kata game state + a small state machine. State lives in
 // one object so the game loop and renderer read/write a single source of
-// truth, mirroring TepuQ Gambar's src/game/game-state.js pattern.
+// truth, mirroring TepuQ Gambar's src/gambar-game/game-state.js pattern.
 //
 // States: LOADING -> PLAYING -> CELEBRATING -> NEXT_WORD -> PLAYING ... -> VICTORY
 

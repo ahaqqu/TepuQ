@@ -27,7 +27,12 @@ test.describe('Admin mode default settings', () => {
     await When('the parent clicks Add Object and fills the form', async () => {
       await page.locator('#btnAddObject').click({ force: true });
       await expect(page.locator('#objectForm')).not.toHaveClass(/hidden/);
+      // The shared editor defaults the Kata toggle to active for new objects.
+      await expect(page.locator('#inpKataEnabled')).toBeChecked();
+      await expect(page.locator('#inpKataEnabled')).toBeEnabled();
       await page.locator('#inpName').fill('Test Papa');
+      // Multi-word names are not spellable in TepuQ Kata — toggle disables.
+      await expect(page.locator('#inpKataEnabled')).toBeDisabled();
       await page.locator('#inpTts').fill('Ini Papa');
       await page.locator('#inpColor').fill('#ff0000');
     });

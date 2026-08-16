@@ -20,6 +20,7 @@ describe('sync serializer', () => {
         useRecording: true,
         audioType: 'recording',
         active: true,
+        kataEnabled: true,
         order: 0,
         keyBindings: ['p'],
         source: 'custom',
@@ -37,6 +38,7 @@ describe('sync serializer', () => {
         useRecording: false,
         audioType: 'tts',
         active: true,
+        kataEnabled: true,
         order: 1,
         keyBindings: [],
         source: 'starter',
@@ -59,6 +61,7 @@ describe('sync serializer', () => {
     expect(restored.useRecording).toBe(true);
     expect(restored.audioType).toBe('recording');
     expect(restored.active).toBe(true);
+    expect(restored.kataEnabled).toBe(true);
     expect(restored.order).toBe(0);
     expect(restored.keyBindings).toEqual(['p']);
     expect(restored.imageSource).toBe('custom');
@@ -95,6 +98,35 @@ describe('sync serializer', () => {
     expect(parsed.config.partial).toBe(true);
     expect(parsed.config.objects).toEqual([]);
     expect(parsed.config.settings).toEqual({ cardSize: 'small' });
+  });
+
+  it('carries no separate kata block — kataEnabled rides on each object', async () => {
+    const objects = [
+      { id: 'obj_1', name: 'Mobil', source: 'custom', imageBlob: null, audioBlob: null, active: true, kataEnabled: true, order: 0, keyBindings: [] },
+    ];
+    const payload = await buildSyncPayload(objects, {});
+    const parsed = await parseSyncPayload(payload);
+    expect(parsed.config.kata).toBeUndefined();
+    expect(parsed.kata).toBeUndefined();
+    expect(parsed.objects[0].kataEnabled).toBe(true);
+  });
+
+  it('defaults kataEnabled to true for legacy payloads without the toggle', async () => {
+    const payload = await buildSyncPayload(
+      [{ id: 'obj_1', name: 'Bola', source: 'custom', imageBlob: null, audioBlob: null, active: true, order: 0, keyBindings: [] }],
+      {},
+    );
+    const parsed = await parseSyncPayload(payload);
+    expect(parsed.objects[0].kataEnabled).toBe(true);
+  });
+
+  it('forces kataEnabled to false for multi-word names', async () => {
+    const payload = await buildSyncPayload(
+      [{ id: 'obj_1', name: 'Sikat Gigi', source: 'custom', imageBlob: null, audioBlob: null, active: true, kataEnabled: true, order: 0, keyBindings: [] }],
+      {},
+    );
+    const parsed = await parseSyncPayload(payload);
+    expect(parsed.objects[0].kataEnabled).toBe(false);
   });
 
   it('configToLogString pretty-prints config and redacts base64 data', async () => {

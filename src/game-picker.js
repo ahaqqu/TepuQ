@@ -3,9 +3,9 @@
 // TepuQ Gambar then shows its existing Bebas/Target sub-picker (mode-manager.js).
 // See ADR 0002.
 
-import { initGame } from './game/mode-manager.js';
-import { bindGameInput } from './game/input.js';
-import { initKata, destroyKata } from './kata/index.js';
+import { initGame } from './gambar-game/mode-manager.js';
+import { bindGameInput } from './gambar-game/input.js';
+import { initKata, destroyKata } from './kata-game/index.js';
 import { loadKataData } from './db.js';
 
 let currentGame = null; // 'gambar' | 'kata' | null

@@ -37,10 +37,10 @@ TepuQ/
 │   ├── main.js             # bootstrap (admin vs game; game -> Game Picker)
 │   ├── game-picker.js      # top-level Game Picker (TepuQ Gambar / TepuQ Kata)
 │   ├── config.js           # defaults + constants (Gambar + Kata)
-│   ├── db.js               # IndexedDB (shared + kata_* stores + Kata CRUD)
+│   ├── db.js               # IndexedDB (objects + settings + meta + kata_settings/kata_progress)
 │   ├── utils.js            # helpers
 │   ├── speech.js           # TTS + recorded audio (shared by both games)
-│   ├── game/               # TepuQ Gambar game logic modules
+│   ├── gambar-game/        # TepuQ Gambar game logic modules (Gambar-only)
 │   │   ├── game-state.js   # centralized mutable game state
 │   │   ├── mode-manager.js # Gambar sub-picker (Bebas/Target), startMode
 │   │   ├── demo.js         # background demo cards on the picker
@@ -48,24 +48,28 @@ TepuQ/
 │   │   ├── logic.js        # core game rules and card advancement
 │   │   ├── card.js         # card rendering and object URL lifecycle
 │   │   └── ...
-│   ├── kata/               # TepuQ Kata (spelling game) modules
+│   ├── kata-game/          # TepuQ Kata (spelling game) modules (Kata-only)
 │   │   ├── index.js        # game loop + state machine
 │   │   ├── game-state.js   # Kata state machine (LOADING/PLAYING/VICTORY)
 │   │   ├── slots.js        # slot derivation + snap hit-testing (pure)
 │   │   ├── drag-engine.js  # touch+mouse drag with magnetic snap
-│   │   ├── renderer.js     # DOM: slots, tiles, confetti, win screen
+│   │   ├── renderer.js     # DOM: slots, tiles, photo, confetti, win screen
 │   │   └── audio.js        # TTS letters/word + success chime
-│   ├── admin/              # TepuQ Gambar admin logic modules
-│   │   ├── merge-objects.js # shared import/sync merge strategy
-│   │   └── ...
-│   ├── kata-admin/         # TepuQ Kata admin logic modules
-│   │   ├── index.js        # Kata admin shell (rendered in the Kata admin tab)
-│   │   ├── word-list.js    # word CRUD list with drag reorder
-│   │   ├── editor.js       # word editor + audio record/upload
-│   │   ├── settings-form.js# Kata settings (letter/slot/snap/session)
-│   │   ├── merge-words.js  # Kata import/sync merge strategy (pure)
-│   │   └── import-export.js# Kata ZIP export/import
-│   └── styles/             # CSS: base, gameplay, theme, admin, kata, kata-admin
+│   ├── admin/              # SHARED admin: main admin page + shared word/photo library
+│   │   ├── index.js        # admin shell (tabs: Objek, Sinkron; editor tabs wiring)
+│   │   ├── editor.js       # shared object editor (incl. "Aktif di TepuQ Kata" toggle)
+│   │   ├── object-list.js  # shared object list with Kata badge + drag reorder
+│   │   ├── import-export.js# shared ZIP export/import (objects carry kataEnabled)
+│   │   ├── sync.js         # cloud sync (objects + settings only)
+│   │   ├── sync-serializer.js
+│   │   └── merge-objects.js # shared import/sync merge strategy
+│   ├── gambar-admin/       # Gambar-specific admin tab ("Pengaturan Game")
+│   │   ├── index.js        # tab entry point
+│   │   └── settings-form.js
+│   ├── kata-admin/         # Kata-specific admin tab ("Pengaturan Kata")
+│   │   ├── index.js        # tab entry point
+│   │   └── settings-form.js # Kata settings (letter/slot/snap/session)
+│   └── styles/             # CSS: base, gameplay, theme, admin, kata
 ├── public/
 │   ├── assets/             # bundled CC0 starter images + audio
 │   └── vendor/             # third-party JS libraries
@@ -114,11 +118,11 @@ After any change, verify at least these default-setting flows:
 3. See the **Game Picker** with TepuQ Gambar and TepuQ Kata buttons.
 4. Click **TepuQ Gambar** → see the Bebas/Target sub-picker → click **TepuQ Bebas** → press any key → a card appears and audio speaks.
 5. Long-press top-left corner → return to mode picker; "Pilih Game" returns to the Game Picker.
-6. Click **TepuQ Kata** → a word appears as empty slots with scattered letter tiles → drag a letter into its slot → it snaps and turns green.
-7. Open `http://localhost:5173?mode=admin` → see the Gambar/Kata game tabs.
-8. Add a new object (Gambar) and a new word (Kata), save, and see each in its list.
-9. Export ZIP (Gambar) and confirm `config.json` only contains custom objects/recordings; export ZIP (Kata) and confirm `kata-words.json` only contains custom words. Import merges each with defaults.
-10. (If sync is implemented) Open admin, log in with the shared family credentials, push, then pull; custom objects, settings, and Kata words round-trip across Devices.
+6. Click **TepuQ Kata** → a word appears with its shared photo, empty slots, and scattered letter tiles → drag a letter into its slot → it snaps and turns green.
+7. Open `http://localhost:5173?mode=admin` → see the object list (shared library) with the Objek/Sinkron tabs and the Editor Objek / Pengaturan Game / Pengaturan Kata editor tabs.
+8. Add a new object, save it, and see it in the list; with a single-word name it is also a Kata word (🔤 badge); multi-word names are Kata-excluded automatically.
+9. Export ZIP and confirm `config.json` only contains custom objects/recordings and carries the `kataEnabled` toggle per object. Import merges with defaults.
+10. (If sync is implemented) Open admin, log in with the shared family credentials, push, then pull; custom objects, settings, and the kataEnabled toggles round-trip across Devices.
 11. Build passes: `bun run build`.
 12. Unit tests pass: `bun run test:unit`.
 
@@ -127,15 +131,15 @@ After any change, verify at least these default-setting flows:
 ## What Must Not Break
 
 - Default settings in `src/config.js` (Gambar + Kata).
-- Starter objects list and seeding in `src/db.js`; starter words in `KATA_STARTER_WORDS`.
+- Starter objects list and seeding in `src/db.js`; each starter object's `kataEnabled` toggle.
 - Game Picker: both games must launch from the main page.
 - TepuQ Gambar: Bebas and Target must both work.
-- TepuQ Kata: drag a letter into the correct slot snaps it; wrong slot bounces back; completing the session shows the win screen.
-- Admin mode: add/edit/delete object (Gambar) and word (Kata), settings, export/import ZIP for each game.
-- Import/export of images and recorded audio (Gambar); import/export of per-word audio (Kata).
+- TepuQ Kata: drag a letter into the correct slot snaps it; wrong slot bounces back; completing the session shows the win screen; each word shows its shared library photo.
+- Admin mode: add/edit/delete object, settings, export/import ZIP. The object editor is the single shared library editor — the "Aktif di TepuQ Kata" toggle decides which objects are Kata words.
+- Import/export of images and recorded audio (shared objects).
 - Key bindings (case-insensitive, Gambar).
 - No-border rule when an image is set (Gambar).
-- Optional cloud sync: login, push, pull, and logout (when implemented). Push/pull now carries Kata custom words + settings alongside Gambar data.
+- Optional cloud sync: login, push, pull, and logout (when implemented). Push/pull carries custom objects + settings; `kataEnabled` rides on each object.
 
 ---
 
@@ -190,7 +194,7 @@ Every time a branch is pushed after additional commits or fixes, the agent must 
 
 During development, whenever adding or changing interactive elements (links, buttons, forms, inputs) on the main page, ensure taps still work on mobile. The game's input handlers can silently break mobile taps:
 
-**The trap:** `src/game/input.js`'s `onTouchStart` calls `e.preventDefault()`. On mobile, `preventDefault()` on `touchstart` cancels the browser's synthetic `click` and blocks input focus — any element that relies on native clicks (links, forms, buttons) stops working while the mode picker is visible.
+**The trap:** `src/gambar-game/input.js`'s `onTouchStart` calls `e.preventDefault()`. On mobile, `preventDefault()` on `touchstart` cancels the browser's synthetic `click` and blocks input focus — any element that relies on native clicks (links, forms, buttons) stops working while the mode picker is visible.
 
 **Development rules (follow when touching `input.js` or adding interactive UI):**
 1. Do **not** call `e.preventDefault()` while the mode picker is visible. Let normal UI interactions (links, form inputs, submit buttons) work natively.
@@ -200,7 +204,7 @@ During development, whenever adding or changing interactive elements (links, but
 5. Every game input handler must early-return when `document.body.classList.contains('admin')` — check `onTouchStart`/`onPointerDown`/`onKeyDown` guards.
 6. Before finishing, verify at least the Admin link (`⚙️ Admin`) and the username/password inputs are tappable on a phone-sized viewport.
 
-Current correct behavior lives in `onTouchStart` in `src/game/input.js`. If you restructure the input handlers, keep these rules.
+Current correct behavior lives in `onTouchStart` in `src/gambar-game/input.js`. If you restructure the input handlers, keep these rules.
 
 ---
 
@@ -245,7 +249,8 @@ Styles live in `src/styles/` and are imported through `src/styles/main.css`:
 - `base.css` — reset, loader, shared utilities, toast message.
 - `gameplay.css` — structural game CSS: layout, sizing, touch/keyboard behavior, hit areas, functional animations, card/particle shells, hints.
 - `theme.css` — visual styling: colors, gradients, decorative background effects, mode picker look, hover/focus states. Safe to override or swap without breaking gameplay.
-- `admin.css` — admin UI layout and components.
+- `admin.css` — admin UI layout and components (shared admin + per-game tabs).
+- `kata.css` — TepuQ Kata gameplay styling (stage, slots, tiles, photo, win screen).
 
 When changing styling, prefer editing `theme.css`. When changing game behavior that relies on layout or animations, edit `gameplay.css`.
 
@@ -253,13 +258,18 @@ When changing styling, prefer editing `theme.css`. When changing game behavior t
 
 ## Useful References
 
-- Game state: `src/game/game-state.js`
-- Mode picker / startMode: `src/game/mode-manager.js`
-- Game input handlers: `src/game/input.js`
-- Game logic: `src/game/logic.js`
-- Card rendering (including border/no-border): `src/game/card.js`
-- Admin editor (camera, audio, key bindings): `src/admin/editor.js`
-- Settings form: `src/admin/settings-form.js`
+- Game state: `src/gambar-game/game-state.js`
+- Mode picker / startMode: `src/gambar-game/mode-manager.js`
+- Game input handlers: `src/gambar-game/input.js`
+- Game logic: `src/gambar-game/logic.js`
+- Card rendering (including border/no-border): `src/gambar-game/card.js`
+- Admin shell (shared admin page): `src/admin/index.js`
+- Shared object editor (incl. "Aktif di TepuQ Kata" toggle): `src/admin/editor.js`
+- Gambar settings tab: `src/gambar-admin/settings-form.js`
+- Kata settings tab: `src/kata-admin/settings-form.js`
+- Kata game loop: `src/kata-game/index.js`
+- Kata photo/slot rendering: `src/kata-game/renderer.js`
+- Objects → Kata words adapter: `loadKataWordsFromObjects()` in `src/db.js`
 - Import/export ZIP: `src/admin/import-export.js`
 - Import/sync merge strategy: `src/admin/merge-objects.js`
 - Cloud sync: `src/admin/sync.js`, `functions/api/login.js`, `functions/api/me.js`, `functions/api/sync.js`

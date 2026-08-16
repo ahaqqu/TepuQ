@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildSlots, scatterLetters, findSnapSlot, distance } from '@/kata/slots.js';
+import { buildSlots, scatterLetters, findSnapSlot, distance } from '@/kata-game/slots.js';
 
 describe('buildSlots', () => {
   it('builds one slot per letter in order', () => {
