@@ -25,6 +25,7 @@ let stage = null;
 let cleanups = [];
 let onSnapCb = null;
 let onRejectCb = null;
+let onPhotoTapCb = null;
 let destroyKataCallback = null;
 let keyboardBlocked = false;
 
@@ -33,10 +34,11 @@ let keyboardBlocked = false;
 // breathing room between centers.
 const TILE_GAP_RATIO = 0.15;
 
-export function initRenderer(container, { onSnap, onReject, onBackToMenu } = {}) {
+export function initRenderer(container, { onSnap, onReject, onBackToMenu, onPhotoTap } = {}) {
   stage = container;
   onSnapCb = onSnap;
   onRejectCb = onReject;
+  onPhotoTapCb = onPhotoTap;
   destroyKataCallback = onBackToMenu;
 }
 
@@ -397,6 +399,11 @@ function createPhoto(wordRecord) {
   photo.src = src;
   photo.alt = wordRecord.word;
   photo.onerror = () => { photo.style.display = 'none'; };
+  // Tapping the photo says the word out loud ("what is this?"), so the toddler
+  // can hear the name any time without finishing the spelling first.
+  photo.addEventListener('click', () => {
+    onPhotoTapCb?.(wordRecord);
+  });
   if (cleanup) cleanups.push(cleanup);
   return photo;
 }

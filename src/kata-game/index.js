@@ -43,6 +43,9 @@ export async function initKata(words, settings, gambarSpeechSettings) {
     // knows to try again. State stays unchanged.
     onReject: () => { playEncourageSfx(); },
     onBackToMenu: () => backToMenu(),
+    // Tapping the word photo says its name (recording if the parent recorded
+    // one, otherwise TTS) — the "what is this?" button for the toddler.
+    onPhotoTap: (word) => speakWord(word, speechSettings),
   });
 
   const enabled = words.filter((w) => w.enabled);

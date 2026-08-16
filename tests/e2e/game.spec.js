@@ -58,6 +58,26 @@ test.describe('Game mode default settings', () => {
     });
   });
 
+  test('the long-press fullscreen hint only appears in the Gambar menu, not on the main page', async ({ page }) => {
+    await Given('the game is opened', async () => {
+      await page.goto('/');
+      await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
+      await expect(page.locator('#gamePicker')).toBeVisible();
+    });
+
+    await Then('the main Game Picker does not show the long-press hint', async () => {
+      await expect(page.locator('#gamePicker .fs-note')).toHaveCount(0);
+    });
+
+    await When('the user picks TepuQ Gambar', async () => {
+      await page.locator('#btnGameGambar').click({ force: true });
+    });
+
+    await Then('the Gambar menu shows the long-press hint', async () => {
+      await expect(page.locator('#modePicker .fs-note')).toBeVisible();
+    });
+  });
+
   test('TepuQ Bebas advances on keypress with default HTTP image', async ({ page }) => {
     await Given('the user starts TepuQ Bebas mode', async () => {
       await startBebasMode(page);

@@ -107,6 +107,52 @@ test.describe('TepuQ Kata', () => {
     });
   });
 
+  test('tapping the word photo says the word out loud', async ({ page }) => {
+    await Given('the browser records every spoken utterance', async () => {
+      await page.addInitScript(() => {
+        window.__spoken = [];
+        // speechSynthesis is a read-only accessor on window, so it must be
+        // replaced with defineProperty for the stub to actually take effect.
+        const fakeSynth = {
+          speaking: false,
+          pending: false,
+          paused: false,
+          getVoices: () => [],
+          cancel: () => {},
+          resume: () => {},
+          speak: (u) => { window.__spoken.push(u.text); },
+        };
+        Object.defineProperty(window, 'speechSynthesis', { value: fakeSynth, configurable: true });
+        Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+          value: function (text) { this.text = text; },
+          configurable: true,
+        });
+      });
+    });
+
+    await Given('TepuQ Kata is started', async () => {
+      await startKata(page);
+      await expect(page.locator('.kata-photo')).toBeVisible();
+    });
+
+    await When('the child taps the word photo', async () => {
+      await page.locator('.kata-photo').click({ force: true });
+    });
+
+    await Then('the TTS says the current word name', async () => {
+      const word = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('.kata-slot'))
+          .map((slot) => slot.dataset.letter)
+          .join('')
+      );
+      expect(word.length).toBeGreaterThan(0);
+      await expect.poll(
+        () => page.evaluate((w) => window.__spoken.some((t) => t === w), word),
+        { timeout: 5000 }
+      ).toBe(true);
+    });
+  });
+
   test('a big desktop screen gets much bigger letters and a 30% photo', async ({ page }) => {
     await Given('TepuQ Kata is started on a 1080p viewport', async () => {
       await page.setViewportSize({ width: 1920, height: 1080 });
