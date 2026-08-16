@@ -54,7 +54,7 @@ export function playVictoryChime() {
   try {
     if (!victoryAudio) {
       victoryAudio = new Audio('assets/sfx/victory-fanfare.mp3');
-      victoryAudio.volume = 0.35;
+      victoryAudio.volume = 0.20;
     }
     victoryAudio.currentTime = 0;
     victoryAudio.play().catch(() => {});
