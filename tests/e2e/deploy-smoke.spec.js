@@ -66,6 +66,45 @@ test.describe('Post-deploy smoke tests', () => {
     });
   });
 
+  test('TepuQ Target tap outside the card plays the encouraging sound and keeps the card', async ({ page }) => {
+    let originalSrc = null;
+
+    await Given('the browser records every audio clip playback', async () => {
+      await page.addInitScript(() => {
+        window.__plays = [];
+        HTMLMediaElement.prototype.play = function () {
+          window.__plays.push(String(this.src));
+          return Promise.resolve();
+        };
+      });
+    });
+
+    await Given('the game is opened on the deployed site and TepuQ Target is started', async () => {
+      await page.goto('/');
+      await expect(page.locator('#gamePicker')).toBeVisible();
+      await page.locator('#btnGameGambar').click({ force: true });
+      await expect(page.locator('#modePicker')).toBeVisible();
+      await page.locator('#btnTarget').click({ force: true });
+      await expect(page.locator('#modePicker')).toHaveClass(/hidden/);
+      await expect(page.locator('.card-pop.target-card img')).toBeVisible();
+    });
+
+    await When('the child taps somewhere that is not the target card', async () => {
+      originalSrc = await page.locator('.card-pop.target-card img').getAttribute('src');
+      // Bottom-right corner: outside the centered card and outside the
+      // top-left back trigger area.
+      await page.mouse.click(1240, 700);
+    });
+
+    await Then('the encouraging try-again sound plays and the card does not change', async () => {
+      await expect.poll(() => page.evaluate(() => window.__plays.length), { timeout: 5000 }).toBe(1);
+      const plays = await page.evaluate(() => window.__plays);
+      expect(plays[0]).toContain('try-again.wav');
+      const src = await page.locator('.card-pop.target-card img').getAttribute('src');
+      expect(src).toBe(originalSrc);
+    });
+  });
+
   test('TepuQ Kata shows slot row and letter tiles from starter words', async ({ page }) => {
     await Given('the game is opened on the deployed site', async () => {
       await page.goto('/');
