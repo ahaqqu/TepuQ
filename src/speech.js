@@ -150,17 +150,18 @@ export function playTryAgainSfx() {
 }
 
 const sfxCache = new Map();
-let lastMenuSfxAt = 0;
+let lastSfxAt = 0;
 
-// Shared decorative SFX player for menu navigation sounds (selecting a game,
-// going back to the menu). Audio is cached per URL so rapid taps reuse the
-// same element; the debounce stops pointer + touch handlers from
-// double-firing on mobile. Failures are swallowed: sound is decorative.
-export function playMenuSfx(url, volume = 1) {
+// Shared decorative SFX player for menu navigation and gameplay sounds
+// (selecting a game, going back to the menu, win-screen buttons). Audio is
+// cached per URL so rapid taps reuse the same element; the debounce stops
+// pointer + touch handlers from double-firing on mobile. Failures are
+// swallowed: sound is decorative.
+export function playSfx(url, volume = 1) {
   try {
     const now = Date.now();
-    if (now - lastMenuSfxAt < 150) return;
-    lastMenuSfxAt = now;
+    if (now - lastSfxAt < 150) return;
+    lastSfxAt = now;
     let audio = sfxCache.get(url);
     if (!audio) {
       audio = new Audio(url);

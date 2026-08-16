@@ -7,7 +7,7 @@ import { initGame, destroyGame } from './gambar-game/mode-manager.js';
 import { bindGameInput, unbindGameInput } from './gambar-game/input.js';
 import { initKata, destroyKata } from './kata-game/index.js';
 import { loadKataData } from './db.js';
-import { playMenuSfx } from './speech.js';
+import { playSfx } from './speech.js';
 
 let currentGame = null; // 'gambar' | 'kata' | null
 let gambarInputCleanup = null;
@@ -23,7 +23,7 @@ export function initGamePicker(appState) {
 
   // Kata's in-game back button dispatches this event to avoid a circular import.
   window.addEventListener('tepuq:kata-back-to-menu', () => {
-    playMenuSfx('assets/sfx/back-menu.mp3', 0.7);
+    playSfx('assets/sfx/back-menu.mp3', 0.7);
     showGamePicker();
   });
 }
@@ -40,7 +40,7 @@ export function showGamePicker() {
 }
 
 async function startGambar(appState) {
-  playMenuSfx('assets/sfx/select-game.mp3');
+  playSfx('assets/sfx/select-game.mp3');
   const picker = document.getElementById('gamePicker');
   if (picker) picker.classList.add('hidden');
   currentGame = 'gambar';
@@ -50,7 +50,7 @@ async function startGambar(appState) {
 }
 
 async function startKata(appState) {
-  playMenuSfx('assets/sfx/select-game.mp3');
+  playSfx('assets/sfx/select-game.mp3');
   const picker = document.getElementById('gamePicker');
   if (picker) picker.classList.add('hidden');
   const kataStage = document.getElementById('kataStage');
@@ -74,7 +74,7 @@ function destroyCurrentGame() {
 
 // Exposed so a "back to games" gesture can return here from inside a game.
 export function backToGamePicker() {
-  playMenuSfx('assets/sfx/back-menu.mp3', 0.7);
+  playSfx('assets/sfx/back-menu.mp3', 0.7);
   showGamePicker();
 }
 
