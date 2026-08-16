@@ -68,9 +68,14 @@ test.describe('TepuQ Gambar — Target mode', () => {
     });
 
     await Then('the encouraging try-again sound plays exactly once', async () => {
-      await expect.poll(() => page.evaluate(() => window.__plays.length), { timeout: 5000 }).toBe(1);
+      // Entering the game also plays the menu select sound (select-game.mp3),
+      // so count only try-again plays: exactly one, from the tap outside.
+      await expect.poll(
+        () => page.evaluate(() => window.__plays.filter((p) => p.includes('try-again.mp3')).length),
+        { timeout: 5000 }
+      ).toBe(1);
       const plays = await page.evaluate(() => window.__plays);
-      expect(plays[0]).toContain('try-again.wav');
+      expect(plays.filter((p) => p.includes('try-again.mp3'))[0]).toContain('try-again.mp3');
     });
 
     await Then('the target card is still the same card', async () => {
@@ -95,7 +100,7 @@ test.describe('TepuQ Gambar — Target mode', () => {
 
     await Then('a successful tap does not play the sound again', async () => {
       const plays = await page.evaluate(() => window.__plays);
-      expect(plays).toHaveLength(1);
+      expect(plays.filter((p) => p.includes('try-again.mp3'))).toHaveLength(1);
     });
   });
 

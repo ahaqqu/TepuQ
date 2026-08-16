@@ -488,7 +488,7 @@ test.describe('TepuQ Kata', () => {
     await Then('the encouraging try-again sound plays', async () => {
       await expect.poll(() => page.evaluate(() => window.__plays.length), { timeout: 5000 }).toBeGreaterThan(0);
       const plays = await page.evaluate(() => window.__plays);
-      expect(plays.some((src) => src.includes('try-again.wav'))).toBe(true);
+      expect(plays.some((src) => src.includes('try-again.mp3'))).toBe(true);
     });
   });
 
@@ -556,13 +556,14 @@ test.describe('TepuQ Kata', () => {
     });
 
     await Then('the success chime plays for each word and the victory fanfare for the session win', async () => {
-      // One success-chime per completed word, then exactly one victory fanfare
-      // when the win screen appears. Both are bundled Mixkit SFX played via
+      // Picking Kata on the menu plays the select sound first, then one
+      // success-chime per completed word, then exactly one victory fanfare
+      // when the win screen appears. All are bundled Mixkit SFX played via
       // <audio>, so the recorded play() order proves the celebration sequence.
       await expect.poll(
         () => page.evaluate(() => window.__plays.map((src) => src.split('/').pop())),
         { timeout: 5000 }
-      ).toEqual(['success-chime.mp3', 'success-chime.mp3', 'success-chime.mp3', 'victory-fanfare.mp3']);
+      ).toEqual(['select-game.mp3', 'success-chime.mp3', 'success-chime.mp3', 'success-chime.mp3', 'victory-fanfare.mp3']);
     });
   });
 });
