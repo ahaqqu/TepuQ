@@ -11,7 +11,7 @@ import {
   clearStage, setKataStateRef, handleTypedLetter,
 } from './renderer.js';
 import {
-  initKataAudio, speakLetter, speakWord, playSuccessChime,
+  initKataAudio, speakLetter, speakWord, playSuccessChime, playVictoryChime,
 } from './audio.js';
 import { putKataProgress, getKataProgress } from '../db.js';
 
@@ -25,7 +25,7 @@ let keyboardCleanup = null;
 export async function initKata(words, settings, gambarSpeechSettings) {
   stage = document.getElementById('kataStage');
   kataSettings = settings;
-  speechSettings = gambarSpeechSettings;
+  speechSettings = gambarSpeechSettings || {};
   destroyed = false;
   progress = await getKataProgress();
 
@@ -125,19 +125,24 @@ async function handleWordComplete() {
 }
 
 async function handleVictory() {
+  const sessionWords = getKataState().words;
   getKataState().phase = 'VICTORY';
-  progress.totalSessions = (progress.totalSessions || 0) + 1;
-  progress.currentStreak = 0;
-  progress.completedWords = [];
-  await putKataProgress(progress);
-  fireConfetti();
+  // Celebration effects must not block or crash the win screen.
+  try { fireConfetti(); } catch {}
+  try { playVictoryChime(); } catch {}
+  try { speak('Hebat! Kamu sudah selesai!', speechSettings); } catch {}
   showWinScreen(() => {
     // Main Lagi: restart the session with the same words reshuffled.
     resetKataState();
     setKataStateRef(getKataState());
-    prepareSession(getKataState().words.length ? getKataState().words : [], kataSettings);
+    prepareSession(sessionWords, kataSettings);
     startCurrentWord();
   });
+  // Save progress in the background so the win screen appears immediately.
+  progress.totalSessions = (progress.totalSessions || 0) + 1;
+  progress.currentStreak = 0;
+  progress.completedWords = [];
+  putKataProgress(progress).catch(() => {});
 }
 
 export function destroyKata() {

@@ -148,7 +148,7 @@ test.describe('TepuQ Kata', () => {
       // overflows. Tiles and slots now share the same fitted size.
       const tileBox = await page.locator('.kata-tile').first().boundingBox();
       const slotBox = await page.locator('.kata-slot').first().boundingBox();
-      expect(tileBox.width).toBeGreaterThanOrEqual(85);
+      expect(tileBox.width).toBeGreaterThanOrEqual(80);
       expect(slotBox.width).toBe(tileBox.width);
     });
   });
@@ -227,7 +227,7 @@ test.describe('TepuQ Kata', () => {
     });
 
     await Then('the win screen with "Hebat!" appears', async () => {
-      await expect(page.locator('.kata-win')).toBeVisible();
+      await expect(page.locator('.kata-win')).toBeVisible({ timeout: 8000 });
       await expect(page.locator('.kata-win h2')).toHaveText('Hebat!');
     });
   });

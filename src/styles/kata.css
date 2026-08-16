@@ -115,10 +115,10 @@
 /* ---- Slot row (letter-outline targets) ----------------------------------- */
 .kata-slot-row {
   display: flex;
-  /* Keep horizontal gaps compact, but add more vertical space between wrapped
-     rows so the neon outlines never overlap on real phones. */
-  column-gap: 2.5vmin;
-  row-gap: 7vmin;
+  /* Horizontal and vertical gaps must be big enough to keep the neon outlines
+     from touching when slots wrap on real phones. */
+  column-gap: 4vmin;
+  row-gap: 10vmin;
   justify-content: center;
   flex-wrap: wrap;
 }
@@ -136,19 +136,22 @@
   transition: opacity 0.2s ease;
 }
 .kata-slot-letter {
-  font-size: calc(var(--kata-slot-size) * 0.85);
+  /* Slightly smaller letter inside the box leaves room for the neon glow so
+     adjacent slots don't overlap on real phones. */
+  font-size: calc(var(--kata-slot-size) * 0.72);
   font-weight: 900;
   font-family: "Comic Sans MS", "Baloo 2", system-ui, sans-serif;
   line-height: 1;
   color: transparent;
-  -webkit-text-stroke: 3px rgba(255,255,255,0.75);
-  text-stroke: 3px rgba(255,255,255,0.75);
+  -webkit-text-stroke: 2px rgba(255,255,255,0.85);
+  text-stroke: 2px rgba(255,255,255,0.85);
   text-shadow:
-    0 0 6px var(--kata-letter-color, rgba(30,41,59,0.25)),
-    0 0 14px var(--kata-letter-color, rgba(30,41,59,0.15));
+    0 0 4px rgba(255,255,255,0.6),
+    0 0 10px var(--kata-letter-color, rgba(30,41,59,0.25)),
+    0 0 18px var(--kata-letter-color, rgba(30,41,59,0.15));
   user-select: none;
   -webkit-user-select: none;
-  opacity: 0.55;
+  opacity: 0.6;
 }
 .kata-slot.filled .kata-slot-letter {
   opacity: 0;
@@ -193,7 +196,9 @@
   transition: filter 0.15s ease;
 }
 .kata-tile-letter {
-  font-size: calc(var(--kata-tile-size) * 0.85);
+  /* Match the slot letter ratio so the draggable letter's footprint is the
+     same and the neon glow doesn't spill onto neighbors. */
+  font-size: calc(var(--kata-tile-size) * 0.72);
   font-weight: 900;
   font-family: "Comic Sans MS", "Baloo 2", system-ui, sans-serif;
   line-height: 1;

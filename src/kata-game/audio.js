@@ -29,7 +29,7 @@ export function speakWord(wordRecord, speechSettings) {
   }
 }
 
-// Short pleasant two-note chime via Web Audio API.
+// Short pleasant three-note chime via Web Audio API.
 export function playSuccessChime() {
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) return;
@@ -49,5 +49,29 @@ export function playSuccessChime() {
     osc.connect(gain).connect(audioCtx.destination);
     osc.start(start);
     osc.stop(start + 0.26);
+  });
+}
+
+// Bigger celebratory fanfare when the child finishes the whole session.
+export function playVictoryChime() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  if (!audioCtx) audioCtx = new AC();
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  const now = audioCtx.currentTime;
+  // A cheerful C-major arpeggio plus a final C6 sparkle.
+  const notes = [523.25, 659.25, 783.99, 1046.5];
+  notes.forEach((freq, i) => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = i === 3 ? 'triangle' : 'sine';
+    osc.frequency.value = freq;
+    const start = now + i * 0.14;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.3, start + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.45);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(start);
+    osc.stop(start + 0.46);
   });
 }
