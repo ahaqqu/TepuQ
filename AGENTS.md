@@ -244,6 +244,7 @@ Default images and audio are bundled in `public/assets/` and seeded into Indexed
 
 - **Images:** bright real photographs from Unsplash and CC0 sources.
 - **Audio:** default uses browser Text-to-Speech; parents can record their own voice per object in admin mode.
+- **SFX:** all game/menu sound effects (found on **Pixabay** or **Mixkit**) live in `public/assets/sfx/` and must stay tiny. **Every new SFX must be re-encoded to mono MP3 with silence trimmed, under 50 KB per file** (the whole SFX bundle is currently ~100 KB). Record the original asset source + license in `docs/assets-sources.md`; re-encoding/modifying is permitted by the Mixkit and Pixabay free licenses.
 - Parents can replace any starter object’s photo or recording in admin mode.
 
 ### Cache-busting rule

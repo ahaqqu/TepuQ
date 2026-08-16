@@ -97,9 +97,14 @@ test.describe('Post-deploy smoke tests', () => {
     });
 
     await Then('the encouraging try-again sound plays and the card does not change', async () => {
-      await expect.poll(() => page.evaluate(() => window.__plays.length), { timeout: 5000 }).toBe(1);
+      // Picking the game on the menu also plays the select sound
+      // (select-game.mp3), so count only try-again plays: exactly one.
+      await expect.poll(
+        () => page.evaluate(() => window.__plays.filter((p) => p.includes('try-again.mp3')).length),
+        { timeout: 5000 }
+      ).toBe(1);
       const plays = await page.evaluate(() => window.__plays);
-      expect(plays[0]).toContain('try-again.wav');
+      expect(plays.filter((p) => p.includes('try-again.mp3'))[0]).toContain('try-again.mp3');
       const src = await page.locator('.card-pop.target-card img').getAttribute('src');
       expect(src).toBe(originalSrc);
     });
