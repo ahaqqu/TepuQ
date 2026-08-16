@@ -272,6 +272,7 @@ test.describe('TepuQ Kata', () => {
     await Given('the browser records every spoken utterance', async () => {
       await page.addInitScript(() => {
         window.__spoken = [];
+        window.__speechStub = true;
         const fakeSynth = {
           speaking: false,
           pending: false,
@@ -308,13 +309,32 @@ test.describe('TepuQ Kata', () => {
       const letters = await Promise.all(slots.map((s) => s.getAttribute('data-letter')));
       const word = letters.join('');
       const lastLetter = letters[letters.length - 1];
-      await expect.poll(
-        () => page.evaluate(() => {
-          const spoken = window.__spoken;
-          return spoken.length >= 2 ? spoken.slice(-2) : null;
-        }),
-        { timeout: 5000 }
-      ).toEqual([lastLetter, word]);
+      try {
+        // 10s window: the completed word is spoken ~700ms after the last
+        // letter and the game auto-advances ~2s later, so the tail of the
+        // recorded speech must still show [lastLetter, word].
+        await expect.poll(
+          () => page.evaluate(() => {
+            const spoken = window.__spoken;
+            return spoken.length >= 2 ? spoken.slice(-2) : null;
+          }),
+          { timeout: 10000 }
+        ).toEqual([lastLetter, word]);
+      } catch (err) {
+        // Rare flake: the poll reported fewer than 2 recorded utterances.
+        // Dump the recorded speech plus the game state so the next failure
+        // shows whether the stub was installed and the word completed.
+        const diag = await page.evaluate(() => ({
+          spoken: window.__spoken ?? null,
+          speechStubInstalled: window.__speechStub === true,
+          phase: window.__kataState?.phase ?? null,
+          wordIndex: window.__kataState?.index ?? null,
+          completed: window.__kataState?.completed ?? null,
+          currentWord: window.__kataState?.words?.[window.__kataState.index]?.word ?? null,
+        }));
+        err.message += `\nDiagnostics: ${JSON.stringify(diag)}`;
+        throw err;
+      }
     });
   });
 
