@@ -5,6 +5,7 @@ const STARTER_PAPA = {
   name: 'Papa',
   color: '#4A90D9',
   image: '/assets/starter/papa.jpg',
+  kataEnabled: true,
 };
 
 function starterObject(overrides = {}) {
@@ -20,6 +21,7 @@ function starterObject(overrides = {}) {
     useRecording: false,
     keyBindings: [],
     active: true,
+    kataEnabled: true,
     ...overrides,
   };
 }
@@ -39,6 +41,7 @@ describe('starter object source reconciliation', () => {
     ['recording enabled', { useRecording: true }],
     ['key bound', { keyBindings: ['p'] }],
     ['deactivated', { active: false }],
+    ['kata toggle changed', { kataEnabled: false }],
   ])('treats an object with %s as customized', (_label, overrides) => {
     expect(isStarterObjectUntouched(starterObject(overrides), STARTER_PAPA)).toBe(false);
   });

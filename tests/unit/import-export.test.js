@@ -38,7 +38,7 @@ describe('export/import behavior', () => {
     const objects = [
       { id: 'a', name: 'A', source: 'starter', imageBlob: null, audioBlob: null, useRecording: false },
       { id: 'b', name: 'B', source: 'starter', imageBlob: new Blob(['img'], { type: 'image/png' }), audioBlob: null, useRecording: false },
-      { id: 'c', name: 'C', source: 'custom', imageBlob: null, audioBlob: new Blob(['audio'], { type: 'audio/webm' }), useRecording: true },
+      { id: 'c', name: 'C', source: 'custom', imageBlob: null, audioBlob: new Blob(['audio'], { type: 'audio/webm' }), useRecording: true, kataEnabled: true },
     ];
     await exportZip(objects, { volume: 0.8 });
 
@@ -49,6 +49,7 @@ describe('export/import behavior', () => {
     expect(config.partial).toBe(true);
     expect(config.objects).toHaveLength(1);
     expect(config.objects[0].id).toBe('c');
+    expect(config.objects[0].kataEnabled).toBe(true);
     expect(zipInstance.files['audio/c.webm']).toBeDefined();
     expect(zipInstance.files['images/b.png']).toBeUndefined();
   });
@@ -59,8 +60,8 @@ describe('export/import behavior', () => {
       { id: 'b', name: 'Mama', source: 'starter', imageBlob: null, audioBlob: null, useRecording: false, audioType: 'tts' },
     ];
     const imported = [
-      { id: 'a', name: 'Papa', source: 'custom', imageBlob: new Blob(['custom'], { type: 'image/png' }), audioBlob: null, useRecording: false, audioType: 'tts' },
-      { id: 'x', name: 'Custom Object', source: 'custom', imageBlob: new Blob(['new'], { type: 'image/png' }), audioBlob: null, useRecording: false, audioType: 'tts' },
+      { id: 'a', name: 'Papa', source: 'custom', imageBlob: new Blob(['custom'], { type: 'image/png' }), audioBlob: null, useRecording: false, audioType: 'tts', kataEnabled: false },
+      { id: 'x', name: 'Custom Object', source: 'custom', imageBlob: new Blob(['new'], { type: 'image/png' }), audioBlob: null, useRecording: false, audioType: 'tts', kataEnabled: true },
     ];
 
     const merged = mergeImportedObjects(defaults, imported);
@@ -68,6 +69,7 @@ describe('export/import behavior', () => {
     const papa = merged.find((o) => o.id === 'a');
     expect(papa.source).toBe('custom');
     expect(papa.imageBlob.size).toBe(6); // 'custom' length
+    expect(papa.kataEnabled).toBe(false); // imported toggle wins
   });
 
   it('merges imported custom objects by normalized name', () => {

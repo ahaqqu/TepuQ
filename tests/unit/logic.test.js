@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { chooseNext, findBoundObject } from '@/game/logic.js';
+import { chooseNext, findBoundObject } from '@/gambar-game/logic.js';
 
 const objects = [
   { id: 'a', name: 'Apple', active: true },

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveEntryAnimation, resolveExitAnimation } from '@/game/animations.js';
+import { resolveEntryAnimation, resolveExitAnimation } from '@/gambar-game/animations.js';
 import { ENTRY_ANIMATIONS, EXIT_ANIMATIONS } from '@/config.js';
 
 describe('resolveEntryAnimation', () => {

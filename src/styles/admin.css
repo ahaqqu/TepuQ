@@ -139,6 +139,13 @@ body:not(.admin) #admin { display: none; }
 }
 .obj-source.starter { background: #e3f2fd; color: #1976d2; }
 .obj-source.custom { background: #e8f5e9; color: #388e3c; }
+.obj-kata {
+  display: inline-block;
+  font-size: 12px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.obj-kata.off { opacity: 0.35; filter: grayscale(1); }
 .obj-actions { display: flex; gap: 4px; flex-wrap: wrap; }
 
 .form-group {

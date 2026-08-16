@@ -3,7 +3,6 @@ import {
   KATA_DB_STORES,
   KATA_DEFAULT_SETTINGS,
   KATA_DEFAULT_PROGRESS,
-  KATA_STARTER_WORDS,
 } from './config.js';
 
 let db = null;
@@ -31,9 +30,11 @@ export async function initDB() {
       if (!d.objectStoreNames.contains('meta')) {
         d.createObjectStore('meta', { keyPath: 'key' });
       }
-      // TepuQ Kata stores (added in DB_VERSION 5). See ADR 0003.
-      if (!d.objectStoreNames.contains(KATA_DB_STORES.words)) {
-        d.createObjectStore(KATA_DB_STORES.words, { keyPath: 'id' });
+      // TepuQ Kata stores (added in DB_VERSION 5). Since v7 there is no
+      // kata_words store anymore — Kata reads its words from `objects`.
+      // See ADR 0003.
+      if (d.objectStoreNames.contains('kata_words')) {
+        d.deleteObjectStore('kata_words');
       }
       if (!d.objectStoreNames.contains(KATA_DB_STORES.settings)) {
         d.createObjectStore(KATA_DB_STORES.settings, { keyPath: 'key' });
@@ -41,6 +42,9 @@ export async function initDB() {
       if (!d.objectStoreNames.contains(KATA_DB_STORES.progress)) {
         d.createObjectStore(KATA_DB_STORES.progress, { keyPath: 'key' });
       }
+      // v7 migration: existing objects gain the Kata toggle (true unless the
+      // name is multi-word and therefore not spellable).
+      await addKataEnabledToExistingObjects(tx);
       // Refresh starter image URLs once per version bump. This keeps bundled
       // asset paths in sync without racing against runtime user edits.
       await refreshStarterImageUrlsInTransaction(tx);
@@ -84,6 +88,7 @@ export async function seedDefaults() {
       useRecording: false,
       audioType: 'tts',
       active: true,
+      kataEnabled: s.kataEnabled !== false,
       order: i,
       keyBindings: [],
       source: s.source || 'starter',
@@ -99,6 +104,30 @@ export async function seedDefaults() {
   // We only store the URL, not a Blob, so the browser can cache them and
   // so iOS Safari does not struggle with Blob MIME types.
   return;
+}
+
+// v7 migration: every existing object gains the Kata enable toggle. Single-word
+// names become spellable in TepuQ Kata; multi-word names ("Sikat Gigi") stay
+// disabled because they cannot be spelled as one word. Only objects missing the
+// toggle are touched, so user choices survive later upgrades.
+function addKataEnabledToExistingObjects(tx) {
+  return new Promise((resolve, reject) => {
+    const store = tx.objectStore('objects');
+    const getAllReq = store.getAll();
+    getAllReq.onsuccess = () => {
+      const objects = getAllReq.result || [];
+      objects.forEach((o) => {
+        if (typeof o.kataEnabled !== 'boolean') {
+          store.put({
+            ...o,
+            kataEnabled: !String(o.name || '').trim().includes(' '),
+          });
+        }
+      });
+      resolve();
+    };
+    getAllReq.onerror = () => reject(getAllReq.error);
+  });
 }
 
 function refreshStarterImageUrlsInTransaction(tx) {
@@ -177,7 +206,8 @@ export function isStarterObjectUntouched(o, s) {
     o.audioBlob == null &&
     o.useRecording === false &&
     (o.keyBindings || []).length === 0 &&
-    o.active === true
+    o.active === true &&
+    o.kataEnabled === (s.kataEnabled !== false)
   );
 }
 
@@ -298,44 +328,33 @@ export function getMeta() {
 }
 
 // ---- TepuQ Kata data access -----------------------------------------------
-// Kata owns three stores (kata_words, kata_settings, kata_progress) inside the
-// shared tepuq_db. These helpers are the only code that reads/writes those
-// stores, so Gambar's object/settings/meta helpers stay untouched. See ADR 0003.
+// Kata owns two stores (kata_settings, kata_progress) inside the shared
+// tepuq_db. Its word list is NOT a separate store anymore: since v7 Kata reads
+// the shared `objects` store and projects it into the shape the Kata game
+// expects via loadKataWordsFromObjects(). See ADR 0003 / plan-shared-word-library.
 
-export function getAllKataWords() {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction([KATA_DB_STORES.words], 'readonly');
-    const req = tx.objectStore(KATA_DB_STORES.words).getAll();
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-export function putKataWord(word) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction([KATA_DB_STORES.words], 'readwrite');
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.objectStore(KATA_DB_STORES.words).put(word);
-  });
-}
-
-export function deleteKataWord(id) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction([KATA_DB_STORES.words], 'readwrite');
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.objectStore(KATA_DB_STORES.words).delete(id);
-  });
-}
-
-export function clearKataWords() {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction([KATA_DB_STORES.words], 'readwrite');
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.objectStore(KATA_DB_STORES.words).clear();
-  });
+// Project the shared object library into Kata word records. This is the single
+// adapter seam: the Kata game and admin keep their word-record shape while the
+// underlying data is Gambar's object store. Objects with a multi-word name are
+// excluded (not spellable), even if their toggle was somehow set.
+export async function loadKataWordsFromObjects() {
+  const objects = await getAllObjects();
+  return objects
+    .filter((o) => o.kataEnabled && !String(o.name || '').trim().includes(' '))
+    .map((o) => ({
+      id: o.id,
+      word: String(o.name || '').toLowerCase(),
+      display: o.name,
+      enabled: !!o.kataEnabled,
+      imageUrl: o.imageUrl || null,
+      imageBlob: o.imageBlob || null,
+      audioBlob: o.audioBlob || null,
+      useRecording: !!o.useRecording,
+      audioType: o.audioType || 'tts',
+      category: 'default',
+      order: o.order,
+      source: o.source,
+    }));
 }
 
 export function getKataSettings() {
@@ -378,51 +397,15 @@ export function putKataProgress(p) {
   });
 }
 
-// Seed the starter words and default Kata settings/progress on first run.
-// Mirrors seedDefaults(): seed immediately so the UI can bootstrap, and only
-// run when the words store is empty.
-export async function seedKataDefaults() {
-  const tx = db.transaction(
-    [KATA_DB_STORES.words, KATA_DB_STORES.settings, KATA_DB_STORES.progress],
-    'readwrite',
-  );
-  const wordStore = tx.objectStore(KATA_DB_STORES.words);
-  KATA_STARTER_WORDS.forEach((s, i) => {
-    const id = 'kata_' + String(i + 1).padStart(3, '0');
-    wordStore.put({
-      id,
-      word: s.word,
-      display: s.word,
-      category: s.category || 'default',
-      order: i,
-      enabled: true,
-      audioBlob: null,
-      audioType: 'tts',
-      useRecording: false,
-      source: 'starter',
-      image: s.image || null,
-    });
-  });
-  tx.objectStore(KATA_DB_STORES.settings).put({ key: 'kata_settings', ...KATA_DEFAULT_SETTINGS, _source: 'default' });
-  tx.objectStore(KATA_DB_STORES.progress).put({ key: 'kata_progress', ...KATA_DEFAULT_PROGRESS });
-  await txComplete(tx);
-}
-
-// Load all Kata data for the game/admin. Seeds on first run like loadData().
+// Load all Kata data for the game/admin. Words come from the shared object
+// library (seeded by Gambar's seedDefaults), settings/progress from their own
+// stores. Mirrors loadData().
 export async function loadKataData() {
   let [words, settings, progress] = await Promise.all([
-    getAllKataWords(),
+    loadKataWordsFromObjects(),
     getKataSettings(),
     getKataProgress(),
   ]);
-  if (words.length === 0) {
-    await seedKataDefaults();
-    [words, settings, progress] = await Promise.all([
-      getAllKataWords(),
-      getKataSettings(),
-      getKataProgress(),
-    ]);
-  }
   const reconciled = await reconcileKataSettings(settings);
   return { words, settings: reconciled, progress };
 }
@@ -436,17 +419,4 @@ async function reconcileKataSettings(stored) {
     return fresh;
   }
   return { ...KATA_DEFAULT_SETTINGS, ...stored };
-}
-
-// A starter word untouched by the parent counts as starter (not synced/exported).
-export function isStarterWordUntouched(w, s) {
-  return (
-    w.word === s.word &&
-    w.display === s.word &&
-    w.audioBlob == null &&
-    w.useRecording === false &&
-    w.source === 'starter' &&
-    w.enabled === true &&
-    (w.image || null) === (s.image || null)
-  );
 }

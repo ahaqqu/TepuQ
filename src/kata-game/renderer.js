@@ -1,11 +1,10 @@
 // DOM rendering for TepuQ Kata: slot row, scattered letter tiles, confetti,
-// and the win screen. Reads state from src/kata/game-state.js and writes DOM
-// into the #kataStage container. Slot/tile centers are measured after layout
-// so the drag engine works in real pixels.
+// and the win screen. Reads state from src/kata-game/game-state.js and writes
+// DOM into the #kataStage container. Slot/tile centers are measured after
+// layout so the drag engine works in real pixels.
 
 import { scatterLetters } from './slots.js';
 import { bindDrag, snapToSlot } from './drag-engine.js';
-import { DB_VERSION } from '../config.js';
 
 // A fun, bright palette so each letter gets its own color — more engaging for a
 // toddler than a single color. The color is assigned by letter so a tile and
@@ -42,8 +41,8 @@ export function clearStage() {
 }
 
 // Render one word: scatter tiles on top, photo + slot row at the bottom.
-// The photo (from the word's Gambar starter image) helps the toddler learn what
-// the word means while spelling it.
+// The photo is the SAME photo as TepuQ Gambar (shared word/photo library), so
+// the toddler learns the word and its meaning at the same time.
 export function renderWord(wordRecord, settings, state) {
   clearStage();
   if (!stage || !wordRecord) return;
@@ -69,11 +68,22 @@ export function renderWord(wordRecord, settings, state) {
   const bottomArea = document.createElement('div');
   bottomArea.className = 'kata-bottom';
 
-  // Photo: the word's starter image, so the child sees what the word means.
-  if (wordRecord.image) {
+  // Photo: the object's shared photo (starter HTTP URL or a custom image
+  // Blob), so the child sees what the word means. Custom blobs get a temporary
+  // object URL that is revoked when the stage is cleared.
+  if (wordRecord.imageBlob) {
+    const photoUrl = URL.createObjectURL(wordRecord.imageBlob);
     const photo = document.createElement('img');
     photo.className = 'kata-photo';
-    photo.src = `/${wordRecord.image}?v=${DB_VERSION}`;
+    photo.src = photoUrl;
+    photo.alt = wordRecord.word;
+    photo.onerror = () => { photo.style.display = 'none'; };
+    bottomArea.appendChild(photo);
+    cleanups.push(() => URL.revokeObjectURL(photoUrl));
+  } else if (wordRecord.imageUrl) {
+    const photo = document.createElement('img');
+    photo.className = 'kata-photo';
+    photo.src = wordRecord.imageUrl;
     photo.alt = wordRecord.word;
     photo.onerror = () => { photo.style.display = 'none'; };
     bottomArea.appendChild(photo);

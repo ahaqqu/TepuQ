@@ -2,8 +2,10 @@ export const DB_NAME = 'tepuq_db';
 // Bump DB_VERSION when bundled starter images change OR when the schema
 // changes (new object stores). v5 adds the TepuQ Kata stores
 // (kata_words, kata_settings, kata_progress). v6 re-seeds Kata starter words
-// to match Gambar's starter objects (same words + photos).
-export const DB_VERSION = 6;
+// to match Gambar's starter objects (same words + photos). v7 merges the
+// Kata word list into the shared `objects` store (kataEnabled toggle) and
+// drops the `kata_words` store — one shared word/photo library for both games.
+export const DB_VERSION = 7;
 
 export const DEFAULT_SETTINGS = {
   backgroundStyle: 'combined',
@@ -22,24 +24,28 @@ export const DEFAULT_SETTINGS = {
   fullscreen: true,
 };
 
+// One shared word/photo library for both games. Each starter entry carries a
+// per-game Kata toggle: single-word names are spellable in TepuQ Kata
+// (kataEnabled: true); multi-word names ("Sikat Gigi") are not (kataEnabled:
+// false).
 export const STARTER_OBJECTS = [
-  { name: 'Papa', color: '#4A90D9', image: 'assets/starter/papa.jpg', source: 'starter' },
-  { name: 'Mama', color: '#E85D75', image: 'assets/starter/mama.jpg', source: 'starter' },
-  { name: 'Saya', color: '#F5C542', image: 'assets/starter/saya.jpg', source: 'starter' },
-  { name: 'Kucing', color: '#F5A623', image: 'assets/starter/kucing.jpg', source: 'starter' },
-  { name: 'Mobil', color: '#D0021B', image: 'assets/starter/mobil.jpg', source: 'starter' },
-  { name: 'Pisang', color: '#F8E71C', image: 'assets/starter/pisang.jpg', source: 'starter' },
-  { name: 'Bola', color: '#7ED321', image: 'assets/starter/bola.jpg', source: 'starter' },
-  { name: 'Boneka', color: '#BD10E0', image: 'assets/starter/boneka.jpg', source: 'starter' },
-  { name: 'Buku', color: '#800000', image: 'assets/starter/buku.jpg', source: 'starter' },
-  { name: 'Air', color: '#87CEEB', image: 'assets/starter/air.jpg', source: 'starter' },
-  { name: 'Susu', color: '#F5F5F5', image: 'assets/starter/susu.jpg', source: 'starter' },
-  { name: 'Sikat Gigi', color: '#00E5FF', image: 'assets/starter/sikat_gigi.jpg', source: 'starter' },
-  { name: 'Mandi', color: '#00BCD4', image: 'assets/starter/mandi.jpg', source: 'starter' },
-  { name: 'Main', color: '#FF6B6B', image: 'assets/starter/main.jpg', source: 'starter' },
-  { name: 'Makan', color: '#FF9800', image: 'assets/starter/makan.jpg', source: 'starter' },
-  { name: 'Minum', color: '#2196F3', image: 'assets/starter/minum.jpg', source: 'starter' },
-  { name: 'Tidur', color: '#9C27B0', image: 'assets/starter/tidur.jpg', source: 'starter' },
+  { name: 'Papa', color: '#4A90D9', image: 'assets/starter/papa.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Mama', color: '#E85D75', image: 'assets/starter/mama.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Saya', color: '#F5C542', image: 'assets/starter/saya.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Kucing', color: '#F5A623', image: 'assets/starter/kucing.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Mobil', color: '#D0021B', image: 'assets/starter/mobil.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Pisang', color: '#F8E71C', image: 'assets/starter/pisang.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Bola', color: '#7ED321', image: 'assets/starter/bola.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Boneka', color: '#BD10E0', image: 'assets/starter/boneka.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Buku', color: '#800000', image: 'assets/starter/buku.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Air', color: '#87CEEB', image: 'assets/starter/air.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Susu', color: '#F5F5F5', image: 'assets/starter/susu.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Sikat Gigi', color: '#00E5FF', image: 'assets/starter/sikat_gigi.jpg', source: 'starter', kataEnabled: false },
+  { name: 'Mandi', color: '#00BCD4', image: 'assets/starter/mandi.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Main', color: '#FF6B6B', image: 'assets/starter/main.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Makan', color: '#FF9800', image: 'assets/starter/makan.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Minum', color: '#2196F3', image: 'assets/starter/minum.jpg', source: 'starter', kataEnabled: true },
+  { name: 'Tidur', color: '#9C27B0', image: 'assets/starter/tidur.jpg', source: 'starter', kataEnabled: true },
 ];
 
 export const ENTRY_ANIMATIONS = ['bounce', 'pop', 'spin', 'slide', 'flip', 'wobble', 'zoom'];
@@ -52,9 +58,13 @@ export const SLIDE_DIRECTIONS = ['left', 'right', 'top', 'bottom'];
 // distance, session length, ...) are stored in the kata_settings store; the
 // TTS rate/pitch/volume are NOT here — Kata reuses Gambar's shared speech
 // settings via src/speech.js.
+//
+// Since DB_VERSION 7 there is NO separate word list: TepuQ Kata reads its words
+// from the shared `objects` store (the same photos and words as TepuQ Gambar)
+// via the kataEnabled per-object toggle. Only kata_settings and kata_progress
+// keep their own stores.
 
 export const KATA_DB_STORES = {
-  words: 'kata_words',
   settings: 'kata_settings',
   progress: 'kata_progress',
 };
@@ -74,27 +84,3 @@ export const KATA_DEFAULT_PROGRESS = {
   currentStreak: 0,
   totalSessions: 0,
 };
-
-// Starter words: the same Indonesian words and photos as TepuQ Gambar's
-// STARTER_OBJECTS, so the toddler sees a familiar photo while spelling the word.
-// Multi-word Gambar objects ("Sikat Gigi") are skipped (not spellable as one
-// word). Each entry carries the Gambar image path so the renderer can show the
-// photo alongside the slot targets. See ADR 0003.
-export const KATA_STARTER_WORDS = [
-  { word: 'papa', category: 'keluarga', image: 'assets/starter/papa.jpg' },
-  { word: 'mama', category: 'keluarga', image: 'assets/starter/mama.jpg' },
-  { word: 'saya', category: 'keluarga', image: 'assets/starter/saya.jpg' },
-  { word: 'kucing', category: 'hewan', image: 'assets/starter/kucing.jpg' },
-  { word: 'mobil', category: 'benda', image: 'assets/starter/mobil.jpg' },
-  { word: 'pisang', category: 'makanan', image: 'assets/starter/pisang.jpg' },
-  { word: 'bola', category: 'benda', image: 'assets/starter/bola.jpg' },
-  { word: 'boneka', category: 'benda', image: 'assets/starter/boneka.jpg' },
-  { word: 'buku', category: 'benda', image: 'assets/starter/buku.jpg' },
-  { word: 'air', category: 'alam', image: 'assets/starter/air.jpg' },
-  { word: 'susu', category: 'makanan', image: 'assets/starter/susu.jpg' },
-  { word: 'mandi', category: 'aktivitas', image: 'assets/starter/mandi.jpg' },
-  { word: 'main', category: 'aktivitas', image: 'assets/starter/main.jpg' },
-  { word: 'makan', category: 'aktivitas', image: 'assets/starter/makan.jpg' },
-  { word: 'minum', category: 'aktivitas', image: 'assets/starter/minum.jpg' },
-  { word: 'tidur', category: 'aktivitas', image: 'assets/starter/tidur.jpg' },
-];

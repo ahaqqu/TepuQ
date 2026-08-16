@@ -25,6 +25,7 @@ export function mergeImportedObjects(existing, imported) {
         useRecording: custom.audioBlob ? custom.useRecording : (o.audioBlob ? o.useRecording : false),
         audioType: custom.audioBlob ? (custom.useRecording ? 'recording' : 'tts') : o.audioType,
         active: custom.active,
+        kataEnabled: custom.kataEnabled ?? o.kataEnabled,
         order: typeof custom.order === 'number' ? custom.order : o.order,
         keyBindings: custom.keyBindings?.length ? custom.keyBindings : o.keyBindings,
         source: 'custom',
