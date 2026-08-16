@@ -47,6 +47,17 @@ export function renderWord(wordRecord, settings, state) {
   clearStage();
   if (!stage || !wordRecord) return;
 
+  const word = wordRecord.word.toLowerCase();
+  const letters = word.split('');
+
+  // Letters scale with the screen: the stored settings are the mobile base.
+  // Phones get slightly bigger letters; desktops get much bigger ones
+  // (capped at 2x). Slots are then adapted so long words never tower into the
+  // scatter area, and tiles are adapted so they never spill onto the photo.
+  const sizes = scaledSizes(settings);
+  const slotSize = fitSlotSize(letters.length, sizes.slotSize);
+  stage.style.setProperty('--kata-slot-size', `${slotSize}px`);
+
   // Back-to-menu button (top-left, toddler-safe minimum size).
   const backBtn = document.createElement('button');
   backBtn.className = 'kata-back-btn';
@@ -55,9 +66,6 @@ export function renderWord(wordRecord, settings, state) {
     destroyKataCallback?.();
   });
   stage.appendChild(backBtn);
-
-  const word = wordRecord.word.toLowerCase();
-  const letters = word.split('');
 
   // Scatter area (top, flexible — tiles are dragged here).
   const scatter = document.createElement('div');
@@ -97,8 +105,8 @@ export function renderWord(wordRecord, settings, state) {
     slot.className = 'kata-slot';
     slot.dataset.index = index;
     slot.dataset.letter = letter;
-    slot.style.width = `${settings.slotSize}px`;
-    slot.style.height = `${settings.slotSize}px`;
+    slot.style.width = `${slotSize}px`;
+    slot.style.height = `${slotSize}px`;
     slot.style.setProperty('--kata-letter-color', colorForLetter(letter));
     const slotLetter = document.createElement('span');
     slotLetter.className = 'kata-slot-letter';
@@ -112,7 +120,14 @@ export function renderWord(wordRecord, settings, state) {
   // Defer measuring until the scatter area is laid out.
   requestAnimationFrame(() => {
     const area = { width: scatter.clientWidth, height: scatter.clientHeight };
-    const origins = scatterLetters(word, area, settings.letterSize);
+    const fit = fitTileSize(letters.length, area, sizes.letterSize);
+    const tileSize = fit.size;
+    stage.style.setProperty('--kata-tile-size', `${tileSize}px`);
+    // When the tiles had to shrink to fit, scatter them on a deterministic
+    // grid (shuffled into cells) so they can never spill onto the photo.
+    const origins = scatterLetters(word, area, tileSize, Math.random, {
+      gridFirst: fit.shrunk,
+    });
 
     letters.forEach((letter, tileIndex) => {
       const tile = document.createElement('div');
@@ -124,8 +139,8 @@ export function renderWord(wordRecord, settings, state) {
       tileLetter.className = 'kata-tile-letter';
       tileLetter.textContent = letter.toUpperCase();
       tile.appendChild(tileLetter);
-      tile.style.width = `${settings.letterSize}px`;
-      tile.style.height = `${settings.letterSize}px`;
+      tile.style.width = `${tileSize}px`;
+      tile.style.height = `${tileSize}px`;
       const origin = origins[tileIndex] || { x: 0, y: 0 };
       tile.style.left = `${origin.x}px`;
       tile.style.top = `${origin.y}px`;
@@ -141,6 +156,71 @@ export function renderWord(wordRecord, settings, state) {
       cleanups.push(cleanup);
     });
   });
+}
+
+// Letter/slot scale per screen. The stored settings are the phone base:
+// mobile gets a small bump (1.15x), and the scale grows with the screen up to
+// 2x on big desktops. The fitted sizes below can only shrink from here when a
+// long word would otherwise overflow the layout.
+function scaledSizes(settings) {
+  const vmin = Math.min(window.innerWidth, window.innerHeight);
+  const factor = Math.min(2, Math.max(1.15, vmin / 540));
+  return {
+    letterSize: Math.round((settings.letterSize || 90) * factor),
+    slotSize: Math.round((settings.slotSize || 100) * factor),
+  };
+}
+
+// Width available to the slot row: the stage content width, minus the photo
+// when the wide-screen layout puts the photo beside the slots. Keep the
+// breakpoint in sync with the @media rule in src/styles/kata.css.
+function slotRowWidth() {
+  const vmin = Math.min(window.innerWidth, window.innerHeight);
+  const padPx = (4 * vmin) / 100; // #kataStage padding 4vmin per side
+  const wide = window.innerWidth >= 1400;
+  const photoPx = Math.min(360, Math.max(110, (30 * vmin) / 100));
+  const gapPx = (2 * vmin) / 100; // .kata-bottom gap 2vmin
+  return window.innerWidth - 2 * padPx - (wide ? photoPx + gapPx : 0);
+}
+
+// Slot size adapted to the row width: prefer one row (shrinking a bit if
+// needed, down to 96px) so the slots never tower into the scatter area; fall
+// back to two rows only when one row would be too small.
+function fitSlotSize(n, preferred) {
+  const vmin = Math.min(window.innerWidth, window.innerHeight);
+  const gap = (2.5 * vmin) / 100; // .kata-slot-row gap 2.5vmin
+  const rowWidth = slotRowWidth();
+  const perRow = (rows) =>
+    Math.floor((rowWidth - (Math.ceil(n / rows) - 1) * gap) / Math.ceil(n / rows));
+  const one = perRow(1);
+  if (one >= preferred) return preferred;
+  if (one >= 96) return one;
+  return Math.max(Math.min(perRow(2), preferred), 96);
+}
+
+// Tile size that packs n tiles into the scatter area without spilling onto the
+// photo below. Mirrors the packed-grid math in slots.js: n tiles need
+// ceil(n/cols) grid rows and the last row must still end inside the area.
+// Returns { size, shrunk } — shrunk tells the caller to use the grid-first
+// scatter: either the tiles had to shrink, or the area's grid cannot hold n
+// distinct cells for the random path (in which case the grid fits by
+// construction at the returned size).
+function fitTileSize(n, area, preferred) {
+  let t = preferred;
+  while (t > 90) {
+    const pad = t / 2;
+    const minX = pad;
+    const maxX = Math.max(minX, area.width - t - pad);
+    const cols = Math.max(1, Math.floor((maxX - minX) / t) + 1);
+    const rows = Math.ceil(n / cols);
+    if (rows * t + pad <= area.height) {
+      const maxRow = Math.max(0, Math.floor((area.height - 2 * t) / t));
+      const capacity = (maxRow + 1) * cols;
+      return { size: Math.round(t), shrunk: t < preferred || capacity < n };
+    }
+    t -= 4;
+  }
+  return { size: Math.round(t), shrunk: true };
 }
 
 // Build the live slot list with centers (viewport coords) and filled state,
