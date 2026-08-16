@@ -1,17 +1,7 @@
-import { initDB, loadData, getAllObjects, putSettings, putMeta, getMeta } from '../db.js';
-import { buildSyncPayload, parseSyncPayload, configToLogString } from './sync-serializer.js';
-import { mergeImportedObjects } from './merge-objects.js';
-import { showToast } from '../utils.js';
+import { loadData, getMeta } from '../db.js';
+import { fetchWithTimeout, checkLoginStatus, applyPulledData, updateLastSyncTime } from '../sync-client.js';
 
-const API_BASE = '/api';
 const LOG_STORAGE_KEY = 'tepuq_sync_log';
-const FETCH_TIMEOUT_MS = 20000;
-
-function fetchWithTimeout(url, options = {}, ms = FETCH_TIMEOUT_MS) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), ms);
-  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(id));
-}
 
 export function initSyncUI() {
   const section = document.getElementById('syncSection');
@@ -51,7 +41,7 @@ async function handleLogin() {
     return;
   }
   try {
-    const res = await fetchWithTimeout(`${API_BASE}/login`, {
+    const res = await fetchWithTimeout(`/api/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
@@ -70,44 +60,9 @@ async function handleLogin() {
   }
 }
 
-// Login with family credentials and pull cloud data immediately.
-// Used by the main page login form; returns { ok, pulled, error }.
-export async function loginAndPull(user, pass) {
-  const loginRes = await fetchWithTimeout(`${API_BASE}/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'same-origin',
-    body: JSON.stringify({ user, pass }),
-  });
-  const loginData = await loginRes.json().catch(() => ({}));
-  if (!loginRes.ok || !loginData.ok) {
-    return { ok: false, error: loginData.error || 'Login gagal' };
-  }
-
-  const pullRes = await fetchWithTimeout(`${API_BASE}/sync`, {
-    method: 'GET',
-    credentials: 'same-origin',
-  });
-  if (pullRes.status === 204) {
-    return { ok: true, pulled: false };
-  }
-  const data = await pullRes.json().catch(() => ({}));
-  if (!pullRes.ok || !data.ok) {
-    return { ok: true, pulled: false, error: data.error || 'Pull gagal' };
-  }
-  if (!data.payload) {
-    return { ok: true, pulled: false };
-  }
-
-  const { settings, objects } = await parseSyncPayload(data.payload);
-  await applyPulledData(objects, settings);
-  await updateLastSyncTime();
-  return { ok: true, pulled: true };
-}
-
 async function handleLogout() {
   try {
-    await fetch(`${API_BASE}/logout`, { method: 'POST', credentials: 'same-origin' });
+    await fetch(`/api/logout`, { method: 'POST', credentials: 'same-origin' });
   } catch (err) {
     console.error(err);
   }
@@ -118,11 +73,12 @@ async function handleLogout() {
 async function handlePush() {
   showSyncStatus('Mempersiapkan data...');
   try {
+    const { buildSyncPayload, parseSyncPayload, configToLogString } = await import('./sync-serializer.js');
     const { objects, settings } = await loadData();
     const payload = await buildSyncPayload(objects, settings);
     const { config } = await parseSyncPayload(payload);
     const jsonSize = new TextEncoder().encode(JSON.stringify(config)).length;
-    const res = await fetch(`${API_BASE}/sync`, {
+    const res = await fetch(`/api/sync`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
@@ -130,11 +86,11 @@ async function handlePush() {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
-      appendSyncLog('PUSH GAGAL', data.error || 'Push gagal');
+      await appendSyncLog('PUSH GAGAL', data.error || 'Push gagal');
       showSyncStatus(data.error || 'Push gagal', true);
       return;
     }
-    appendSyncLog(
+    await appendSyncLog(
       'PUSH',
       config,
       `${config.objects?.length || 0} objek, JSON ${jsonSize} byte, terkirim ${data.size} byte`
@@ -143,7 +99,7 @@ async function handlePush() {
     await updateLastSyncTime();
   } catch (err) {
     console.error(err);
-    appendSyncLog('PUSH GAGAL', err.message);
+    await appendSyncLog('PUSH GAGAL', err.message);
     showSyncStatus('Push gagal: ' + err.message, true);
   }
 }
@@ -151,65 +107,39 @@ async function handlePush() {
 async function handlePull() {
   showSyncStatus('Mengambil data...');
   try {
-    const res = await fetch(`${API_BASE}/sync`, {
+    const { parseSyncPayload, configToLogString } = await import('./sync-serializer.js');
+    const res = await fetch(`/api/sync`, {
       method: 'GET',
       credentials: 'same-origin',
     });
     if (res.status === 204) {
-      appendSyncLog('PULL', 'Belum ada data di cloud');
+      await appendSyncLog('PULL', 'Belum ada data di cloud');
       showSyncStatus('Belum ada data di cloud');
       return;
     }
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
-      appendSyncLog('PULL GAGAL', data.error || 'Pull gagal');
+      await appendSyncLog('PULL GAGAL', data.error || 'Pull gagal');
       showSyncStatus(data.error || 'Pull gagal', true);
       return;
     }
     if (!data.payload) {
-      appendSyncLog('PULL', 'Payload kosong');
+      await appendSyncLog('PULL', 'Payload kosong');
       showSyncStatus('Payload kosong', true);
       return;
     }
 
     const { settings, objects, config } = await parseSyncPayload(data.payload);
-    appendSyncLog('PULL', config, `${objects.length} objek`);
+    await appendSyncLog('PULL', config, `${objects.length} objek`);
     await applyPulledData(objects, settings);
     showSyncStatus('Pull berhasil. Memuat ulang halaman...');
     await updateLastSyncTime();
     location.reload();
   } catch (err) {
     console.error(err);
-    appendSyncLog('PULL GAGAL', err.message);
+    await appendSyncLog('PULL GAGAL', err.message);
     showSyncStatus('Pull gagal: ' + err.message, true);
   }
-}
-
-async function applyPulledData(importedObjects, settings) {
-  const existing = await getAllObjects();
-  const merged = mergeImportedObjects(existing, importedObjects);
-
-  const storeNames = ['objects', 'settings', 'meta'];
-
-  const db = await initDB();
-  const tx = db.transaction(storeNames, 'readwrite');
-  tx.objectStore('objects').clear();
-  merged.forEach((o) => tx.objectStore('objects').put(o));
-
-  const hasSettings = settings && Object.keys(settings).length > 0;
-  tx.objectStore('settings').put({ key: 'settings', ...(hasSettings ? settings : {}), _source: hasSettings ? 'user' : 'default' });
-  tx.objectStore('meta').put({ key: 'meta', version: '3.0', lastModified: Date.now() });
-
-  await new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error || new Error('Transaction aborted'));
-  });
-}
-
-async function updateLastSyncTime() {
-  const meta = await getMeta();
-  await putMeta({ ...meta, lastSync: Date.now() });
 }
 
 export async function refreshSyncUI() {
@@ -232,28 +162,6 @@ export async function refreshSyncUI() {
   }
 }
 
-export async function checkLoginStatus() {
-  try {
-    const res = await fetch(`${API_BASE}/me`, { method: 'GET', credentials: 'same-origin' });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
-// Returns the logged-in username, or null when not logged in.
-export async function fetchCurrentUser() {
-  try {
-    const res = await fetch(`${API_BASE}/me`, { method: 'GET', credentials: 'same-origin' });
-    if (!res.ok) return null;
-    const data = await res.json().catch(() => null);
-    const user = data && data.ok ? data.user : null;
-    return typeof user === 'string' && user ? user : null;
-  } catch {
-    return null;
-  }
-}
-
 function showSyncStatus(text, isError = false) {
   const el = document.getElementById('syncStatus');
   if (!el) return;
@@ -264,11 +172,15 @@ function showSyncStatus(text, isError = false) {
 // Append a push/pull entry to the admin sync log. `detail` is either a
 // config object (shown as pretty JSON) or a plain message string.
 // The log is persisted in localStorage so it survives the reload after pull.
-function appendSyncLog(type, detail, summary = '') {
+async function appendSyncLog(type, detail, summary = '') {
   const el = document.getElementById('syncLog');
   if (!el) return;
   const ts = new Date().toLocaleTimeString('id-ID');
-  const body = typeof detail === 'string' ? detail : configToLogString(detail);
+  let body = detail;
+  if (typeof detail !== 'string') {
+    const { configToLogString } = await import('./sync-serializer.js');
+    body = configToLogString(detail);
+  }
   const entry = `[${ts}] ${type}${summary ? ' — ' + summary : ''}\n${body}\n\n`;
   const text = (localStorage.getItem(LOG_STORAGE_KEY) || '') + entry;
   try {

@@ -63,10 +63,11 @@ TepuQ/
 │   │   ├── index.js        # admin shell (tabs: Objek, Sinkron; editor tabs wiring)
 │   │   ├── editor.js       # shared object editor (incl. "Aktif di TepuQ Kata" toggle)
 │   │   ├── object-list.js  # shared object list with Kata badge + drag reorder
-│   │   ├── import-export.js# shared ZIP export/import (objects carry kataEnabled)
+│   │   ├── import-export.js# shared ZIP export/import (objects carry kataEnabled; lazy-loads JSZip)
 │   │   ├── sync.js         # cloud sync UI (login/push/pull/logout)
-│   │   ├── sync-serializer.js # sync payload build/parse (gzip -> base64)
+│   │   ├── sync-serializer.js # sync payload build/parse (gzip -> base64; lazy chunk)
 │   │   └── merge-objects.js # shared import/sync merge strategy
+│   ├── sync-client.js      # shared sync API client (main-page login, Kata greeting, admin)
 │   ├── gambar-admin/       # Gambar-specific admin tab ("Pengaturan Game")
 │   │   ├── index.js        # tab entry point
 │   │   └── settings-form.js
@@ -75,10 +76,9 @@ TepuQ/
 │   │   └── settings-form.js # Kata settings (letter/slot/snap/session)
 │   └── styles/             # CSS: base, gameplay, theme, admin, kata
 ├── public/
-│   ├── assets/             # bundled CC0 starter images + audio
+│   ├── assets/             # bundled CC0 starter images (WebP) + SFX
 │   ├── icons/              # PWA icons
-│   ├── manifest.json       # web app manifest
-│   └── vendor/             # third-party JS libraries
+│   └── manifest.json       # web app manifest
 ├── tests/
 │   ├── unit/               # Vitest tests
 │   └── e2e/                # Playwright tests
@@ -285,6 +285,6 @@ When changing styling, prefer editing `theme.css`. When changing game behavior t
 - Objects → Kata words adapter: `loadKataWordsFromObjects()` in `src/db.js`
 - Import/export ZIP: `src/admin/import-export.js`
 - Import/sync merge strategy: `src/admin/merge-objects.js`
-- Cloud sync: `src/admin/sync.js`, `functions/api/login.js`, `functions/api/me.js`, `functions/api/sync.js`, `functions/api/logout.js`
+- Cloud sync: `src/sync-client.js`, `src/admin/sync.js`, `functions/api/login.js`, `functions/api/me.js`, `functions/api/sync.js`, `functions/api/logout.js`
 - Sync payload serializer: `src/admin/sync-serializer.js`
 - Architecture docs: `docs/architecture.md` (diagram, tech stack, structure, sync mechanism), `docs/adr/`, `CONTEXT.md` (domain glossary)

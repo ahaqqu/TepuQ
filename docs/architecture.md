@@ -35,7 +35,7 @@ flowchart LR
 | Language | Vanilla JavaScript (ESM) + HTML + CSS | No framework; keeps the app light and simple for a toddler game |
 | Local storage | IndexedDB (`tepuq_db`) | Blob storage for photos/recordings; one DB shared by both games |
 | Speech | Web Speech API (`id-ID` TTS) + MediaRecorder | Default TTS; parents can record their own voice per object |
-| ZIP export/import | JSZip + FileSaver (vendored in `public/vendor/`) | Backup & device migration |
+| ZIP export/import | JSZip (npm, lazy-loaded chunk) | Backup & device migration |
 | Cloud sync | Cloudflare Pages Functions + KV | Free tier, sub-ms access, zero database ops |
 | Auth | Hand-rolled JWT (HS256 via Web Crypto), HttpOnly cookie | No auth library needed for a single shared family credential |
 | Compression | `CompressionStream`/`DecompressionStream` (gzip) | Shrinks the sync payload before it hits KV |
@@ -61,6 +61,7 @@ TepuQ/
 │   ├── db.js                     # IndexedDB: stores, seeding, Kata adapter, migrations
 │   ├── utils.js                  # Shared helpers (toast, resize, blob utils)
 │   ├── speech.js                 # TTS wrapper + recorded audio, shared by both games
+│   ├── sync-client.js            # Shared sync API client (login/pull/me); keep out of admin layer
 │   ├── gambar-game/              # TepuQ Gambar (original card game, renamed)
 │   │   ├── mode-manager.js       # Bebas/Target sub-picker, startMode
 │   │   ├── logic.js              # Core rules: card advancement, burst window
@@ -94,8 +95,7 @@ TepuQ/
 │   │   └── settings-form.js      # Letter/slot/snap/session settings
 │   └── styles/                   # base / gameplay / theme / admin / kata CSS
 ├── public/
-│   ├── assets/                   # Bundled CC0 starter images + SFX (cache-busted by DB_VERSION)
-│   └── vendor/                   # jszip.min.js, FileSaver.min.js
+│   └── assets/                   # Bundled CC0 starter images (WebP) + SFX (cache-busted by DB_VERSION)
 ├── tests/
 │   ├── unit/                     # Vitest (logic, slots, sync, serializers, settings…)
 │   └── e2e/                      # Playwright (game, kata, admin, sync, deploy smoke)

@@ -15,7 +15,7 @@ import {
   playEncourageSfx,
 } from './audio.js';
 import { putKataProgress, getKataProgress } from '../db.js';
-import { fetchCurrentUser } from '../admin/sync.js';
+import { fetchCurrentUser } from '../sync-client.js';
 import { speak } from '../speech.js';
 
 let stage = null;

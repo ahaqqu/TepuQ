@@ -24,7 +24,7 @@ test.describe('TepuQ Gambar — Target mode', () => {
       const initialCard = page.locator('.card-pop.target-card img');
       await expect(initialCard).toBeVisible();
       const initialSrc = await initialCard.getAttribute('src');
-      expect(initialSrc).toMatch(/assets\/starter\/.+\.jpg/);
+      expect(initialSrc).toMatch(/assets\/starter\/.+\.webp/);
       expect(initialSrc).not.toMatch(/^blob:/);
     });
 
@@ -38,7 +38,7 @@ test.describe('TepuQ Gambar — Target mode', () => {
       const nextCard = page.locator('.card-pop.target-card img');
       await expect(nextCard).toBeVisible();
       const nextSrc = await nextCard.getAttribute('src');
-      expect(nextSrc).toMatch(/assets\/starter\/.+\.jpg/);
+      expect(nextSrc).toMatch(/assets\/starter\/.+\.webp/);
       expect(nextSrc).not.toMatch(/^blob:/);
     });
   });
