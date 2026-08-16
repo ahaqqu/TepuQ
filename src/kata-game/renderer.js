@@ -5,6 +5,7 @@
 
 import { scatterLetters } from './slots.js';
 import { bindDrag, snapToSlot } from './drag-engine.js';
+import { playSfx } from '../speech.js';
 
 // A fun, bright palette so each letter gets its own color — more engaging for a
 // toddler than a single color. The color is assigned by letter so a tile and
@@ -375,6 +376,7 @@ export function showWinScreen(onMainLagi) {
   `;
   stage.appendChild(overlay);
   overlay.querySelector('#kataMainLagi').addEventListener('click', () => {
+    playSfx('assets/sfx/select-game.mp3');
     overlay.remove();
     onMainLagi?.();
   });

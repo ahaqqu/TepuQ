@@ -2,7 +2,7 @@ import { applyBackground, applyCardSize } from './background.js';
 import { startDemoCards, stopDemoCards } from './demo.js';
 import { handleSuccess, resetAutoSmash, stopAutoSmash } from './logic.js';
 import { resetGameState, getState, setState } from './game-state.js';
-import { speak, unlockSpeechForGameplay, unlockAudioContext } from '../speech.js';
+import { speak, unlockSpeechForGameplay, unlockAudioContext, playSfx } from '../speech.js';
 import { enterFullscreen, exitFullscreen, unlockPointer, onFullscreenChange, warnIfKioskBlocked } from './fullscreen.js';
 import { revokeCardURL } from './card.js';
 
@@ -47,6 +47,9 @@ export function initGame(state) {
 
 export function showModePicker() {
   if (!appState) return;
+  if (getCurrentMode() !== null) {
+    playSfx('assets/sfx/back-menu.mp3', 0.7);
+  }
   stopAutoSmash();
   if (fsUnsubscribe) {
     fsUnsubscribe();
