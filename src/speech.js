@@ -80,8 +80,13 @@ function startUtterance(u) {
   synth.speak(u);
 }
 
-export function speak(text, settings = {}) {
-  if (!window.speechSynthesis) return;
+export function speak(text, settings = {}, onEnd) {
+  if (!window.speechSynthesis) {
+    // No TTS available: let the caller know immediately so nothing that
+    // depends on the utterance (e.g. a delayed sound) is skipped.
+    if (typeof onEnd === 'function') onEnd();
+    return;
+  }
   const synth = window.speechSynthesis;
   if (!text) {
     synth.cancel();
@@ -89,6 +94,9 @@ export function speak(text, settings = {}) {
   }
   loadVoices();
   const u = new SpeechSynthesisUtterance(text);
+  if (typeof onEnd === 'function') {
+    u.onend = onEnd;
+  }
   // Always tell the browser the text is Indonesian. On iOS Safari this is
   // required for it to pick an appropriate voice; on other platforms the
   // browser falls back to its default voice when no Indonesian voice is
