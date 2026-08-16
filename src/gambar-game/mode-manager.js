@@ -9,6 +9,32 @@ import { revokeCardURL } from './card.js';
 let appState = null;
 let fsUnsubscribe = null;
 
+// Speak `text` only after the pointer has stayed on `btn` for 2 seconds.
+// Cancelled when the pointer leaves or the button is clicked, so hovering
+// past a mode button is silent and a tap never double-speaks.
+function speakIntroOnHover(btn, text, settings) {
+  let hoverTimer = null;
+  const cancel = () => {
+    if (hoverTimer) {
+      clearTimeout(hoverTimer);
+      hoverTimer = null;
+    }
+  };
+  const startModeClick = btn.onclick;
+  btn.onclick = () => {
+    cancel();
+    startModeClick();
+  };
+  btn.onpointerenter = () => {
+    cancel();
+    hoverTimer = setTimeout(() => {
+      hoverTimer = null;
+      speak(text, settings);
+    }, 2000);
+  };
+  btn.onpointerleave = cancel;
+}
+
 export function initGame(state) {
   appState = state;
   resetGameState();
@@ -48,9 +74,11 @@ export function showModePicker() {
   // Speak the mode intro only on hover-capable devices. On touch screens
   // pointerenter fires BEFORE the user gesture, so iOS Safari silently drops
   // the utterance (and it would double-speak when a mode is started).
+  // The speech only starts after the pointer has stayed on the button for
+  // 2 seconds — a quick pass-over with the cursor must stay silent.
   if (window.matchMedia('(hover: hover)').matches) {
-    btnBebas.onpointerenter = () => speak('Main TepuQ Bebas yuk', appState.settings);
-    btnTarget.onpointerenter = () => speak('Ayo main TepuQ Target bersamaku', appState.settings);
+    speakIntroOnHover(btnBebas, 'Main TepuQ Bebas yuk', appState.settings);
+    speakIntroOnHover(btnTarget, 'Ayo main TepuQ Target bersamaku', appState.settings);
   }
   btnBebas.classList.toggle('hidden', enabled.length === 1 && !enabled.includes('bebas'));
   btnTarget.classList.toggle('hidden', enabled.length === 1 && !enabled.includes('target'));
