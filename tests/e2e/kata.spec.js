@@ -506,7 +506,12 @@ test.describe('TepuQ Kata', () => {
           getVoices: () => [],
           cancel: () => {},
           resume: () => {},
-          speak: (u) => { window.__spoken.push(u.text); },
+          speak: (u) => {
+            window.__spoken.push(u.text);
+            // Fire onend so the victory fanfare (delayed until the TTS ends)
+            // still plays in the test, preserving the speak-then-sfx order.
+            if (typeof u.onend === 'function') u.onend();
+          },
         };
         Object.defineProperty(window, 'speechSynthesis', { value: fakeSynth, configurable: true });
         Object.defineProperty(window, 'SpeechSynthesisUtterance', {

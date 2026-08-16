@@ -143,12 +143,15 @@ async function handleVictory() {
   getKataState().phase = 'VICTORY';
   // Celebration effects must not block or crash the win screen.
   try { fireConfetti(); } catch {}
-  try { playVictoryChime(); } catch {}
   try {
     const user = await fetchCurrentUser();
     const text = user ? `Selamat ${user}, kamu hebat!` : 'Selamat, kamu hebat!';
-    speak(text, speechSettings);
-  } catch {}
+    // Play the fanfare only after the congratulations TTS finishes, so the
+    // child hears "Selamat, kamu hebat!" clearly before the music starts.
+    speak(text, speechSettings, () => { try { playVictoryChime(); } catch {} });
+  } catch {
+    try { playVictoryChime(); } catch {}
+  }
   showWinScreen(() => {
     // Main Lagi: continue the rotation with the FULL word list. The victory
     // celebration must not reset it — words keep coming in random order with

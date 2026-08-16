@@ -40,7 +40,7 @@ export function playSuccessChime() {
   try {
     if (!successAudio) {
       successAudio = new Audio('assets/sfx/success-chime.mp3');
-      successAudio.volume = 0.8;
+      successAudio.volume = 0.55;
     }
     successAudio.currentTime = 0;
     successAudio.play().catch(() => {});
@@ -54,7 +54,7 @@ export function playVictoryChime() {
   try {
     if (!victoryAudio) {
       victoryAudio = new Audio('assets/sfx/victory-fanfare.mp3');
-      victoryAudio.volume = 0.9;
+      victoryAudio.volume = 0.20;
     }
     victoryAudio.currentTime = 0;
     victoryAudio.play().catch(() => {});
