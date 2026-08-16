@@ -220,6 +220,104 @@ test.describe('TepuQ Kata', () => {
     });
   });
 
+  test('a letter dragged into its slot is read out loud', async ({ page }) => {
+    await Given('the browser records every spoken utterance', async () => {
+      await page.addInitScript(() => {
+        window.__spoken = [];
+        const fakeSynth = {
+          speaking: false,
+          pending: false,
+          paused: false,
+          getVoices: () => [],
+          cancel: () => {},
+          resume: () => {},
+          speak: (u) => { window.__spoken.push(u.text); },
+        };
+        Object.defineProperty(window, 'speechSynthesis', { value: fakeSynth, configurable: true });
+        Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+          value: function (text) { this.text = text; },
+          configurable: true,
+        });
+      });
+    });
+
+    await Given('TepuQ Kata is started', async () => {
+      await startKata(page);
+      await expect(page.locator('.kata-scatter .kata-tile').first()).toBeVisible();
+    });
+
+    await When('the child drags one letter into its matching slot', async () => {
+      const slot = page.locator('.kata-slot').first();
+      const letter = await slot.getAttribute('data-letter');
+      const tile = page.locator(`.kata-scatter .kata-tile[data-letter="${letter}"]`).first();
+      const slotBox = await slot.boundingBox();
+      const tileBox = await tile.boundingBox();
+      await page.mouse.move(tileBox.x + tileBox.width / 2, tileBox.y + tileBox.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(slotBox.x + slotBox.width / 2, slotBox.y + slotBox.height / 2, { steps: 10 });
+      await page.mouse.up();
+      await expect(page.locator('.kata-slot.filled')).toHaveCount(1);
+    });
+
+    await Then('the TTS says that letter out loud', async () => {
+      const letter = await page.locator('.kata-slot').first().getAttribute('data-letter');
+      await expect.poll(
+        () => page.evaluate((l) => window.__spoken.some((t) => t === l), letter),
+        { timeout: 5000 }
+      ).toBe(true);
+    });
+  });
+
+  test('completing a word speaks the last letter first, then the whole word', async ({ page }) => {
+    await Given('the browser records every spoken utterance', async () => {
+      await page.addInitScript(() => {
+        window.__spoken = [];
+        const fakeSynth = {
+          speaking: false,
+          pending: false,
+          paused: false,
+          getVoices: () => [],
+          cancel: () => {},
+          resume: () => {},
+          speak: (u) => { window.__spoken.push(u.text); },
+        };
+        Object.defineProperty(window, 'speechSynthesis', { value: fakeSynth, configurable: true });
+        Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+          value: function (text) { this.text = text; },
+          configurable: true,
+        });
+      });
+    });
+
+    await Given('TepuQ Kata is started', async () => {
+      await startKata(page);
+    });
+
+    await When('the child drags every letter into its matching slot', async () => {
+      resetUsedTiles();
+      const slotCount = await page.locator('.kata-slot-row .kata-slot').count();
+      for (let i = 0; i < slotCount; i++) {
+        const placed = await dragTileToMatchingSlot(page);
+        expect(placed).toBe(true);
+        await expect(page.locator('.kata-slot.filled').nth(i)).toBeVisible();
+      }
+    });
+
+    await Then('the last letter is spoken before the completed word', async () => {
+      const slots = await page.locator('.kata-slot-row .kata-slot').all();
+      const letters = await Promise.all(slots.map((s) => s.getAttribute('data-letter')));
+      const word = letters.join('');
+      const lastLetter = letters[letters.length - 1];
+      await expect.poll(
+        () => page.evaluate(() => {
+          const spoken = window.__spoken;
+          return spoken.length >= 2 ? spoken.slice(-2) : null;
+        }),
+        { timeout: 5000 }
+      ).toEqual([lastLetter, word]);
+    });
+  });
+
   test('completing all letters of a word fills every slot', async ({ page }) => {
     await Given('TepuQ Kata is started', async () => {
       await startKata(page);
@@ -394,8 +492,8 @@ test.describe('TepuQ Kata', () => {
     });
   });
 
-  test('the victory celebration says "Selamat, kamu hebat!"', async ({ page }) => {
-    await Given('the browser records every spoken utterance', async () => {
+  test('the victory celebration says "Selamat, kamu hebat!" and plays the celebration sounds', async ({ page }) => {
+    await Given('the browser records every spoken utterance and Web Audio clip', async () => {
       await page.addInitScript(() => {
         window.__spoken = [];
         // speechSynthesis is a read-only accessor on window, so it must be
@@ -414,6 +512,47 @@ test.describe('TepuQ Kata', () => {
           value: function (text) { this.text = text; },
           configurable: true,
         });
+        // Kata sounds use the Web Audio API (oscillators + buffer sources), so
+        // swap AudioContext for a recording stub: the victory fanfare alone
+        // creates 12 oscillators (4-note trumpet + 8 sparkle pings) and 8
+        // firework-crackle buffer sources, while the per-word success chime
+        // creates only 3 oscillators and never any buffer source.
+        window.__ctxOsc = 0;
+        window.__ctxBuffers = 0;
+        const chain = { connect: () => chain };
+        const FakeAudioContext = class {
+          constructor() {
+            this.state = 'running';
+            this.currentTime = 0;
+            this.destination = {};
+            this.sampleRate = 44100;
+          }
+          resume() { return Promise.resolve(); }
+          createOscillator() {
+            window.__ctxOsc += 1;
+            return {
+              type: '',
+              frequency: { value: 0 },
+              connect: () => chain,
+              start: () => {},
+              stop: () => {},
+            };
+          }
+          createGain() {
+            return {
+              gain: { value: 0, setValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} },
+              connect: () => chain,
+            };
+          }
+          createBuffer(channels, length) {
+            return { getChannelData: () => new Float32Array(length) };
+          }
+          createBufferSource() {
+            window.__ctxBuffers += 1;
+            return { buffer: null, connect: () => chain, start: () => {}, stop: () => {} };
+          }
+        };
+        Object.defineProperty(window, 'AudioContext', { value: FakeAudioContext, configurable: true });
       });
     });
 
@@ -443,6 +582,13 @@ test.describe('TepuQ Kata', () => {
         () => page.evaluate(() => window.__spoken.some((t) => /Selamat.*kamu hebat/.test(t))),
         { timeout: 10000 }
       ).toBe(true);
+    });
+
+    await Then('the Web Audio celebration sound effects play', async () => {
+      await expect.poll(() => page.evaluate(() => window.__ctxOsc), { timeout: 5000 })
+        .toBeGreaterThanOrEqual(12);
+      const buffers = await page.evaluate(() => window.__ctxBuffers);
+      expect(buffers).toBeGreaterThanOrEqual(8);
     });
   });
 });
