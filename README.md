@@ -1,11 +1,13 @@
 # TepuQ
 
-TepuQ adalah permainan browser sederhana untuk anak 15 bulan ke atas yang belajar mengenal objek, suara, dan koordinasi tangan–penglihatan.
+TepuQ adalah permainan browser sederhana untuk anak 15 bulan ke atas yang belajar mengenal objek, suara, kata, dan koordinasi tangan–penglihatan.
 
-## Dua Mode Bermain
+Halaman utama menampilkan **Game Picker** — menu untuk memilih salah satu dari dua game:
 
-- **TepuQ Bebas** — anak menekan tombol keyboard atau mengetuk layar mana saja. Kartu foto muncul dengan suara.
-- **TepuQ Target** — anak harus mengetuk kartu fotonya untuk melanjutkan ke objek berikutnya.
+- **TepuQ Gambar** — permainan kartu foto dengan dua mode bermain:
+  - **TepuQ Bebas** — anak menekan tombol keyboard atau mengetuk layar mana saja. Kartu foto muncul dengan suara.
+  - **TepuQ Target** — anak harus mengetuk kartu fotonya untuk melanjutkan ke objek berikutnya.
+- **TepuQ Kata** — permainan mengeja: sebuah kata tampil sebagai kotak-kotak huruf kosong dengan fotonya, dan anak menyeret huruf-huruf yang tersebar ke kotak yang tepat. Huruf yang benar menempel dan berubah hijau; menyelesaikan sesi menampilkan layar kemenangan.
 
 ## Cara Menjalankan di Lokal
 
@@ -33,6 +35,9 @@ Buka di browser:
 - Atur kecepatan, pitch, dan volume suara TTS Bahasa Indonesia.
 - Atur tombol cepat (key binding) untuk objek tertentu.
 - Atur mode yang tersedia dan mode layar penuh.
+- Atur toggle "Aktif di TepuQ Gambar" per objek untuk memilih objek mana yang menjadi gambar di TepuQ Gambar.
+- Atur toggle "Aktif di TepuQ Kata" per objek untuk memilih objek mana yang menjadi kata di TepuQ Kata.
+- Atur pengaturan TepuQ Kata: ukuran huruf/kotak, jarak snap, dan panjang sesi.
 - Export data ke ZIP (`tepuq-data.zip`) untuk backup.
 - Import ZIP untuk memindahkan data antar browser atau perangkat.
 
@@ -78,4 +83,4 @@ Jika ingin mengaktifkan sinkron cloud, tambahkan juga:
 
 - Data tersimpan di browser masing-masing. Gunakan export/import untuk backup.
 - Suara TTS paling baik di Chrome/Edge. Firefox terkadang membutuhkan interaksi pengguna dulu sebelum audio bisa berjalan.
-- Lihat `AGENTS.md` untuk panduan kontributor dan agent.
+- Lihat `docs/architecture.md` untuk arsitektur teknis, dan `AGENTS.md` untuk panduan kontributor dan agent.
