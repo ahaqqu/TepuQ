@@ -129,13 +129,22 @@ export function renderWord(wordRecord, settings, state) {
   requestAnimationFrame(() => {
     const area = { width: scatter.clientWidth, height: scatter.clientHeight };
     const fit = fitTileSize(letters.length, area, sizes.letterSize);
-    const tileSize = fit.size;
-    stage.style.setProperty('--kata-tile-size', `${tileSize}px`);
+    // Keep the draggable letters the same size as the target slots so the
+    // toddler has a consistent visual target. The shared size is the smaller
+    // of the slot-row fit and the scatter-area fit, guaranteeing both fit.
+    const commonSize = Math.min(slotSize, fit.size);
+    stage.style.setProperty('--kata-slot-size', `${commonSize}px`);
+    stage.style.setProperty('--kata-tile-size', `${commonSize}px`);
+    slotRow.querySelectorAll('.kata-slot').forEach((slot) => {
+      slot.style.width = `${commonSize}px`;
+      slot.style.height = `${commonSize}px`;
+    });
+
     // When the tiles had to shrink to fit, scatter them on a deterministic
     // grid (shuffled into cells) so they can never spill onto the photo.
     // A little extra spacing (TILE_GAP_RATIO) keeps the neon outlines from
     // visually merging on small screens.
-    const origins = scatterLetters(word, area, tileSize, Math.random, {
+    const origins = scatterLetters(word, area, commonSize, Math.random, {
       gridFirst: fit.shrunk,
       cellSize: fit.cellSize,
     });
@@ -150,8 +159,8 @@ export function renderWord(wordRecord, settings, state) {
       tileLetter.className = 'kata-tile-letter';
       tileLetter.textContent = letter.toUpperCase();
       tile.appendChild(tileLetter);
-      tile.style.width = `${tileSize}px`;
-      tile.style.height = `${tileSize}px`;
+      tile.style.width = `${commonSize}px`;
+      tile.style.height = `${commonSize}px`;
       const origin = origins[tileIndex] || { x: 0, y: 0 };
       tile.style.left = `${origin.x}px`;
       tile.style.top = `${origin.y}px`;

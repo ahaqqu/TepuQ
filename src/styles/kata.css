@@ -115,7 +115,10 @@
 /* ---- Slot row (letter-outline targets) ----------------------------------- */
 .kata-slot-row {
   display: flex;
-  gap: 2.5vmin;
+  /* Keep horizontal gaps compact, but add more vertical space between wrapped
+     rows so the neon outlines never overlap on real phones. */
+  column-gap: 2.5vmin;
+  row-gap: 7vmin;
   justify-content: center;
   flex-wrap: wrap;
 }

@@ -98,13 +98,12 @@ test.describe('TepuQ Kata', () => {
     });
 
     await Then('the letters are scaled up on desktop', async () => {
-      // vmin 720 -> scale 1.33x. Slots stay at 160px; tiles only shrink when a
-      // long word would not fit the scatter area (118px worst case for 6
-      // letters, still above the 110px base setting).
+      // vmin 720 -> scale 1.33x. Tiles and slots now share one fitted size,
+      // so both are the same width.
       const tileBox = await page.locator('.kata-tile').first().boundingBox();
       const slotBox = await page.locator('.kata-slot').first().boundingBox();
       expect(tileBox.width).toBeGreaterThanOrEqual(110);
-      expect(slotBox.width).toBeGreaterThanOrEqual(155);
+      expect(slotBox.width).toBe(tileBox.width);
     });
   });
 
@@ -122,12 +121,12 @@ test.describe('TepuQ Kata', () => {
     });
 
     await Then('the letters are much bigger than the base settings', async () => {
-      // vmin 1080 -> scale 2x: tiles 216-220px; slots 225-240px (6-letter words
-      // shrink slightly so the slot row fits beside the photo; base 110/120).
+      // vmin 1080 -> scale 2x: tiles and slots share one fitted size
+      // (base 110/120), so both are the same width on desktop.
       const tileBox = await page.locator('.kata-tile').first().boundingBox();
       const slotBox = await page.locator('.kata-slot').first().boundingBox();
       expect(tileBox.width).toBeGreaterThanOrEqual(175);
-      expect(slotBox.width).toBeGreaterThanOrEqual(220);
+      expect(slotBox.width).toBe(tileBox.width);
     });
   });
 
@@ -146,11 +145,11 @@ test.describe('TepuQ Kata', () => {
 
     await Then('the letters stay at least as big as the base settings', async () => {
       // Mobile scale 1.15x, then adapted to the word length so nothing
-      // overflows: slots 113-138px, tiles 90-126px (base 110/120).
+      // overflows. Tiles and slots now share the same fitted size.
       const tileBox = await page.locator('.kata-tile').first().boundingBox();
       const slotBox = await page.locator('.kata-slot').first().boundingBox();
       expect(tileBox.width).toBeGreaterThanOrEqual(85);
-      expect(slotBox.width).toBeGreaterThanOrEqual(110);
+      expect(slotBox.width).toBe(tileBox.width);
     });
   });
 
