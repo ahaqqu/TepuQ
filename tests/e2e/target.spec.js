@@ -44,6 +44,8 @@ test.describe('TepuQ Gambar — Target mode', () => {
   });
 
   test('tapping outside the target card plays the encouraging sound', async ({ page }) => {
+    let initialSrc = null;
+
     await Given('the browser records every audio clip playback', async () => {
       await page.addInitScript(() => {
         window.__plays = [];
@@ -56,6 +58,7 @@ test.describe('TepuQ Gambar — Target mode', () => {
 
     await Given('the user starts TepuQ Target mode', async () => {
       await startTargetMode(page);
+      initialSrc = await page.locator('.card-pop.target-card img').getAttribute('src');
     });
 
     await When('the child taps somewhere that is not the target card', async () => {
@@ -70,10 +73,24 @@ test.describe('TepuQ Gambar — Target mode', () => {
       expect(plays[0]).toContain('try-again.wav');
     });
 
+    await Then('the target card is still the same card', async () => {
+      const src = await page.locator('.card-pop.target-card img').getAttribute('src');
+      expect(src).toBe(initialSrc);
+    });
+
     await When('the child then taps the target card', async () => {
+      // The interaction debounce (debounceMs=300) silently swallows a tap that
+      // lands right after the mode-start interaction, and it is UI-undetectable.
+      // Wait it out before tapping, then the "card advances" assertion proves it.
+      await page.waitForTimeout(400);
       const card = page.locator('.card-pop.target-card');
       await card.click({ force: true });
       await expect(page.locator('.card-pop.target-card img')).toBeVisible();
+    });
+
+    await Then('the card advances to the next object', async () => {
+      const src = await page.locator('.card-pop.target-card img').getAttribute('src');
+      expect(src).not.toBe(initialSrc);
     });
 
     await Then('a successful tap does not play the sound again', async () => {
