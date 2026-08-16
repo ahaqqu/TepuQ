@@ -26,6 +26,12 @@ let cleanups = [];
 let onSnapCb = null;
 let onRejectCb = null;
 let destroyKataCallback = null;
+let keyboardBlocked = false;
+
+// Visual gap between scattered tiles so their neon outlines don't overlap on
+// small screens. The tile box stays the same size; the grid just leaves
+// breathing room between centers.
+const TILE_GAP_RATIO = 0.15;
 
 export function initRenderer(container, { onSnap, onReject, onBackToMenu } = {}) {
   stage = container;
@@ -37,6 +43,7 @@ export function initRenderer(container, { onSnap, onReject, onBackToMenu } = {})
 export function clearStage() {
   cleanups.forEach((fn) => fn());
   cleanups = [];
+  keyboardBlocked = false;
   if (stage) stage.innerHTML = '';
 }
 
@@ -57,6 +64,7 @@ export function renderWord(wordRecord, settings, state) {
   const sizes = scaledSizes(settings);
   const slotSize = fitSlotSize(letters.length, sizes.slotSize);
   stage.style.setProperty('--kata-slot-size', `${slotSize}px`);
+  keyboardBlocked = false;
 
   // Back-to-menu button (top-left, toddler-safe minimum size).
   const backBtn = document.createElement('button');
@@ -125,8 +133,11 @@ export function renderWord(wordRecord, settings, state) {
     stage.style.setProperty('--kata-tile-size', `${tileSize}px`);
     // When the tiles had to shrink to fit, scatter them on a deterministic
     // grid (shuffled into cells) so they can never spill onto the photo.
+    // A little extra spacing (TILE_GAP_RATIO) keeps the neon outlines from
+    // visually merging on small screens.
     const origins = scatterLetters(word, area, tileSize, Math.random, {
       gridFirst: fit.shrunk,
+      cellSize: fit.cellSize,
     });
 
     letters.forEach((letter, tileIndex) => {
@@ -207,20 +218,26 @@ function fitSlotSize(n, preferred) {
 // construction at the returned size).
 function fitTileSize(n, area, preferred) {
   let t = preferred;
-  while (t > 90) {
+  while (t > 80) {
     const pad = t / 2;
+    const cell = t * (1 + TILE_GAP_RATIO);
     const minX = pad;
     const maxX = Math.max(minX, area.width - t - pad);
-    const cols = Math.max(1, Math.floor((maxX - minX) / t) + 1);
+    const cols = Math.max(1, Math.floor((maxX - minX) / cell) + 1);
     const rows = Math.ceil(n / cols);
-    if (rows * t + pad <= area.height) {
-      const maxRow = Math.max(0, Math.floor((area.height - 2 * t) / t));
+    if (rows * cell + pad <= area.height) {
+      const maxRow = Math.max(0, Math.floor((area.height - t - pad) / cell));
       const capacity = (maxRow + 1) * cols;
-      return { size: Math.round(t), shrunk: t < preferred || capacity < n };
+      return {
+        size: Math.round(t),
+        cellSize: Math.round(cell),
+        shrunk: t < preferred || capacity < n,
+      };
     }
     t -= 4;
   }
-  return { size: Math.round(t), shrunk: true };
+  const cell = t * (1 + TILE_GAP_RATIO);
+  return { size: Math.round(t), cellSize: Math.round(cell), shrunk: true };
 }
 
 // Build the live slot list with centers (viewport coords) and filled state,
@@ -239,7 +256,7 @@ function getSlotList(slotRow) {
   });
 }
 
-function handleSnap(tileIndex, slotIndex, state, settings, slotRow, scatter) {
+function handleSnap(tileIndex, slotIndex, state, settings, slotRow, scatter, { animate = false } = {}) {
   const slotEl = slotRow.querySelector(`.kata-slot[data-index="${slotIndex}"]`);
   const tileEl = scatter.querySelector(`.kata-tile[data-tile-index="${tileIndex}"]`);
   if (!slotEl || !tileEl) return;
@@ -253,7 +270,11 @@ function handleSnap(tileIndex, slotIndex, state, settings, slotRow, scatter) {
     x: slotRect.left + slotRect.width / 2 - scatterRect.left,
     y: slotRect.top + slotRect.height / 2 - scatterRect.top,
   };
-  snapToSlot(tileEl, slotCenter, scatterRect);
+  if (animate) {
+    animateTileToSlot(tileEl, slotCenter, 650);
+  } else {
+    snapToSlot(tileEl, slotCenter, scatterRect);
+  }
   tileEl.classList.add('placed');
 }
 
@@ -272,6 +293,35 @@ function handleReject(tileIndex, scatter) {
   tileEl.style.transform = '';
   tileEl.style.zIndex = '';
   onRejectCb?.(tileIndex);
+}
+
+// Move a tile to a slot's center with a slow, visible CSS transition so a
+// toddler can follow what happened when they typed a key. Used by keyboard
+// input; drag snaps stay instant via snapToSlot().
+function animateTileToSlot(tileEl, slotCenter, durationMs) {
+  tileEl.classList.add('kata-tile--keyboard');
+  const rect = tileEl.getBoundingClientRect();
+  const targetLeft = slotCenter.x - rect.width / 2;
+  const targetTop = slotCenter.y - rect.height / 2;
+
+  let finished = false;
+  const finish = (e) => {
+    if (e && e.target !== tileEl) return;
+    if (finished) return;
+    finished = true;
+    tileEl.removeEventListener('transitionend', finish);
+    tileEl.classList.remove('kata-tile--keyboard');
+    tileEl.classList.add('snapped');
+    keyboardBlocked = false;
+  };
+  tileEl.addEventListener('transitionend', finish);
+  // Guard against transitions that silently fail to fire.
+  setTimeout(() => finish(), durationMs + 100);
+
+  requestAnimationFrame(() => {
+    tileEl.style.left = `${targetLeft}px`;
+    tileEl.style.top = `${targetTop}px`;
+  });
 }
 
 // Confetti burst (canvas-based, no external library). Attached to #kataConfetti.
@@ -350,4 +400,28 @@ export function showEmptyState() {
 // Expose state for the renderer's getSlotList without a circular import.
 export function setKataStateRef(stateRef) {
   window.__kataState = stateRef;
+}
+
+// Keyboard typing support: when a toddler presses a letter key, move the
+// matching unplaced tile to the first unfilled slot for that letter with a
+// slow animated glide. One keypress places exactly one tile.
+export function handleTypedLetter(key) {
+  if (keyboardBlocked) return false;
+  const state = window.__kataState;
+  if (!state || state.phase !== 'PLAYING') return false;
+
+  const slotRow = stage?.querySelector('.kata-slot-row');
+  const scatter = stage?.querySelector('.kata-scatter');
+  if (!slotRow || !scatter) return false;
+
+  const lower = key.toLowerCase();
+  const slotIndex = state.slots.findIndex((s) => !s.filled && s.letter === lower);
+  if (slotIndex === -1) return false;
+
+  const tile = state.tiles[slotIndex];
+  if (!tile || tile.placed) return false;
+
+  keyboardBlocked = true;
+  handleSnap(slotIndex, slotIndex, state, null, slotRow, scatter, { animate: true });
+  return true;
 }

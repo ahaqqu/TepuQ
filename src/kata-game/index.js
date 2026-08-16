@@ -8,7 +8,7 @@ import {
 } from './game-state.js';
 import {
   initRenderer, renderWord, fireConfetti, showWinScreen, showEmptyState,
-  clearStage, setKataStateRef,
+  clearStage, setKataStateRef, handleTypedLetter,
 } from './renderer.js';
 import {
   initKataAudio, speakLetter, speakWord, playSuccessChime,
@@ -20,6 +20,7 @@ let kataSettings = null;
 let speechSettings = null;
 let progress = null;
 let destroyed = false;
+let keyboardCleanup = null;
 
 export async function initKata(words, settings, gambarSpeechSettings) {
   stage = document.getElementById('kataStage');
@@ -44,7 +45,34 @@ export async function initKata(words, settings, gambarSpeechSettings) {
 
   prepareSession(words, settings);
   await initKataAudio();
+  keyboardCleanup = bindKeyboard();
   startCurrentWord();
+}
+
+function bindKeyboard() {
+  const handler = (e) => {
+    if (destroyed) return;
+    if (document.body.classList.contains('admin')) return;
+    if (!stage || stage.classList.contains('hidden')) return;
+
+    // Don't steal keys from forms/inputs (login form, admin, etc).
+    const active = document.activeElement;
+    if (
+      active &&
+      (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)
+    ) {
+      return;
+    }
+
+    // Only single character keys (letters, numbers) count as a toddler typing.
+    if (e.key.length !== 1) return;
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+    const moved = handleTypedLetter(e.key);
+    if (moved && e.cancelable) e.preventDefault();
+  };
+  document.addEventListener('keydown', handler);
+  return () => document.removeEventListener('keydown', handler);
 }
 
 function startCurrentWord() {
@@ -114,6 +142,10 @@ async function handleVictory() {
 
 export function destroyKata() {
   destroyed = true;
+  if (keyboardCleanup) {
+    keyboardCleanup();
+    keyboardCleanup = null;
+  }
   clearStage();
 }
 

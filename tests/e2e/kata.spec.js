@@ -154,6 +154,24 @@ test.describe('TepuQ Kata', () => {
     });
   });
 
+  test('typing a letter on the keyboard moves one matching tile into its slot', async ({ page }) => {
+    await Given('TepuQ Kata is started', async () => {
+      await startKata(page);
+    });
+
+    await When('the child types the first letter of the current word', async () => {
+      const word = await page.evaluate(() => window.__kataState?.words?.[window.__kataState?.index]?.word || '');
+      const firstLetter = word.charAt(0);
+      expect(firstLetter).not.toBe('');
+      await page.keyboard.press(firstLetter);
+    });
+
+    await Then('exactly one tile is placed and the first slot is filled', async () => {
+      await expect(page.locator('.kata-slot.filled')).toHaveCount(1);
+      await expect(page.locator('.kata-tile.placed')).toHaveCount(1);
+    });
+  });
+
   test('completing all letters of a word fills every slot', async ({ page }) => {
     await Given('TepuQ Kata is started', async () => {
       await startKata(page);

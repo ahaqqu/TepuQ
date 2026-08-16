@@ -20,8 +20,14 @@ export function buildSlots(word) {
 // place the shuffled letters on a deterministic grid that fits by construction,
 // instead of random attempts. This guarantees long words on short screens
 // never spill onto the photo below.
+//
+// opts.cellSize: optional spacing between tile centers. Defaults to tileSize
+// for backward compatibility; the renderer passes a slightly larger cell so
+// neon outlines have room on small screens.
 export function scatterLetters(word, area, tileSize, rng = Math.random, opts = {}) {
   const letters = (word || '').toLowerCase().split('');
+  const cellSize = opts.cellSize || tileSize;
+  const minGap = opts.cellSize ? opts.cellSize : tileSize * 1.15;
   const positions = [];
   const pad = tileSize * 0.5;
   const minX = pad;
@@ -32,12 +38,12 @@ export function scatterLetters(word, area, tileSize, rng = Math.random, opts = {
   const order = shuffledIndices(letters.length, rng);
 
   if (opts.gridFirst) {
-    const cols = Math.max(1, Math.floor((maxX - minX) / tileSize) + 1);
+    const cols = Math.max(1, Math.floor((maxX - minX) / cellSize) + 1);
     const cells = [];
     for (let row = 0; cells.length < letters.length; row++) {
-      const y = minY + row * tileSize;
+      const y = minY + row * cellSize;
       for (let col = 0; col < cols && cells.length < letters.length; col++) {
-        cells.push({ x: minX + col * tileSize, y });
+        cells.push({ x: minX + col * cellSize, y });
       }
     }
     const ordered = new Array(cells.length);
@@ -55,13 +61,13 @@ export function scatterLetters(word, area, tileSize, rng = Math.random, opts = {
         x: minX + rng() * (maxX - minX),
         y: minY + rng() * (maxY - minY),
       };
-      if (!overlapsAny(candidate, positions, tileSize * 1.15)) pos = candidate;
+      if (!overlapsAny(candidate, positions, minGap)) pos = candidate;
     }
     // Random placement can run out of room in a short scatter area (longer
     // words on the photo layout). Fall back to a packed grid so no tile is ever
     // hidden behind another and every letter stays tappable. The grid stays
     // inside the bounded area, so tiles never spill onto the photo.
-    if (pos === null) pos = packedPosition(positions, minX, maxX, minY, maxY, tileSize);
+    if (pos === null) pos = packedPosition(positions, minX, maxX, minY, maxY, tileSize, cellSize);
     positions.push(pos);
   }
 
@@ -74,20 +80,20 @@ export function scatterLetters(word, area, tileSize, rng = Math.random, opts = {
 }
 
 // Deterministic last resort: scan a left-to-right, top-to-bottom grid at
-// `tileSize` spacing for the first free spot within the bounded area. If every
+// `cellSize` spacing for the first free spot within the bounded area. If every
 // cell is blocked (a truly degenerate area), pick the cell farthest from the
 // nearest tile: tiles stay inside the scatter area and their centers are never
 // covered by another tile's box, so every letter stays tappable.
-function packedPosition(existing, minX, maxX, minY, maxY, tileSize) {
-  const cols = Math.max(1, Math.floor((maxX - minX) / tileSize) + 1);
-  const maxRow = Math.max(0, Math.floor((maxY - minY) / tileSize));
+function packedPosition(existing, minX, maxX, minY, maxY, tileSize, cellSize = tileSize) {
+  const cols = Math.max(1, Math.floor((maxX - minX) / cellSize) + 1);
+  const maxRow = Math.max(0, Math.floor((maxY - minY) / cellSize));
   const cellCount = (maxRow + 1) * cols;
   let best = null;
   let bestDist = -1;
   for (let cell = 0; cell < cellCount; cell++) {
     const pos = {
-      x: minX + (cell % cols) * tileSize,
-      y: minY + Math.floor(cell / cols) * tileSize,
+      x: minX + (cell % cols) * cellSize,
+      y: minY + Math.floor(cell / cols) * cellSize,
     };
     if (!overlapsAny(pos, existing, tileSize)) return pos;
     let nearest = Infinity;
