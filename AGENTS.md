@@ -149,13 +149,12 @@ After any change, verify at least these default-setting flows:
 
 1. **Make minimal changes.** Do not refactor unrelated code.
 2. **Run tests before finishing.** At minimum `bun run test:unit`, `bun run test:e2e`, and `bun run build` must all pass.
-3. **Prefer editing existing files.** Avoid creating new files unless required.
-4. **Update this file (AGENTS.md)** if you change project structure, scripts, or deployment.
-5. **Do not commit, push, or create pull requests** unless explicitly asked.
-6. **Keep it fun and simple.** If a feature adds complexity, propose a simpler alternative.
-7. **Use `bun` and `bunx`.** This is a Bun project. Use `bun install`, `bun run ...`, and `bunx playwright ...`. Do not use `npm`, `npx`, or `yarn` unless specifically instructed.
-8. **Write tests in BDD style.** E2E tests should read as `Given / When / Then` steps using Playwright `test.step`. Unit tests should describe behavior, not implementation.
-9. **Avoid `page.waitForTimeout` in E2E tests.** Prefer explicit Playwright waits (e.g., `await expect(locator).toBeVisible()`, `await expect(locator).toHaveClass(...)`). If a timeout is unavoidable because the app has an async, UI-undetectable side effect (e.g., image resize before save), keep it small, comment why, and pair it with an explicit DOM assertion.
+3. **Update this file (AGENTS.md)** if you change project structure, scripts, or deployment.
+4. **Do not commit, push, or create pull requests** unless explicitly asked.
+5. **Keep it fun and simple.** If a feature adds complexity, propose a simpler alternative.
+6. **Use `bun` and `bunx`.** This is a Bun project. Use `bun install`, `bun run ...`, and `bunx playwright ...`. Do not use `npm`, `npx`, or `yarn` unless specifically instructed.
+7. **Write tests in BDD style.** E2E tests should read as `Given / When / Then` steps using Playwright `test.step`. Unit tests should describe behavior, not implementation.
+8. **Avoid `page.waitForTimeout` in E2E tests.** Prefer explicit Playwright waits (e.g., `await expect(locator).toBeVisible()`, `await expect(locator).toHaveClass(...)`). If a timeout is unavoidable because the app has an async, UI-undetectable side effect (e.g., image resize before save), keep it small, comment why, and pair it with an explicit DOM assertion.
 
 ## Pull Requests
 
@@ -273,38 +272,3 @@ When changing styling, prefer editing `theme.css`. When changing game behavior t
 - Import/export ZIP: `src/admin/import-export.js`
 - Import/sync merge strategy: `src/admin/merge-objects.js`
 - Cloud sync: `src/admin/sync.js`, `functions/api/login.js`, `functions/api/me.js`, `functions/api/sync.js`
-
----
-
-## Hard-Won Lessons (problems + solutions)
-
-Recorded so the next agent reuses these solutions instead of re-solving them:
-
-### 1. White line inside Kata letters on Android — never use `-webkit-text-stroke` on FILLED letters
-- **Problem:** on real Android devices a horizontal white line appears across thin horizontal strokes of the Kata letter tiles. Desktop Chrome and DevTools device emulation render fine, so it cannot be reproduced or verified locally — only the real device shows it.
-- **Diagnosis without image vision:** decode the screenshot's PNG pixels (Node `zlib.inflateSync` + PNG scanline unfiltering) and scan for white bands crossing glyph strokes. The cause: Android Chrome paints `-webkit-text-stroke` **over** the glyph fill, so the stroke's inner half eats thin strokes.
-- **Solution (already applied in `src/styles/kata.css`):** filled letters (`.kata-tile-letter`, `.kata-tile.snapped .kata-tile-letter`) use an 8-direction hard `text-shadow` white outline instead of the stroke — shadows render behind the fill on every browser. Do **not** reintroduce `-webkit-text-stroke` on filled letters. Slot targets (`color: transparent` + stroke) are unaffected and may keep the stroke.
-
-### 2. Victory TTS was silently broken by a missing import
-- **Problem:** the celebration never spoke, and the bare `try/catch` around the `speak()` call hid the cause: `speak` was never imported into `src/kata-game/index.js` (ReferenceError swallowed silently).
-- **Solution:** import `{ speak } from '../speech.js'` there; never rely on a bare catch around a speech call — a missing import fails silently. Greeting text: `Selamat <username>, kamu hebat!` (fallback without username).
-
-### 3. Playwright E2E stubbing gotchas
-- `window.speechSynthesis` is a read-only accessor on `Window`: plain assignment is silently ignored. In `page.addInitScript` use `Object.defineProperty(window, 'speechSynthesis', { value: fakeSynth, configurable: true })` and define `SpeechSynthesisUtterance` the same way. Otherwise the app feeds fake utterances to the native engine and throws `Failed to execute 'speak' on 'SpeechSynthesis'`.
-- `page.waitForFunction(fn)` serializes `fn` to the browser — Node closure variables are NOT available there. Pass them as the second argument: `waitForFunction((i) => ..., i, { timeout })`.
-- To assert file-based sound playback, patch `HTMLMediaElement.prototype.play` in an init script and record `this.src`. Web Audio oscillator chimes (success/victory) bypass `HTMLMediaElement`, which is how the tests distinguish the two.
-
-### 4. Sourcing Mixkit sound effects
-- `curl` hits a Cloudflare challenge; load pages with Playwright (real Chromium) instead.
-- Search URL: `https://mixkit.co/free-sound-effects/discover/<term>/`.
-- Download URL pattern: `https://assets.mixkit.co/active_storage/sfx/<id>/<id>.wav` (preview: `<id>-preview.mp3`).
-- Mixkit Free License: free for commercial use, no attribution, do not redistribute as-is. Record every new asset in `docs/assets-sources.md`.
-- The try-again "boing" is shared by both games via `playTryAgainSfx()` in `src/speech.js` (250 ms debounce against pointer + touch double-firing on one tap). Kata's `onReject` (letter dropped outside a target) and Gambar Target's off-card tap (see `onPointerDown`/`onTouchStart` in `src/gambar-game/input.js`) both call it. `src/kata-game/audio.js` re-exports it as `playEncourageSfx`.
-
-### 5. Kata word rotation ("putar semua") — celebration must not reset it
-- **Problem:** the victory "Main Lagi" button restarted the session from only the finished session's words, so the same 3 words repeated forever — the celebration effectively reset the rotation.
-- **Solution (already applied):** keep the FULL word list in a module variable at `initKata` and pass it to `prepareSession` on Main Lagi. The exhausted-words set lives at module level in `src/kata-game/game-state.js`, cleared only when every enabled word has been shown once or when the game starts again (`resetExhaustedWords()` in `initKata`). See the rotation tests in `tests/unit/kata-game-state.test.js`.
-
-### 6. The dev-machine Node.js must be an official build (DSH harness)
-- **Problem:** the agent `run_code` tool failed every call with `Node.js is not compiled with TypeScript support` — Ubuntu's distro `nodejs` package is built without amaro (type stripping), which the harness needs.
-- **Solution:** install an official Node tarball into `/usr/local` (it takes PATH priority over `/usr/bin/node`) and restart the DSH server. Verify with: `printf 'const x: number = 1;\n' > /tmp/t.ts && node /tmp/t.ts`
