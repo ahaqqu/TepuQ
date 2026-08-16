@@ -28,15 +28,17 @@ All images were resized to a maximum of 800 px on the longest side and saved as 
 
 ## Starter audio
 
-### Kata sound effect
+### Game sound effects
 
 | File | Source | License | Notes |
 |---|---|---|---|
 | public/assets/sfx/try-again.wav | [Mixkit — Cartoon spring sound](https://mixkit.co/free-sound-effects/cartoon/) (asset id 736) | [Mixkit Free License](https://mixkit.co/license/#sfxFree) — free for commercial and non-commercial use, no attribution required | Playful "boing" played in TepuQ Kata when a letter is dropped outside a target and in TepuQ Target when the child taps outside the target card, to encourage the child to try again |
+| public/assets/sfx/success-chime.mp3 | [Mixkit — Win sound effects](https://mixkit.co/free-sound-effects/win/) (asset id 600, "Achievement bell") | [Mixkit Free License](https://mixkit.co/license/#sfxFree) — free for commercial and non-commercial use, no attribution required | Short pleasant bell (trimmed to ~1.2 s) played in TepuQ Kata every time a word is completed |
+| public/assets/sfx/victory-fanfare.mp3 | [Mixkit — Win sound effects](https://mixkit.co/free-sound-effects/win/) (asset id 226, "Medieval show fanfare announcement") | [Mixkit Free License](https://mixkit.co/license/#sfxFree) — free for commercial and non-commercial use, no attribution required | Celebratory trumpet fanfare played in TepuQ Kata when the child finishes the whole session and sees the win screen |
 
 ### TTS and recordings
 
-There are no other bundled default audio clips. The app uses browser Text-to-Speech (TTS) with a cheerful pitch and rate so the object name is spoken clearly. Parents can record their own voice for each object in admin mode; those recordings are stored in IndexedDB and exported/imported with the object ZIP.
+Besides the game sound effects above, there are no other bundled default audio clips. The app uses browser Text-to-Speech (TTS) with a cheerful pitch and rate so the object name is spoken clearly. Parents can record their own voice for each object in admin mode; those recordings are stored in IndexedDB and exported/imported with the object ZIP.
 
 ## Replacing assets
 

@@ -493,9 +493,10 @@ test.describe('TepuQ Kata', () => {
   });
 
   test('the victory celebration says "Selamat, kamu hebat!" and plays the celebration sounds', async ({ page }) => {
-    await Given('the browser records every spoken utterance and Web Audio clip', async () => {
+    await Given('the browser records every spoken utterance and audio clip playback', async () => {
       await page.addInitScript(() => {
         window.__spoken = [];
+        window.__plays = [];
         // speechSynthesis is a read-only accessor on window, so it must be
         // replaced with defineProperty for the stub to actually take effect.
         const fakeSynth = {
@@ -512,47 +513,12 @@ test.describe('TepuQ Kata', () => {
           value: function (text) { this.text = text; },
           configurable: true,
         });
-        // Kata sounds use the Web Audio API (oscillators + buffer sources), so
-        // swap AudioContext for a recording stub: the victory fanfare alone
-        // creates 12 oscillators (4-note trumpet + 8 sparkle pings) and 8
-        // firework-crackle buffer sources, while the per-word success chime
-        // creates only 3 oscillators and never any buffer source.
-        window.__ctxOsc = 0;
-        window.__ctxBuffers = 0;
-        const chain = { connect: () => chain };
-        const FakeAudioContext = class {
-          constructor() {
-            this.state = 'running';
-            this.currentTime = 0;
-            this.destination = {};
-            this.sampleRate = 44100;
-          }
-          resume() { return Promise.resolve(); }
-          createOscillator() {
-            window.__ctxOsc += 1;
-            return {
-              type: '',
-              frequency: { value: 0 },
-              connect: () => chain,
-              start: () => {},
-              stop: () => {},
-            };
-          }
-          createGain() {
-            return {
-              gain: { value: 0, setValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} },
-              connect: () => chain,
-            };
-          }
-          createBuffer(channels, length) {
-            return { getChannelData: () => new Float32Array(length) };
-          }
-          createBufferSource() {
-            window.__ctxBuffers += 1;
-            return { buffer: null, connect: () => chain, start: () => {}, stop: () => {} };
-          }
+        // Kata sounds are bundled .mp3 clips played through <audio> elements,
+        // so record every play() call (with its src) instead.
+        HTMLMediaElement.prototype.play = function () {
+          window.__plays.push(String(this.src));
+          return Promise.resolve();
         };
-        Object.defineProperty(window, 'AudioContext', { value: FakeAudioContext, configurable: true });
       });
     });
 
@@ -584,11 +550,14 @@ test.describe('TepuQ Kata', () => {
       ).toBe(true);
     });
 
-    await Then('the Web Audio celebration sound effects play', async () => {
-      await expect.poll(() => page.evaluate(() => window.__ctxOsc), { timeout: 5000 })
-        .toBeGreaterThanOrEqual(12);
-      const buffers = await page.evaluate(() => window.__ctxBuffers);
-      expect(buffers).toBeGreaterThanOrEqual(8);
+    await Then('the success chime plays for each word and the victory fanfare for the session win', async () => {
+      // One success-chime per completed word, then exactly one victory fanfare
+      // when the win screen appears. Both are bundled Mixkit SFX played via
+      // <audio>, so the recorded play() order proves the celebration sequence.
+      await expect.poll(
+        () => page.evaluate(() => window.__plays.map((src) => src.split('/').pop())),
+        { timeout: 5000 }
+      ).toEqual(['success-chime.mp3', 'success-chime.mp3', 'success-chime.mp3', 'victory-fanfare.mp3']);
     });
   });
 });
