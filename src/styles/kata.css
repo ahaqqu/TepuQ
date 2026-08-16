@@ -93,22 +93,23 @@
 }
 
 .kata-photo {
-  /* Big, toddler-visible photo: ~30% of the shorter screen edge on phones. */
-  width: clamp(110px, 30vmin, 360px);
-  height: clamp(110px, 30vmin, 360px);
-  object-fit: cover;
+  /* Scale the photo proportionally to the original image dimensions so nothing
+     is cropped. The image fills the available height up to a toddler-friendly
+     max, and its width follows the intrinsic aspect ratio. */
+  height: clamp(220px, 36vmin, 460px);
+  width: auto;
+  max-width: min(82vw, 460px);
+  object-fit: contain;
   border-radius: 20px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.18);
   border: 4px solid #fff;
 }
 
-/* Desktop: keep the photo above the slot row (not beside it) and make both
-   the image and its square much bigger so photos are not cropped, while
-   still leaving room for the scattered letter tiles above. */
-@media (min-width: 1024px) {
+/* Phones: slightly smaller ceiling so the slot row still has room. */
+@media (max-width: 640px) {
   .kata-photo {
-    width: clamp(180px, 32vmin, 420px);
-    height: clamp(180px, 32vmin, 420px);
+    height: clamp(180px, 34vmin, 320px);
+    max-width: min(88vw, 320px);
   }
 }
 

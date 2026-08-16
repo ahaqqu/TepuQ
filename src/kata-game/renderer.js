@@ -87,23 +87,8 @@ export function renderWord(wordRecord, settings, state) {
   // Photo: the object's shared photo (starter HTTP URL or a custom image
   // Blob), so the child sees what the word means. Custom blobs get a temporary
   // object URL that is revoked when the stage is cleared.
-  if (wordRecord.imageBlob) {
-    const photoUrl = URL.createObjectURL(wordRecord.imageBlob);
-    const photo = document.createElement('img');
-    photo.className = 'kata-photo';
-    photo.src = photoUrl;
-    photo.alt = wordRecord.word;
-    photo.onerror = () => { photo.style.display = 'none'; };
-    bottomArea.appendChild(photo);
-    cleanups.push(() => URL.revokeObjectURL(photoUrl));
-  } else if (wordRecord.imageUrl) {
-    const photo = document.createElement('img');
-    photo.className = 'kata-photo';
-    photo.src = wordRecord.imageUrl;
-    photo.alt = wordRecord.word;
-    photo.onerror = () => { photo.style.display = 'none'; };
-    bottomArea.appendChild(photo);
-  }
+  const photo = createPhoto(wordRecord);
+  if (photo) bottomArea.appendChild(photo);
 
   const slotRow = document.createElement('div');
   slotRow.className = 'kata-slot-row';
@@ -391,6 +376,29 @@ export function showWinScreen(onMainLagi) {
     overlay.remove();
     onMainLagi?.();
   });
+}
+
+// Create the photo img element. Preserve the original image aspect ratio so
+// the picture is never cropped; we only clamp the max size so it can't push
+// the slot row off the screen.
+function createPhoto(wordRecord) {
+  let src = null;
+  let cleanup = null;
+  if (wordRecord.imageBlob) {
+    const photoUrl = URL.createObjectURL(wordRecord.imageBlob);
+    src = photoUrl;
+    cleanup = () => URL.revokeObjectURL(photoUrl);
+  } else if (wordRecord.imageUrl) {
+    src = wordRecord.imageUrl;
+  }
+  if (!src) return null;
+  const photo = document.createElement('img');
+  photo.className = 'kata-photo';
+  photo.src = src;
+  photo.alt = wordRecord.word;
+  photo.onerror = () => { photo.style.display = 'none'; };
+  if (cleanup) cleanups.push(cleanup);
+  return photo;
 }
 
 export function showEmptyState() {

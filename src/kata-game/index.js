@@ -14,6 +14,7 @@ import {
   initKataAudio, speakLetter, speakWord, playSuccessChime, playVictoryChime,
 } from './audio.js';
 import { putKataProgress, getKataProgress } from '../db.js';
+import { fetchCurrentUser } from '../admin/sync.js';
 
 let stage = null;
 let kataSettings = null;
@@ -134,7 +135,11 @@ async function handleVictory() {
   // Celebration effects must not block or crash the win screen.
   try { fireConfetti(); } catch {}
   try { playVictoryChime(); } catch {}
-  try { speak('Hebat! Kamu sudah selesai!', speechSettings); } catch {}
+  try {
+    const user = await fetchCurrentUser();
+    const text = user ? `Selamat ${user}, kamu berhasil!` : 'Selamat, kamu berhasil!';
+    speak(text, speechSettings);
+  } catch {}
   showWinScreen(() => {
     // Main Lagi: restart the session with the same words reshuffled.
     resetKataState();

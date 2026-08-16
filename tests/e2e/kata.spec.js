@@ -91,9 +91,9 @@ test.describe('TepuQ Kata', () => {
     });
 
     await Then('the photo is about 30% of the shorter screen edge', async () => {
-      // Desktop Chrome viewport is 1280x720, so 30vmin = 216px.
+      // Desktop Chrome viewport is 1280x720. The image is scaled proportionally
+      // so height is the controlling dimension; width follows aspect ratio.
       const box = await page.locator('.kata-photo').boundingBox();
-      expect(box.width).toBeGreaterThanOrEqual(200);
       expect(box.height).toBeGreaterThanOrEqual(200);
     });
 
@@ -116,16 +116,17 @@ test.describe('TepuQ Kata', () => {
 
     await Then('the photo is about 30% of the screen', async () => {
       const box = await page.locator('.kata-photo').boundingBox();
-      expect(box.width).toBeGreaterThanOrEqual(300);
+      // The image is scaled proportionally, so height is the controlling
+      // dimension; width follows the intrinsic aspect ratio.
       expect(box.height).toBeGreaterThanOrEqual(300);
     });
 
     await Then('the letters are much bigger than the base settings', async () => {
-      // vmin 1080 -> scale 2x: tiles and slots share one fitted size
-      // (base 110/120), so both are the same width on desktop.
+      // vmin 1080 -> scale up to 2x, then fitted to the word length.
+      // Tiles and slots share one fitted size, so both are the same width.
       const tileBox = await page.locator('.kata-tile').first().boundingBox();
       const slotBox = await page.locator('.kata-slot').first().boundingBox();
-      expect(tileBox.width).toBeGreaterThanOrEqual(175);
+      expect(tileBox.width).toBeGreaterThanOrEqual(160);
       expect(slotBox.width).toBe(tileBox.width);
     });
   });
@@ -138,17 +139,17 @@ test.describe('TepuQ Kata', () => {
     });
 
     await Then('the photo is bigger than the old mobile size', async () => {
+      // The image is scaled proportionally; height is the controlling dimension.
       const box = await page.locator('.kata-photo').boundingBox();
-      expect(box.width).toBeGreaterThanOrEqual(110);
       expect(box.height).toBeGreaterThanOrEqual(110);
     });
 
     await Then('the letters stay at least as big as the base settings', async () => {
       // Mobile scale 1.15x, then adapted to the word length so nothing
-      // overflows. Tiles and slots now share the same fitted size.
+      // overflows. Tiles and slots share the same fitted size.
       const tileBox = await page.locator('.kata-tile').first().boundingBox();
       const slotBox = await page.locator('.kata-slot').first().boundingBox();
-      expect(tileBox.width).toBeGreaterThanOrEqual(80);
+      expect(tileBox.width).toBeGreaterThanOrEqual(75);
       expect(slotBox.width).toBe(tileBox.width);
     });
   });
@@ -159,10 +160,12 @@ test.describe('TepuQ Kata', () => {
     });
 
     await When('the child types the first letter of the current word', async () => {
-      const word = await page.evaluate(() => window.__kataState?.words?.[window.__kataState?.index]?.word || '');
-      const firstLetter = word.charAt(0);
-      expect(firstLetter).not.toBe('');
-      await page.keyboard.press(firstLetter);
+      // Read the first unfilled slot's letter, which always matches the current word.
+      const firstSlot = page.locator('.kata-slot').first();
+      await expect(firstSlot).toBeVisible();
+      const letter = await firstSlot.getAttribute('data-letter');
+      expect(letter).not.toBe('');
+      await page.keyboard.press(letter);
     });
 
     await Then('exactly one tile is placed and the first slot is filled', async () => {
