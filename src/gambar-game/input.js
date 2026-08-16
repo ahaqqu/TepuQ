@@ -7,6 +7,7 @@ import { handleSuccess } from './logic.js';
 import { hintCard } from './effects.js';
 import { exitFullscreen, unlockPointer } from './fullscreen.js';
 import { showModePicker, getCurrentMode, getAppState } from './mode-manager.js';
+import { playTryAgainSfx } from '../speech.js';
 
 // Keep handler references at module scope so unbindGameInput can remove them.
 let cleanup = null;
@@ -112,6 +113,7 @@ function isBlockedKey(e) {
 
 function onTouchStart(e) {
   if (document.body.classList.contains('admin')) return;
+  if (e.target.id === 'backTrigger') return;
 
   const target = e.target;
   if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
@@ -132,7 +134,10 @@ function onTouchStart(e) {
   const isCard = e.target === card || card?.contains(e.target);
 
   if (getCurrentMode() === 'target' && !isCard) {
+    // Missed the target: wobble the card and play the encouraging "boing"
+    // (debounced in speech.js so the pointer + touch paths don't double it).
     hintCard(card);
+    playTryAgainSfx();
     return;
   }
 
@@ -190,7 +195,10 @@ function onPointerDown(e) {
   const isCard = e.target === clickedCard || clickedCard?.contains(e.target);
 
   if (getCurrentMode() === 'target' && !isCard) {
+    // Missed the target: wobble the card and play the encouraging "boing"
+    // (debounced in speech.js so the pointer + touch paths don't double it).
     hintCard(clickedCard);
+    playTryAgainSfx();
     return;
   }
 

@@ -118,6 +118,29 @@ export function stopSpeech() {
   if (window.speechSynthesis) window.speechSynthesis.cancel();
 }
 
+let tryAgainAudio = null;
+let lastTryAgainAt = 0;
+
+// Playful "boing" (Mixkit, see docs/assets-sources.md) shared by both games:
+// TepuQ Kata plays it when a letter is dropped outside a target; TepuQ Target
+// plays it when the child taps outside the target card. The debounce keeps
+// pointer + touch handlers from double-firing on the same tap on mobile.
+export function playTryAgainSfx() {
+  try {
+    const now = Date.now();
+    if (now - lastTryAgainAt < 250) return;
+    lastTryAgainAt = now;
+    if (!tryAgainAudio) {
+      tryAgainAudio = new Audio('assets/sfx/try-again.wav');
+      tryAgainAudio.volume = 0.55;
+    }
+    tryAgainAudio.currentTime = 0;
+    tryAgainAudio.play().catch(() => {});
+  } catch {
+    // Audio is decorative; never let it break input handling.
+  }
+}
+
 export async function playRecording(audioBlob) {
   if (!audioBlob) return;
   const url = URL.createObjectURL(audioBlob);

@@ -315,4 +315,88 @@ test.describe('TepuQ Kata', () => {
       await expect(dropped).not.toHaveClass(/placed/);
     });
   });
+
+  test('dropping a letter off-target plays an encouraging sound', async ({ page }) => {
+    await Given('the browser records every audio clip playback', async () => {
+      await page.addInitScript(() => {
+        window.__plays = [];
+        HTMLMediaElement.prototype.play = function () {
+          window.__plays.push(String(this.src));
+          return Promise.resolve();
+        };
+      });
+    });
+
+    await Given('TepuQ Kata is started', async () => {
+      await startKata(page);
+    });
+
+    await When('the child drops a letter far away from any target', async () => {
+      await page.locator('.kata-tile').first().waitFor({ state: 'visible' });
+      const tileBox = await page.locator('.kata-tile').first().boundingBox();
+      const photoBox = await page.locator('.kata-photo').boundingBox();
+      await page.mouse.move(tileBox.x + tileBox.width / 2, tileBox.y + tileBox.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(photoBox.x + photoBox.width / 2, photoBox.y + photoBox.height / 2, { steps: 10 });
+      await page.mouse.up();
+    });
+
+    await Then('the encouraging try-again sound plays', async () => {
+      await expect.poll(() => page.evaluate(() => window.__plays.length), { timeout: 5000 }).toBeGreaterThan(0);
+      const plays = await page.evaluate(() => window.__plays);
+      expect(plays.some((src) => src.includes('try-again.wav'))).toBe(true);
+    });
+  });
+
+  test('the victory celebration says "Selamat, kamu hebat!"', async ({ page }) => {
+    await Given('the browser records every spoken utterance', async () => {
+      await page.addInitScript(() => {
+        window.__spoken = [];
+        // speechSynthesis is a read-only accessor on window, so it must be
+        // replaced with defineProperty for the stub to actually take effect.
+        const fakeSynth = {
+          speaking: false,
+          pending: false,
+          paused: false,
+          getVoices: () => [],
+          cancel: () => {},
+          resume: () => {},
+          speak: (u) => { window.__spoken.push(u.text); },
+        };
+        Object.defineProperty(window, 'speechSynthesis', { value: fakeSynth, configurable: true });
+        Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+          value: function (text) { this.text = text; },
+          configurable: true,
+        });
+      });
+    });
+
+    await Given('Kata session length is set to 3 words', async () => {
+      await setShortSession(page);
+    });
+
+    await When('the child starts Kata and completes 3 words', async () => {
+      await startKata(page);
+      for (let w = 0; w < 3; w++) {
+        if (w > 0) {
+          await expect(page.locator('.kata-slot.filled')).toHaveCount(0, { timeout: 5000 });
+        }
+        await expect(page.locator('.kata-scatter .kata-tile').first()).toBeVisible();
+        resetUsedTiles();
+        const slotCount = await page.locator('.kata-slot-row .kata-slot').count();
+        for (let i = 0; i < slotCount; i++) {
+          await dragTileToMatchingSlot(page);
+          await expect(page.locator('.kata-slot.filled').nth(i)).toBeVisible();
+        }
+      }
+      await expect(page.locator('.kata-win')).toBeVisible({ timeout: 8000 });
+    });
+
+    await Then('the TTS congratulates the child', async () => {
+      await expect.poll(
+        () => page.evaluate(() => window.__spoken.some((t) => /Selamat.*kamu hebat/.test(t))),
+        { timeout: 10000 }
+      ).toBe(true);
+    });
+  });
 });

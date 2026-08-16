@@ -207,9 +207,15 @@
   font-family: "Comic Sans MS", "Baloo 2", system-ui, sans-serif;
   line-height: 1;
   color: var(--kata-letter-color, #3b82f6);
-  -webkit-text-stroke: 2px #fff;
-  text-stroke: 2px #fff;
+  /* White outline via hard text-shadows instead of -webkit-text-stroke:
+     Android Chrome paints the stroke OVER the glyph fill, leaving a white
+     line across thin horizontal strokes (see bug on real devices — desktop
+     and DevTools emulation render correctly and never show it). Shadows
+     render behind the fill on every browser, so the outline stays outside
+     the letter. */
   text-shadow:
+    -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff,
+    -1px 0 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, 0 1px 0 #fff,
     0 0 4px #fff,
     0 0 10px var(--kata-letter-color, #3b82f6),
     0 0 20px var(--kata-letter-color, #3b82f6),
@@ -225,9 +231,9 @@
 }
 .kata-tile.snapped .kata-tile-letter {
   color: var(--kata-letter-color, #22c55e);
-  -webkit-text-stroke: 2px #fff;
-  text-stroke: 2px #fff;
   text-shadow:
+    -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff,
+    -1px 0 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, 0 1px 0 #fff,
     0 0 6px #fff,
     0 0 14px var(--kata-letter-color, #22c55e),
     0 0 28px var(--kata-letter-color, #22c55e),

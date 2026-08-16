@@ -111,6 +111,51 @@ test.describe('Game mode default settings', () => {
     });
   });
 
+  test('tapping outside the target card plays the encouraging sound', async ({ page }) => {
+    await Given('the browser records every audio clip playback', async () => {
+      await page.addInitScript(() => {
+        window.__plays = [];
+        HTMLMediaElement.prototype.play = function () {
+          window.__plays.push(String(this.src));
+          return Promise.resolve();
+        };
+      });
+    });
+
+    await Given('the user starts TepuQ Target mode', async () => {
+      await page.goto('/');
+      await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
+      await page.locator('#btnGameGambar').click({ force: true });
+      await expect(page.locator('#modePicker')).toBeVisible();
+      await page.locator('#btnTarget').click({ force: true });
+      await expect(page.locator('#modePicker')).toHaveClass(/hidden/);
+      await expect(page.locator('.card-pop.target-card')).toBeVisible();
+    });
+
+    await When('the child taps somewhere that is not the target card', async () => {
+      // Bottom-right corner: outside the centered card and outside the
+      // top-left back trigger area.
+      await page.mouse.click(1240, 700);
+    });
+
+    await Then('the encouraging try-again sound plays exactly once', async () => {
+      await expect.poll(() => page.evaluate(() => window.__plays.length), { timeout: 5000 }).toBe(1);
+      const plays = await page.evaluate(() => window.__plays);
+      expect(plays[0]).toContain('try-again.wav');
+    });
+
+    await When('the child then taps the target card', async () => {
+      const card = page.locator('.card-pop.target-card');
+      await card.click({ force: true });
+      await expect(page.locator('.card-pop.target-card img')).toBeVisible();
+    });
+
+    await Then('a successful tap does not play the sound again', async () => {
+      const plays = await page.evaluate(() => window.__plays);
+      expect(plays).toHaveLength(1);
+    });
+  });
+
   test('default Papa image uses HTTP URL, then custom image via key p', async ({ page }) => {
     await Given('the database is reset to default starter objects', async () => {
       await resetAllData(page);

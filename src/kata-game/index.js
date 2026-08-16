@@ -12,9 +12,11 @@ import {
 } from './renderer.js';
 import {
   initKataAudio, speakLetter, speakWord, playSuccessChime, playVictoryChime,
+  playEncourageSfx,
 } from './audio.js';
 import { putKataProgress, getKataProgress } from '../db.js';
 import { fetchCurrentUser } from '../admin/sync.js';
+import { speak } from '../speech.js';
 
 let stage = null;
 let allWords = null;
@@ -37,7 +39,9 @@ export async function initKata(words, settings, gambarSpeechSettings) {
   setKataStateRef(getKataState());
   initRenderer(stage, {
     onSnap: handleSnap,
-    onReject: () => { /* visual only; state unchanged */ },
+    // Free drop (no target nearby): play an encouraging "boing" so the child
+    // knows to try again. State stays unchanged.
+    onReject: () => { playEncourageSfx(); },
     onBackToMenu: () => backToMenu(),
   });
 
@@ -139,7 +143,7 @@ async function handleVictory() {
   try { playVictoryChime(); } catch {}
   try {
     const user = await fetchCurrentUser();
-    const text = user ? `Selamat ${user}, kamu berhasil!` : 'Selamat, kamu berhasil!';
+    const text = user ? `Selamat ${user}, kamu hebat!` : 'Selamat, kamu hebat!';
     speak(text, speechSettings);
   } catch {}
   showWinScreen(() => {

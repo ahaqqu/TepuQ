@@ -13,6 +13,11 @@ export async function initKataAudio() {
   unlockSpeechForGameplay();
 }
 
+// Playful "boing" (Mixkit, see docs/assets-sources.md) played when a letter is
+// dropped outside a target: a friendly nudge that says "bounce back and try
+// again" without sounding like an error buzzer. Shared with TepuQ Target.
+export { playTryAgainSfx as playEncourageSfx } from '../speech.js';
+
 // Speak a single letter. Indonesian TTS reads isolated letters acceptably.
 export function speakLetter(letter, speechSettings) {
   if (!letter) return;
