@@ -8,6 +8,7 @@ let state = {
   autoSmashTimer: null,
   targetTransitionTimer: null,
   shufflePool: [],
+  targetStreak: 0, // successful target taps; every 3rd celebrates (see logic.js)
 };
 
 export function getState() {
@@ -29,5 +30,6 @@ export function resetGameState() {
     autoSmashTimer: null,
     targetTransitionTimer: null,
     shufflePool: [],
+    targetStreak: 0,
   };
 }

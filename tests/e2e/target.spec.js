@@ -128,6 +128,67 @@ test.describe('TepuQ Gambar — Target mode', () => {
     });
   });
 
+  test('five successful target taps celebrate like Kata with TTS and fanfare', async ({ page }) => {
+    await Given('the browser records every spoken utterance and audio clip playback', async () => {
+      await page.addInitScript(() => {
+        window.__spoken = [];
+        window.__plays = [];
+        const fakeSynth = {
+          speaking: false,
+          pending: false,
+          paused: false,
+          getVoices: () => [],
+          cancel: () => {},
+          resume: () => {},
+          speak: (u) => {
+            window.__spoken.push(u.text);
+            // Fire onend so the victory fanfare (delayed until the TTS ends)
+            // still plays in the test, preserving the speak-then-sfx order.
+            if (typeof u.onend === 'function') u.onend();
+          },
+        };
+        Object.defineProperty(window, 'speechSynthesis', { value: fakeSynth, configurable: true });
+        Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+          value: function (text) { this.text = text; },
+          configurable: true,
+        });
+        HTMLMediaElement.prototype.play = function () {
+          window.__plays.push(String(this.src));
+          return Promise.resolve();
+        };
+      });
+    });
+
+    await Given('the user starts TepuQ Target mode', async () => {
+      await startTargetMode(page);
+    });
+
+    await When('the child taps the target card five times', async () => {
+      for (let i = 0; i < 5; i++) {
+        // The interaction debounce (debounceMs=300) silently swallows a tap
+        // right after the previous one, which is UI-undetectable; wait it out,
+        // then the visible card swap proves the tap registered.
+        await page.waitForTimeout(400);
+        await page.locator('.card-pop.target-card').click({ force: true });
+        await expect(page.locator('.card-pop.target-card img')).toBeVisible();
+      }
+    });
+
+    await Then('the victory TTS congratulates the child', async () => {
+      await expect.poll(
+        () => page.evaluate(() => window.__spoken.some((t) => /Selamat.*kamu hebat/.test(t))),
+        { timeout: 8000 }
+      ).toBe(true);
+    });
+
+    await Then('the victory fanfare plays', async () => {
+      await expect.poll(
+        () => page.evaluate(() => window.__plays.some((p) => p.includes('victory-fanfare.mp3'))),
+        { timeout: 8000 }
+      ).toBe(true);
+    });
+  });
+
   test('long-pressing the top-left corner exits Target gameplay back to the Gambar menu', async ({ page }) => {
     await Given('the target card is playing in TepuQ Target', async () => {
       await startTargetMode(page);

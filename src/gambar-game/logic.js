@@ -1,10 +1,37 @@
-import { speakOrPlay } from '../speech.js';
+import { speakOrPlay, speak, playVictoryChime } from '../speech.js';
+import { fireConfetti } from '../confetti.js';
 import { createParticles, thumpCard } from './effects.js';
 import { createCard, clearPopCards, revokeCardURL } from './card.js';
 import { normalizeKey } from '../utils.js';
+import { fetchCurrentUser } from '../sync-client.js';
 import { getState, setState, resetGameState } from './game-state.js';
 
 export { getState, setState, resetGameState } from './game-state.js';
+
+// Every this many successful target taps, TepuQ Target adds a Kata-style
+// victory audio celebration ("Selamat, kamu hebat!" + victory fanfare) to the
+// confetti that bursts on every successful tap. Kata keeps its 3-word session
+// (letters take a toddler time), but a target tap is one gesture — 5 keeps
+// the celebration special.
+const TARGET_CELEBRATION_EVERY = 5;
+
+// Non-blocking Kata-style milestone: 3 confetti waves (the per-tap burst plus
+// two follow-ups) over the stage, then the congratulations TTS (after the
+// card-name speech) and the fanfare once the TTS finishes. The game keeps
+// running underneath.
+function celebrateTargetMilestone(settings, point) {
+  [400, 800].forEach((ms) => {
+    setTimeout(() => { try { fireConfetti(point?.x, point?.y); } catch {} }, ms);
+  });
+  setTimeout(() => {
+    fetchCurrentUser()
+      .then((user) => {
+        const text = user ? `Selamat ${user}, kamu hebat!` : 'Selamat, kamu hebat!';
+        speak(text, settings, () => { try { playVictoryChime(); } catch {} });
+      })
+      .catch(() => { try { playVictoryChime(); } catch {} });
+  }, 1600);
+}
 
 export function chooseNext(active, current, playMode, shufflePool) {
   if (playMode === 'sequential') {
@@ -74,6 +101,17 @@ export async function handleSuccess(source, objects, settings, elParticles, key,
 
   if (state.currentMode === 'target') {
     advanceTargetCard(objects, settings, elParticles, point);
+    // Count only the child's own taps, not the mode-start card. Every
+    // successful tap bursts full-screen confetti like Kata does per word.
+    if (source && source !== 'mode-start') {
+      state.targetStreak = (state.targetStreak || 0) + 1;
+      // Burst from the tap/click point; keyboard actions have no point and
+      // burst from the center.
+      try { fireConfetti(point?.x, point?.y); } catch {}
+      if (state.targetStreak % TARGET_CELEBRATION_EVERY === 0) {
+        celebrateTargetMilestone(settings, point);
+      }
+    }
     return;
   }
 

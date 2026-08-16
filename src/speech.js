@@ -175,6 +175,39 @@ export function playSfx(url, volume = 1) {
   }
 }
 
+let successChimeAudio = null;
+let victoryChimeAudio = null;
+
+// Pleasant bell when a word is completed (TepuQ Kata) and the bigger victory
+// fanfare at session/milestone celebrations (both games). Shared so Kata and
+// Gambar celebrate with the same sounds; re-encoded Mixkit SFX, see
+// docs/assets-sources.md. Audio is decorative — failures are swallowed.
+export function playSuccessChime() {
+  try {
+    if (!successChimeAudio) {
+      successChimeAudio = new Audio('assets/sfx/success-chime.mp3');
+      successChimeAudio.volume = 0.55;
+    }
+    successChimeAudio.currentTime = 0;
+    successChimeAudio.play().catch(() => {});
+  } catch {
+    // Audio is decorative; never let it break the celebration flow.
+  }
+}
+
+export function playVictoryChime() {
+  try {
+    if (!victoryChimeAudio) {
+      victoryChimeAudio = new Audio('assets/sfx/victory-fanfare.mp3');
+      victoryChimeAudio.volume = 0.20;
+    }
+    victoryChimeAudio.currentTime = 0;
+    victoryChimeAudio.play().catch(() => {});
+  } catch {
+    // Audio is decorative; never let it break the celebration flow.
+  }
+}
+
 export async function playRecording(audioBlob) {
   if (!audioBlob) return;
   const url = URL.createObjectURL(audioBlob);
