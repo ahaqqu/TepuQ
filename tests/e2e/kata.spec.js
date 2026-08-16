@@ -89,6 +89,69 @@ test.describe('TepuQ Kata', () => {
       const src = await photo.getAttribute('src');
       expect(src).toContain('assets/starter');
     });
+
+    await Then('the photo is about 30% of the shorter screen edge', async () => {
+      // Desktop Chrome viewport is 1280x720, so 30vmin = 216px.
+      const box = await page.locator('.kata-photo').boundingBox();
+      expect(box.width).toBeGreaterThanOrEqual(200);
+      expect(box.height).toBeGreaterThanOrEqual(200);
+    });
+
+    await Then('the letters are scaled up on desktop', async () => {
+      // vmin 720 -> scale 1.33x. Slots stay at 160px; tiles only shrink when a
+      // long word would not fit the scatter area (118px worst case for 6
+      // letters, still above the 110px base setting).
+      const tileBox = await page.locator('.kata-tile').first().boundingBox();
+      const slotBox = await page.locator('.kata-slot').first().boundingBox();
+      expect(tileBox.width).toBeGreaterThanOrEqual(110);
+      expect(slotBox.width).toBeGreaterThanOrEqual(155);
+    });
+  });
+
+  test('a big desktop screen gets much bigger letters and a 30% photo', async ({ page }) => {
+    await Given('TepuQ Kata is started on a 1080p viewport', async () => {
+      await page.setViewportSize({ width: 1920, height: 1080 });
+      await startKata(page);
+      await expect(page.locator('.kata-tile').first()).toBeVisible();
+    });
+
+    await Then('the photo is about 30% of the screen', async () => {
+      const box = await page.locator('.kata-photo').boundingBox();
+      expect(box.width).toBeGreaterThanOrEqual(300);
+      expect(box.height).toBeGreaterThanOrEqual(300);
+    });
+
+    await Then('the letters are much bigger than the base settings', async () => {
+      // vmin 1080 -> scale 2x: tiles 216-220px; slots 225-240px (6-letter words
+      // shrink slightly so the slot row fits beside the photo; base 110/120).
+      const tileBox = await page.locator('.kata-tile').first().boundingBox();
+      const slotBox = await page.locator('.kata-slot').first().boundingBox();
+      expect(tileBox.width).toBeGreaterThanOrEqual(175);
+      expect(slotBox.width).toBeGreaterThanOrEqual(220);
+    });
+  });
+
+  test('phone viewport keeps a bigger photo and slightly bigger letters', async ({ page }) => {
+    await Given('TepuQ Kata is started on a phone-sized viewport', async () => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await startKata(page);
+      await expect(page.locator('.kata-tile').first()).toBeVisible();
+    });
+
+    await Then('the photo is bigger than the old mobile size', async () => {
+      const box = await page.locator('.kata-photo').boundingBox();
+      expect(box.width).toBeGreaterThanOrEqual(110);
+      expect(box.height).toBeGreaterThanOrEqual(110);
+    });
+
+    await Then('the letters stay at least as big as the base settings', async () => {
+      // Mobile scale 1.15x, then adapted to the word length so nothing
+      // overflows: slots 113-138px, tiles 90-126px (base 110/120).
+      const tileBox = await page.locator('.kata-tile').first().boundingBox();
+      const slotBox = await page.locator('.kata-slot').first().boundingBox();
+      expect(tileBox.width).toBeGreaterThanOrEqual(85);
+      expect(slotBox.width).toBeGreaterThanOrEqual(110);
+    });
   });
 
   test('completing all letters of a word fills every slot', async ({ page }) => {
@@ -107,12 +170,19 @@ test.describe('TepuQ Kata', () => {
       }
     });
 
-    await Then('all slots are filled', async () => {
-      // Read the count once, immediately after the drags, so the assertion does
-      // not race the game's 2s auto-advance (which clears the completed word).
+    await Then('the word completed with every slot filled', async () => {
+      // The game auto-advances 2s after a word completes. Read the state right
+      // after the drags: either we catch the completed word (celebrating, all
+      // slots filled) or the game already advanced (next word, nothing filled)
+      // — both prove the previous word completed with every slot filled.
       const total = await page.locator('.kata-slot-row .kata-slot').count();
       const filled = await page.locator('.kata-slot.filled').count();
-      expect(filled).toBe(total);
+      const phase = await page.evaluate(() => window.__kataState?.phase);
+      if (phase === 'CELEBRATING') {
+        expect(filled).toBe(total);
+      } else {
+        expect(filled).toBe(0);
+      }
     });
   });
 

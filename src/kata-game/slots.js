@@ -15,7 +15,12 @@ export function buildSlots(word) {
 // Returns absolute {x, y} positions (relative to the scatter container) for
 // each tile, in tile order. The tiles are shuffled so the child must drag them
 // to their correct slots rather than reading them left-to-right.
-export function scatterLetters(word, area, tileSize, rng = Math.random) {
+//
+// opts.gridFirst: for tight areas (the renderer's fit logic shrank the tiles),
+// place the shuffled letters on a deterministic grid that fits by construction,
+// instead of random attempts. This guarantees long words on short screens
+// never spill onto the photo below.
+export function scatterLetters(word, area, tileSize, rng = Math.random, opts = {}) {
   const letters = (word || '').toLowerCase().split('');
   const positions = [];
   const pad = tileSize * 0.5;
@@ -25,6 +30,23 @@ export function scatterLetters(word, area, tileSize, rng = Math.random) {
   const maxY = Math.max(minY, area.height - tileSize - pad);
 
   const order = shuffledIndices(letters.length, rng);
+
+  if (opts.gridFirst) {
+    const cols = Math.max(1, Math.floor((maxX - minX) / tileSize) + 1);
+    const cells = [];
+    for (let row = 0; cells.length < letters.length; row++) {
+      const y = minY + row * tileSize;
+      for (let col = 0; col < cols && cells.length < letters.length; col++) {
+        cells.push({ x: minX + col * tileSize, y });
+      }
+    }
+    const ordered = new Array(cells.length);
+    order.forEach((tileIndex, i) => {
+      ordered[tileIndex] = cells[i];
+    });
+    return ordered;
+  }
+
   for (let i = 0; i < letters.length; i++) {
     let pos = null;
     // Prefer random spots with a little breathing room between tiles.
@@ -37,8 +59,9 @@ export function scatterLetters(word, area, tileSize, rng = Math.random) {
     }
     // Random placement can run out of room in a short scatter area (longer
     // words on the photo layout). Fall back to a packed grid so no tile is ever
-    // hidden behind another and every letter stays tappable.
-    if (pos === null) pos = packedPosition(positions, minX, maxX, minY, tileSize);
+    // hidden behind another and every letter stays tappable. The grid stays
+    // inside the bounded area, so tiles never spill onto the photo.
+    if (pos === null) pos = packedPosition(positions, minX, maxX, minY, maxY, tileSize);
     positions.push(pos);
   }
 
@@ -51,16 +74,30 @@ export function scatterLetters(word, area, tileSize, rng = Math.random) {
 }
 
 // Deterministic last resort: scan a left-to-right, top-to-bottom grid at
-// `tileSize` spacing for the first free spot. Guarantees no two tiles overlap
-// even when the scatter area is too cramped for random placement to find room.
-function packedPosition(existing, minX, maxX, minY, tileSize) {
+// `tileSize` spacing for the first free spot within the bounded area. If every
+// cell is blocked (a truly degenerate area), pick the cell farthest from the
+// nearest tile: tiles stay inside the scatter area and their centers are never
+// covered by another tile's box, so every letter stays tappable.
+function packedPosition(existing, minX, maxX, minY, maxY, tileSize) {
   const cols = Math.max(1, Math.floor((maxX - minX) / tileSize) + 1);
-  for (let row = 0; ; row++) {
-    for (let col = 0; col < cols; col++) {
-      const pos = { x: minX + col * tileSize, y: minY + row * tileSize };
-      if (!overlapsAny(pos, existing, tileSize)) return pos;
+  const maxRow = Math.max(0, Math.floor((maxY - minY) / tileSize));
+  const cellCount = (maxRow + 1) * cols;
+  let best = null;
+  let bestDist = -1;
+  for (let cell = 0; cell < cellCount; cell++) {
+    const pos = {
+      x: minX + (cell % cols) * tileSize,
+      y: minY + Math.floor(cell / cols) * tileSize,
+    };
+    if (!overlapsAny(pos, existing, tileSize)) return pos;
+    let nearest = Infinity;
+    for (const e of existing) nearest = Math.min(nearest, distance(pos, e));
+    if (nearest > bestDist) {
+      bestDist = nearest;
+      best = pos;
     }
   }
+  return best;
 }
 
 // Find the slot a dragged tile should snap into, given the tile's center and

@@ -92,9 +92,20 @@
   padding-bottom: 2vmin;
 }
 
+/* Wide screens: put the photo beside the slot row so both stay big without
+   squeezing the scatter area above. Keep this breakpoint in sync with
+   slotRowWidth() in src/kata-game/renderer.js. */
+@media (min-width: 1400px) {
+  .kata-bottom {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
 .kata-photo {
-  width: clamp(100px, 22vmin, 200px);
-  height: clamp(100px, 22vmin, 200px);
+  /* Big, toddler-visible photo: ~30% of the shorter screen edge. */
+  width: clamp(110px, 30vmin, 360px);
+  height: clamp(110px, 30vmin, 360px);
   object-fit: cover;
   border-radius: 20px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.18);
@@ -143,7 +154,9 @@
   flex: 1;
   width: 100%;
   max-width: 900px;
-  min-height: 44vmin;
+  /* Bigger photo + bigger letters need the room; keep a small floor so the
+     scatter area still shrinks gracefully on short/landscape screens. */
+  min-height: 22vmin;
 }
 
 /* ---- Letter tiles (thick colored letter, no square) --------------------- */

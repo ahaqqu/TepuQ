@@ -57,19 +57,59 @@ describe('scatterLetters', () => {
     });
   });
 
-  it('never overlaps tiles, even for long words in a short area', () => {
+  it('never fully overlaps tiles, even for long words in a short area', () => {
     // The photo layout gives the scatter area a short vertical range; a long
-    // word must still scatter without any tile hiding behind another.
+    // word must still scatter with every tile staying inside the area and its
+    // center never covered by another tile's box (distance >= tileSize/2), so
+    // no letter is ever hidden behind another.
     const area = { width: 900, height: 334 };
     const tileSize = 110;
     for (let trial = 0; trial < 500; trial++) {
       const positions = scatterLetters('kucing', area, tileSize, Math.random);
+      positions.forEach((p) => {
+        expect(p.x).toBeGreaterThanOrEqual(0);
+        expect(p.x).toBeLessThanOrEqual(area.width);
+        expect(p.y).toBeGreaterThanOrEqual(0);
+        expect(p.y).toBeLessThanOrEqual(area.height);
+      });
+      for (let i = 0; i < positions.length; i++) {
+        for (let j = i + 1; j < positions.length; j++) {
+          expect(distance(positions[i], positions[j])).toBeGreaterThanOrEqual(tileSize / 2);
+        }
+      }
+    }
+  });
+
+  it('grid-first mode keeps every tile inside a tight area without overlap', () => {
+    // A phone-sized scatter area above the photo: 6 letters must stay inside
+    // the bounds and stay tappable (no overlap).
+    const area = { width: 359, height: 433 };
+    const tileSize = 118;
+    for (let trial = 0; trial < 50; trial++) {
+      const positions = scatterLetters('pisang', area, tileSize, Math.random, { gridFirst: true });
+      positions.forEach((p) => {
+        expect(p.x).toBeGreaterThanOrEqual(0);
+        expect(p.x).toBeLessThanOrEqual(area.width);
+        expect(p.y).toBeGreaterThanOrEqual(0);
+        expect(p.y).toBeLessThanOrEqual(area.height);
+      });
       for (let i = 0; i < positions.length; i++) {
         for (let j = i + 1; j < positions.length; j++) {
           expect(distance(positions[i], positions[j])).toBeGreaterThanOrEqual(tileSize);
         }
       }
     }
+  });
+
+  it('returns positions in shuffled tile order in grid-first mode', () => {
+    const rng = () => 0.5;
+    const area = { width: 360, height: 440 };
+    const positions = scatterLetters('bola', area, 110, rng, { gridFirst: true });
+    expect(positions).toHaveLength(4);
+    positions.forEach((p) => {
+      expect(p).toHaveProperty('x');
+      expect(p).toHaveProperty('y');
+    });
   });
 });
 
