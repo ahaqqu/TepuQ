@@ -14,7 +14,7 @@ export { getState, setState, resetGameState } from './game-state.js';
 // (letters take a toddler time), but a target tap is one gesture — 5 keeps
 // the celebration special.
 const TARGET_CELEBRATION_EVERY = 5;
-const TARGET_CELEBRATION_PAUSE_MS = 5000;
+const TARGET_CELEBRATION_PAUSE_MS = 10000;
 
 // Non-blocking Kata-style milestone: confetti bursts over the stage, then the
 // congratulations TTS and the fanfare once the TTS finishes. When a username is
@@ -29,7 +29,7 @@ function celebrateTargetMilestone(settings, point, user) {
   }, 1600);
 }
 
-// On every 5th successful target tap, freeze the game for ~5 seconds and show
+// On every 5th successful target tap, freeze the game for ~10 seconds and show
 // a big, playful username celebration before advancing to the next card.
 function showTargetCelebrationPause(objects, settings, elParticles, point) {
   const state = getState();
@@ -39,6 +39,10 @@ function showTargetCelebrationPause(objects, settings, elParticles, point) {
     clearTimeout(state.targetTransitionTimer);
     state.targetTransitionTimer = null;
   }
+
+  // Hide the card that was just tapped so the celebration overlay is the only
+  // thing on screen during the pause.
+  clearPopCards();
 
   // Initial burst from the tap point plus two full-screen follow-ups.
   try { fireConfetti(point?.x, point?.y); } catch {}
