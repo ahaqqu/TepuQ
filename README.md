@@ -1,13 +1,13 @@
-# TepuQ
+# TepuQ & TariQ
 
-TepuQ adalah permainan browser sederhana untuk anak 15 bulan ke atas yang belajar mengenal objek, suara, kata, dan koordinasi tangan–penglihatan.
+TepuQ & TariQ adalah permainan browser sederhana untuk anak 15 bulan ke atas yang belajar mengenal objek, suara, kata, dan koordinasi tangan–penglihatan. "TepuQ" berarti *tap* (ketuk) dan "TariQ" berarti *drag* (tarik).
 
 Halaman utama menampilkan **Game Picker** — menu untuk memilih salah satu dari dua game:
 
 - **TepuQ Gambar** — permainan kartu foto dengan dua mode bermain:
   - **TepuQ Bebas** — anak menekan tombol keyboard atau mengetuk layar mana saja. Kartu foto muncul dengan suara.
   - **TepuQ Target** — anak harus mengetuk kartu fotonya untuk melanjutkan ke objek berikutnya.
-- **TepuQ Kata** — permainan mengeja: sebuah kata tampil sebagai kotak-kotak huruf kosong dengan fotonya, dan anak menyeret huruf-huruf yang tersebar ke kotak yang tepat. Huruf yang benar menempel dan berubah hijau; menyelesaikan sesi menampilkan layar kemenangan.
+- **TariQ Kata** — permainan mengeja: sebuah kata tampil sebagai kotak-kotak huruf kosong dengan fotonya, dan anak menyeret huruf-huruf yang tersebar ke kotak yang tepat. Huruf yang benar menempel dan berubah hijau; menyelesaikan sesi menampilkan layar kemenangan.
 
 ## Cara Menjalankan di Lokal
 
@@ -36,8 +36,8 @@ Buka di browser:
 - Atur tombol cepat (key binding) untuk objek tertentu.
 - Atur mode yang tersedia dan mode layar penuh.
 - Atur toggle "Aktif di TepuQ Gambar" per objek untuk memilih objek mana yang menjadi gambar di TepuQ Gambar.
-- Atur toggle "Aktif di TepuQ Kata" per objek untuk memilih objek mana yang menjadi kata di TepuQ Kata.
-- Atur pengaturan TepuQ Kata: ukuran huruf/kotak, jarak snap, dan panjang sesi.
+- Atur toggle "Aktif di TariQ Kata" per objek untuk memilih objek mana yang menjadi kata di TariQ Kata.
+- Atur pengaturan TariQ Kata: ukuran huruf/kotak, jarak snap, dan panjang sesi.
 - Export data ke ZIP (`tepuq-data.zip`) untuk backup.
 - Import ZIP untuk memindahkan data antar browser atau perangkat.
 

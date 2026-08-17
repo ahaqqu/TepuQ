@@ -1,11 +1,11 @@
-# ADR 0004 — Deploy TepuQ Kata via the Existing tepuq.pages.dev Pipeline
+# ADR 0004 — Deploy TariQ Kata via the Existing tepuq.pages.dev Pipeline
 
 **Status:** Accepted
 
 **Date:** 2026-08-15
 
 ## Context
-ADR 0002 folds TepuQ Kata into the TepuQ repo as a second game on the same main page. TepuQ already ships to Cloudflare Pages via a GitHub Actions workflow on push to `main`: it runs unit tests, builds, provisions the `TEPUQ_SYNC` KV namespace, sets Pages secrets, and deploys `dist/` to the `tepuq` Pages project. A second workflow runs Playwright smoke tests against `https://tepuq.pages.dev` after every successful deploy and opens a GitHub issue on failure. All required repo secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `TEPUQ_JWT_SECRET`, `TEPUQ_PASS`, `TEPUQ_USER`) are already set on `ahaqqu/TepuQ`. The original TariQ repo has none of these.
+ADR 0002 folds TariQ Kata into the TepuQ & TariQ repo as a second game on the same main page. TepuQ already ships to Cloudflare Pages via a GitHub Actions workflow on push to `main`: it runs unit tests, builds, provisions the `TEPUQ_SYNC` KV namespace, sets Pages secrets, and deploys `dist/` to the `tepuq` Pages project. A second workflow runs Playwright smoke tests against `https://tepuq.pages.dev` after every successful deploy and opens a GitHub issue on failure. All required repo secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `TEPUQ_JWT_SECRET`, `TEPUQ_PASS`, `TEPUQ_USER`) are already set on `ahaqqu/TepuQ`. The original TariQ repo has none of these.
 
 Because Kata now shares a deploy with the live Gambar app, a broken Kata could take down the working Gambar site on the same build.
 
@@ -18,7 +18,7 @@ We considered three deploy targets:
 Ship Kata through the **existing** `tepuq.pages.dev` pipeline. Push to `main` on `ahaqqu/TepuQ` runs the established Action; both games deploy in one build to one Pages project and one URL.
 
 - No new Cloudflare Pages project, no new repo secrets, no new workflow for deployment.
-- Production verification uses the existing post-deploy smoke workflow **plus** an additional Playwright smoke that exercises Kata specifically: pick TepuQ Kata from the Game Picker and complete one word on `https://tepuq.pages.dev`.
+- Production verification uses the existing post-deploy smoke workflow **plus** an additional Playwright smoke that exercises Kata specifically: pick TariQ Kata from the Game Picker and complete one word on `https://tepuq.pages.dev`.
 - Before any push to `main`, the full test suite (Gambar + Kata unit tests and E2E) must pass locally so a Kata regression cannot take down the live Gambar app.
 
 ## Rationale
@@ -39,6 +39,6 @@ Ship Kata through the **existing** `tepuq.pages.dev` pipeline. Push to `main` on
   - `CLOUDFLARE_PROJECT_NAME` is unset, so the workflow defaults to `tepuq`; renaming the project later would require adding that secret.
 
 ## Related
-- ADR 0002 — TepuQ as a Multi-Game Shell.
+- ADR 0002 — TepuQ & TariQ as a Multi-Game Shell.
 - ADR 0003 — Kata data stores and sync scope.
 - `.github/workflows/deploy.yml`, `.github/workflows/deploy-smoke.yml`.

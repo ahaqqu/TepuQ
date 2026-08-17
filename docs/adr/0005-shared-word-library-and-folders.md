@@ -6,7 +6,7 @@
 
 ## Context
 
-TepuQ Gambar and TepuQ Kata each kept their own starter data: Gambar seeded
+TepuQ Gambar and TariQ Kata each kept their own starter data: Gambar seeded
 `STARTER_OBJECTS` into the `objects` store, while Kata seeded
 `KATA_STARTER_WORDS` into a separate `kata_words` store (ADR 0003). The two
 lists had to be kept in sync by hand so the toddler saw the same words and
@@ -23,14 +23,14 @@ services (config, db, utils, speech, game-picker) were shared.
 **One shared word/photo library.** The `kata_words` store is retired
 (DB_VERSION 7 drops it). TepuQ Kata reads its words from the same `objects`
 store as TepuQ Gambar through a single adapter seam,
-`loadKataWordsFromObjects()` in `src/db.js`. Each object carries two per-game
+`loadKataWordsFromObjects()` in `src/db.js:340`. Each object carries two per-game
 toggles: `active` (Gambar) and `kataEnabled` (Kata, new). Objects whose name
 contains a space ("Sikat Gigi") are not spellable and are always excluded from
 Kata.
 
 Consequences:
 
-- The admin merges into **one shared object editor** with a "Aktif di TepuQ
+- The admin merges into **one shared object editor** with a "Aktif di TariQ
   Kata" checkbox. The separate Kata word list/editor/ZIP is removed.
 - Kata gameplay shows the object's photo (starter HTTP URL or custom blob)
   next to the slots, so the toddler learns the word and its meaning at once.
@@ -44,7 +44,7 @@ Consequences:
 
 ```
 src/gambar-game/   # TepuQ Gambar gameplay (was src/game/)
-src/kata-game/     # TepuQ Kata gameplay (was src/kata/)
+src/kata-game/     # TariQ Kata gameplay (was src/kata/)
 src/admin/         # SHARED admin: main admin page + shared library
                    # (editor, object list, ZIP, sync, merge)
 src/gambar-admin/  # Gambar-specific admin tab: "Pengaturan Game"

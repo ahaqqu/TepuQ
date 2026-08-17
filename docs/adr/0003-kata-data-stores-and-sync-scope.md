@@ -1,11 +1,11 @@
-# ADR 0003 — TepuQ Kata Data Stores and Sync Scope
+# ADR 0003 — TariQ Kata Data Stores and Sync Scope
 
 **Status:** Accepted
 
 **Date:** 2026-08-15
 
 ## Context
-ADR 0002 folds the spelling game (TepuQ Kata) into the TepuQ repo. Kata needs persistent data: word definitions (with optional per-word custom audio), its own settings (letter/slot size, snap distance, session length, TTS rate/pitch/volume, distractor toggle, language), and per-device progress (completed words, current streak, total sessions). TepuQ's existing `tepuq_db` (v4) has card-only stores: `objects`, `settings`, `meta`. The existing cloud sync (ADR 0001) pushes/pulls Gambar custom objects + settings per Family; progress is not synced.
+ADR 0002 folds the spelling game (TariQ Kata) into the TepuQ & TariQ repo. Kata needs persistent data: word definitions (with optional per-word custom audio), its own settings (letter/slot size, snap distance, session length, TTS rate/pitch/volume, distractor toggle, language), and per-device progress (completed words, current streak, total sessions). TepuQ's existing `tepuq_db` (v4) has card-only stores: `objects`, `settings`, `meta`. The existing cloud sync (ADR 0001) pushes/pulls Gambar custom objects + settings per Family; progress is not synced.
 
 We had to decide three things: where Kata's data lives, what a word record looks like, and what syncs.
 
@@ -73,6 +73,6 @@ Slots are **derived at runtime** from the word string as ordered letter position
   - Starter words, like starter objects, are assumed identical on every device and refreshed from the bundle on version bump.
 
 ## Related
-- `CONTEXT.md` — TepuQ, TepuQ Kata, Local Data, Custom Object, Starter Object, Sync Store, Push, Pull.
+- `CONTEXT.md` — TepuQ & TariQ, TariQ Kata, Local Data, Custom Object, Starter Object, Sync Store, Push, Pull.
 - ADR 0001 — Cloud Sync as a Single Family Account.
-- ADR 0002 — TepuQ as a Multi-Game Shell.
+- ADR 0002 — TepuQ & TariQ as a Multi-Game Shell.

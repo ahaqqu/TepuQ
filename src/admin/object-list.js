@@ -41,14 +41,14 @@ export function renderObjectList(objects, selectFn) {
     sourceBadge.className = 'obj-source ' + (obj.source === 'custom' ? 'custom' : 'starter');
     sourceBadge.textContent = obj.source === 'custom' ? 'custom' : 'default';
     nameLine.appendChild(sourceBadge);
-    // Kata badge: this object is also a word in TepuQ Kata (shared library).
+    // Kata badge: this object is also a word in TariQ Kata (shared library).
     // Hidden for multi-word names (not spellable), dimmed when toggled off.
     if (!String(obj.name || '').trim().includes(' ')) {
       const kataBadge = document.createElement('span');
       kataBadge.className = 'obj-kata' + (obj.kataEnabled ? '' : ' off');
       kataBadge.title = obj.kataEnabled
-        ? 'Aktif di TepuQ Kata'
-        : 'Tidak aktif di TepuQ Kata';
+        ? 'Aktif di TariQ Kata'
+        : 'Tidak aktif di TariQ Kata';
       kataBadge.textContent = '🔤';
       nameLine.appendChild(kataBadge);
     }
