@@ -1,7 +1,7 @@
 {
-  "name": "TepuQ",
-  "short_name": "TepuQ",
-  "description": "Permainan kartu foto dan suara untuk balita. Ketuk layar atau tekan tombol untuk melihat foto dan mendengar nama benda dalam bahasa Indonesia.",
+  "name": "TepuQ & TariQ",
+  "short_name": "TepuQ & TariQ",
+  "description": "Permainan kartu foto dan suara untuk balita, plus susun huruf jadi kata. Ketuk atau tekan tombol untuk melihat foto, dan tarik huruf ke slot untuk mengeja kata dalam bahasa Indonesia.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#4A90D9",

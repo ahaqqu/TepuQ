@@ -1,13 +1,13 @@
-# TepuQ — Architecture
+# TepuQ & TariQ — Architecture
 
-TepuQ is a browser-first toddler game shell. One page hosts two games (TepuQ Gambar and TepuQ Kata), a shared admin mode, and an optional family cloud sync. All gameplay data lives in the browser's IndexedDB; the cloud is only a backup/sync store for custom objects and settings.
+TepuQ & TariQ is a browser-first toddler game shell. "TepuQ" means *tap* and "TariQ" means *drag*. One page hosts two games (TepuQ Gambar and TariQ Kata), a shared admin mode, and an optional family cloud sync. All gameplay data lives in the browser's IndexedDB; the cloud is only a backup/sync store for custom objects and settings.
 
 ## 1. Architecture Diagram
 
 ```mermaid
 flowchart LR
     subgraph B ["Browser"]
-        App["TepuQ App (index.html)<br/>Gambar · Kata · Admin"]
+        App["TepuQ & TariQ App (index.html)<br/>Gambar · Kata · Admin"]
         DB[(IndexedDB<br/>tepuq_db v7)]
     end
 
@@ -74,7 +74,7 @@ TepuQ/
 │   │   ├── effects.js            # Particle/burst effects
 │   │   ├── fullscreen.js         # Fullscreen toggling
 │   │   └── index.js              # Gambar entry point
-│   ├── kata-game/                # TepuQ Kata (spelling game)
+│   ├── kata-game/                # TariQ Kata (spelling game)
 │   │   ├── index.js              # Game loop + state machine wiring
 │   │   ├── game-state.js         # LOADING/PLAYING/VICTORY state machine
 │   │   ├── slots.js              # Pure slot derivation + snap hit-testing
@@ -83,7 +83,7 @@ TepuQ/
 │   │   └── audio.js              # TTS letters/word + success chime
 │   ├── admin/                    # SHARED admin chrome (one page, per-game tabs)
 │   │   ├── index.js              # Admin shell: Objek/Sinkron + editor tabs
-│   │   ├── editor.js             # Shared object editor ("Aktif di TepuQ Kata" toggle)
+│   │   ├── editor.js             # Shared object editor ("Aktif di TariQ Kata" toggle)
 │   │   ├── object-list.js        # Object list with Kata badge + drag reorder
 │   │   ├── import-export.js      # ZIP export/import (objects carry kataEnabled)
 │   │   ├── sync.js               # Cloud sync UI: login/push/pull/logout
@@ -112,7 +112,7 @@ TepuQ/
 
 ### Key design points
 
-- **One database, many stores.** `tepuq_db` (v7) holds `objects`, `settings`, `meta` (shared), plus `kata_settings` and `kata_progress`. Since v7 there is no `kata_words` store: TepuQ Kata reads its words from the shared `objects` store through `loadKataWordsFromObjects()` in `src/db.js:340` (ADR 0005). Each object carries `active` (Gambar) and `kataEnabled` (Kata) toggles; multi-word names are auto-excluded from Kata.
+- **One database, many stores.** `tepuq_db` (v7) holds `objects`, `settings`, `meta` (shared), plus `kata_settings` and `kata_progress`. Since v7 there is no `kata_words` store: TariQ Kata reads its words from the shared `objects` store through `loadKataWordsFromObjects()` in `src/db.js:340` (ADR 0005). Each object carries `active` (Gambar) and `kataEnabled` (Kata) toggles; multi-word names are auto-excluded from Kata.
 - **Browser-first.** Everything works offline with zero configuration. Cloud sync is an add-on, never a requirement.
 - **Starter media is cache-busted by `DB_VERSION`.** Starter images are served as plain URLs (`?v=<DB_VERSION>`); bumping the version in `src/config.js` invalidates stale caches for every browser on the next load.
 - **Mobile-safe input.** `src/gambar-game/input.js` only calls `preventDefault()` during actual gameplay; the mode picker and all native UI (forms, links, inputs) keep native click behavior (see AGENTS.md "Tap / Click Must Work on Mobile").

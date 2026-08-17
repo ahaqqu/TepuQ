@@ -1,8 +1,8 @@
-# TepuQ — Agent Instructions
+# TepuQ & TariQ — Agent Instructions
 
 ## Project Purpose
 
-TepuQ is a fun and simple browser game for toddlers (15+ months) and their parents. It is a multi-game shell: **TepuQ Gambar** (the original photo-card game) and **TepuQ Kata** (a drag-and-drop spelling game). The main page shows a Game Picker; picking a game routes into it. Parents configure everything through a shared admin mode with per-game tabs. An optional cloud-sync feature lets a family share custom objects, settings, and Kata words across devices.
+TepuQ & TariQ is a fun and simple browser game for toddlers (15+ months) and their parents. "TepuQ" means *tap* and "TariQ" means *drag*. It is a multi-game shell: **TepuQ Gambar** (the original photo-card game) and **TariQ Kata** (a drag-and-drop spelling game). The main page shows a Game Picker; picking a game routes into it. Parents configure everything through a shared admin mode with per-game tabs. An optional cloud-sync feature lets a family share custom objects, settings, and Kata words across devices.
 
 **Core principles (do not break):**
 - **Fun and simple** — keep the experience joyful and easy.
@@ -35,7 +35,7 @@ TepuQ/
 ├── scripts/                # helper scripts (e.g. dynamic E2E port runner run-e2e.js)
 ├── src/
 │   ├── main.js             # bootstrap (admin vs game; game -> Game Picker)
-│   ├── game-picker.js      # top-level Game Picker (TepuQ Gambar / TepuQ Kata)
+│   ├── game-picker.js      # top-level Game Picker (TepuQ Gambar / TariQ Kata)
 │   ├── config.js           # defaults + constants (Gambar + Kata)
 │   ├── db.js               # IndexedDB (objects + settings + meta + kata_settings/kata_progress)
 │   ├── utils.js            # helpers
@@ -52,7 +52,7 @@ TepuQ/
 │   │   ├── background.js   # background styling per settings
 │   │   ├── effects.js      # particle/burst effects
 │   │   └── fullscreen.js   # fullscreen toggling
-│   ├── kata-game/          # TepuQ Kata (spelling game) modules (Kata-only)
+│   ├── kata-game/          # TariQ Kata (spelling game) modules (Kata-only)
 │   │   ├── index.js        # game loop + state machine
 │   │   ├── game-state.js   # Kata state machine (LOADING/PLAYING/VICTORY)
 │   │   ├── slots.js        # slot derivation + snap hit-testing (pure)
@@ -61,7 +61,7 @@ TepuQ/
 │   │   └── audio.js        # TTS letters/word + success chime
 │   ├── admin/              # SHARED admin: main admin page + shared word/photo library
 │   │   ├── index.js        # admin shell (tabs: Objek, Sinkron; editor tabs wiring)
-│   │   ├── editor.js       # shared object editor (incl. "Aktif di TepuQ Kata" toggle)
+│   │   ├── editor.js       # shared object editor (incl. "Aktif di TariQ Kata" toggle)
 │   │   ├── object-list.js  # shared object list with Kata badge + drag reorder
 │   │   ├── import-export.js# shared ZIP export/import (objects carry kataEnabled; lazy-loads JSZip)
 │   │   ├── sync.js         # cloud sync UI (login/push/pull/logout)
@@ -128,10 +128,10 @@ After any change, verify at least these default-setting flows:
 
 1. `bun run dev`
 2. Open `http://localhost:5173`
-3. See the **Game Picker** with TepuQ Gambar and TepuQ Kata buttons.
+3. See the **Game Picker** with TepuQ Gambar and TariQ Kata buttons.
 4. Click **TepuQ Gambar** → see the Bebas/Target sub-picker → click **TepuQ Bebas** → press any key → a card appears and audio speaks.
 5. Long-press top-left corner → return to mode picker; "Pilih Game" returns to the Game Picker.
-6. Click **TepuQ Kata** → a word appears with its shared photo, empty slots, and scattered letter tiles → drag a letter into its slot → it snaps and turns green.
+6. Click **TariQ Kata** → a word appears with its shared photo, empty slots, and scattered letter tiles → drag a letter into its slot → it snaps and turns green.
 7. Open `http://localhost:5173?mode=admin` → see the object list (shared library) with the Objek/Sinkron tabs and the Editor Objek / Pengaturan Game / Pengaturan Kata editor tabs.
 8. Add a new object, save it, and see it in the list; with a single-word name it is also a Kata word (🔤 badge); multi-word names are Kata-excluded automatically.
 9. Export ZIP and confirm `config.json` only contains custom objects/recordings and carries the `kataEnabled` toggle per object. Import merges with defaults.
@@ -147,8 +147,8 @@ After any change, verify at least these default-setting flows:
 - Starter objects list and seeding in `src/db.js`; each starter object's `kataEnabled` toggle.
 - Game Picker: both games must launch from the main page.
 - TepuQ Gambar: Bebas and Target must both work.
-- TepuQ Kata: drag a letter into the correct slot snaps it; wrong slot bounces back; completing the session shows the win screen; each word shows its shared library photo.
-- Admin mode: add/edit/delete object, settings, export/import ZIP. The object editor is the single shared library editor — the "Aktif di TepuQ Kata" toggle decides which objects are Kata words.
+- TariQ Kata: drag a letter into the correct slot snaps it; wrong slot bounces back; completing the session shows the win screen; each word shows its shared library photo.
+- Admin mode: add/edit/delete object, settings, export/import ZIP. The object editor is the single shared library editor — the "Aktif di TariQ Kata" toggle decides which objects are Kata words.
 - Import/export of images and recorded audio (shared objects).
 - Key bindings (case-insensitive, Gambar).
 - No-border rule when an image is set (Gambar).
@@ -263,7 +263,7 @@ Styles live in `src/styles/` and are imported through `src/styles/main.css`:
 - `gameplay.css` — structural game CSS: layout, sizing, touch/keyboard behavior, hit areas, functional animations, card/particle shells, hints.
 - `theme.css` — visual styling: colors, gradients, decorative background effects, mode picker look, hover/focus states. Safe to override or swap without breaking gameplay.
 - `admin.css` — admin UI layout and components (shared admin + per-game tabs).
-- `kata.css` — TepuQ Kata gameplay styling (stage, slots, tiles, photo, win screen).
+- `kata.css` — TariQ Kata gameplay styling (stage, slots, tiles, photo, win screen).
 
 When changing styling, prefer editing `theme.css`. When changing game behavior that relies on layout or animations, edit `gameplay.css`.
 
@@ -277,7 +277,7 @@ When changing styling, prefer editing `theme.css`. When changing game behavior t
 - Game logic: `src/gambar-game/logic.js`
 - Card rendering (including border/no-border): `src/gambar-game/card.js`
 - Admin shell (shared admin page): `src/admin/index.js`
-- Shared object editor (incl. "Aktif di TepuQ Kata" toggle): `src/admin/editor.js`
+- Shared object editor (incl. "Aktif di TariQ Kata" toggle): `src/admin/editor.js`
 - Gambar settings tab: `src/gambar-admin/settings-form.js`
 - Kata settings tab: `src/kata-admin/settings-form.js`
 - Kata game loop: `src/kata-game/index.js`

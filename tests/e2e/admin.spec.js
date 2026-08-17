@@ -11,7 +11,7 @@ test.describe('Admin mode default settings', () => {
     });
 
     await Then('the admin header is visible and default objects are listed', async () => {
-      await expect(page.locator('text=TepuQ Admin')).toBeVisible();
+      await expect(page.locator('text=TepuQ & TariQ Admin')).toBeVisible();
       await expect(page.locator('#objectList .object-item')).toHaveCount(17);
       await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
     });
@@ -31,7 +31,7 @@ test.describe('Admin mode default settings', () => {
       await expect(page.locator('#inpKataEnabled')).toBeChecked();
       await expect(page.locator('#inpKataEnabled')).toBeEnabled();
       await page.locator('#inpName').fill('Test Papa');
-      // Multi-word names are not spellable in TepuQ Kata — toggle disables.
+      // Multi-word names are not spellable in TariQ Kata — toggle disables.
       await expect(page.locator('#inpKataEnabled')).toBeDisabled();
       await page.locator('#inpTts').fill('Ini Papa');
       await page.locator('#inpColor').fill('#ff0000');

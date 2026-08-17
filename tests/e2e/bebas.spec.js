@@ -11,7 +11,7 @@ const Then = test.step;
 
 async function resetAllData(page) {
   await page.goto('/?mode=admin');
-  await expect(page.locator('text=TepuQ Admin')).toBeVisible();
+  await expect(page.locator('text=TepuQ & TariQ Admin')).toBeVisible();
   await page.locator('#editorTabs .tab[data-editortab="settings"]').click({ force: true });
   await expect(page.locator('#btnResetAll')).toBeVisible();
   page.once('dialog', (dialog) => dialog.accept());

@@ -110,13 +110,13 @@ test.describe('Post-deploy smoke tests', () => {
     });
   });
 
-  test('TepuQ Kata shows slot row and letter tiles from starter words', async ({ page }) => {
+  test('TariQ Kata shows slot row and letter tiles from starter words', async ({ page }) => {
     await Given('the game is opened on the deployed site', async () => {
       await page.goto('/');
       await expect(page.locator('#gamePicker')).toBeVisible();
     });
 
-    await When('the user picks TepuQ Kata', async () => {
+    await When('the user picks TariQ Kata', async () => {
       await page.locator('#btnGameKata').click({ force: true });
       await expect(page.locator('#kataStage')).toBeVisible();
     });

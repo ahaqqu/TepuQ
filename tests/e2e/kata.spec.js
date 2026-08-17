@@ -65,9 +65,9 @@ function resetUsedTiles() {
   usedTileIndices.clear();
 }
 
-test.describe('TepuQ Kata', () => {
+test.describe('TariQ Kata', () => {
   test('the back-to-menu button returns to the Game Picker', async ({ page }) => {
-    await Given('TepuQ Kata is started', async () => {
+    await Given('TariQ Kata is started', async () => {
       await startKata(page);
       await expect(page.locator('#kataStage')).toBeVisible();
     });
@@ -84,7 +84,7 @@ test.describe('TepuQ Kata', () => {
   });
 
   test('the shared word photo is shown during gameplay', async ({ page }) => {
-    await Given('TepuQ Kata is started', async () => {
+    await Given('TariQ Kata is started', async () => {
       await startKata(page);
     });
 
@@ -135,7 +135,7 @@ test.describe('TepuQ Kata', () => {
       });
     });
 
-    await Given('TepuQ Kata is started', async () => {
+    await Given('TariQ Kata is started', async () => {
       await startKata(page);
       await expect(page.locator('.kata-photo')).toBeVisible();
     });
@@ -159,7 +159,7 @@ test.describe('TepuQ Kata', () => {
   });
 
   test('a big desktop screen gets much bigger letters and a 30% photo', async ({ page }) => {
-    await Given('TepuQ Kata is started on a 1080p viewport', async () => {
+    await Given('TariQ Kata is started on a 1080p viewport', async () => {
       await page.setViewportSize({ width: 1920, height: 1080 });
       await startKata(page);
       await expect(page.locator('.kata-tile').first()).toBeVisible();
@@ -183,7 +183,7 @@ test.describe('TepuQ Kata', () => {
   });
 
   test('phone viewport keeps a bigger photo and slightly bigger letters', async ({ page }) => {
-    await Given('TepuQ Kata is started on a phone-sized viewport', async () => {
+    await Given('TariQ Kata is started on a phone-sized viewport', async () => {
       await page.setViewportSize({ width: 390, height: 844 });
       await startKata(page);
       await expect(page.locator('.kata-tile').first()).toBeVisible();
@@ -206,7 +206,7 @@ test.describe('TepuQ Kata', () => {
   });
 
   test('typing a letter on the keyboard moves one matching tile into its slot', async ({ page }) => {
-    await Given('TepuQ Kata is started', async () => {
+    await Given('TariQ Kata is started', async () => {
       await startKata(page);
     });
 
@@ -246,7 +246,7 @@ test.describe('TepuQ Kata', () => {
       });
     });
 
-    await Given('TepuQ Kata is started', async () => {
+    await Given('TariQ Kata is started', async () => {
       await startKata(page);
       await expect(page.locator('.kata-scatter .kata-tile').first()).toBeVisible();
     });
@@ -295,7 +295,7 @@ test.describe('TepuQ Kata', () => {
       });
     });
 
-    await Given('TepuQ Kata is started', async () => {
+    await Given('TariQ Kata is started', async () => {
       await startKata(page);
     });
 
@@ -344,7 +344,7 @@ test.describe('TepuQ Kata', () => {
   });
 
   test('completing all letters of a word fills every slot', async ({ page }) => {
-    await Given('TepuQ Kata is started', async () => {
+    await Given('TariQ Kata is started', async () => {
       await startKata(page);
     });
 
@@ -450,7 +450,7 @@ test.describe('TepuQ Kata', () => {
   test('an unfinished tile resting over the targets stays free to move', async ({ page }) => {
     let droppedIndex = -1;
 
-    await Given('TepuQ Kata is started', async () => {
+    await Given('TariQ Kata is started', async () => {
       await startKata(page);
     });
 
@@ -503,7 +503,7 @@ test.describe('TepuQ Kata', () => {
       });
     });
 
-    await Given('TepuQ Kata is started', async () => {
+    await Given('TariQ Kata is started', async () => {
       await startKata(page);
     });
 
