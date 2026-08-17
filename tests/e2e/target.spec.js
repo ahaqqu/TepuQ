@@ -166,11 +166,14 @@ test.describe('TepuQ Gambar — Target mode', () => {
     await When('the child taps the target card five times', async () => {
       for (let i = 0; i < 5; i++) {
         // The interaction debounce (debounceMs=300) silently swallows a tap
-        // right after the previous one, which is UI-undetectable; wait it out,
-        // then the visible card swap proves the tap registered.
+        // right after the previous one, which is UI-undetectable; wait it out.
         await page.waitForTimeout(400);
         await page.locator('.card-pop.target-card').click({ force: true });
-        await expect(page.locator('.card-pop.target-card img')).toBeVisible();
+        // The 5th tap triggers the celebration pause and hides the card;
+        // only assert a visible card swap for the first four taps.
+        if (i < 4) {
+          await expect(page.locator('.card-pop.target-card img')).toBeVisible();
+        }
       }
     });
 
@@ -188,17 +191,15 @@ test.describe('TepuQ Gambar — Target mode', () => {
       ).toBe(true);
     });
 
-    await Then('the card stays on the 5th tap object during the ~5s pause, then advances', async () => {
-      const srcDuringPause = await page.locator('.card-pop.target-card img').getAttribute('src');
-      // A visible celebration overlay confirms the milestone pause is active.
+    await Then('the current card is hidden during the ~10s pause and the celebration overlay is visible', async () => {
+      await expect(page.locator('.card-pop.target-card')).toHaveCount(0);
       await expect(page.locator('.target-celebration')).toBeVisible();
-      // The next card appears only after the pause finishes.
+    });
+
+    await Then('a new card appears after the pause finishes', async () => {
       await expect.poll(
-        async () => {
-          const src = await page.locator('.card-pop.target-card img').getAttribute('src');
-          return src !== srcDuringPause;
-        },
-        { timeout: 8000 }
+        async () => page.locator('.card-pop.target-card img').isVisible(),
+        { timeout: 13000 }
       ).toBe(true);
     });
   });
@@ -275,18 +276,27 @@ test.describe('TepuQ Gambar — Target mode', () => {
       for (let i = 0; i < 5; i++) {
         await page.waitForTimeout(400);
         await page.locator('.card-pop.target-card').click({ force: true });
-        await expect(page.locator('.card-pop.target-card img')).toBeVisible();
+        // The 5th tap triggers the celebration pause and hides the card;
+        // only assert a visible card swap for the first four taps.
+        if (i < 4) {
+          await expect(page.locator('.card-pop.target-card img')).toBeVisible();
+        }
       }
     });
 
-    await Then('a big celebration overlay shows the logged-in username', async () => {
+    await Then('the current card is hidden and a big celebration overlay shows the logged-in username', async () => {
+      await expect(page.locator('.card-pop.target-card')).toHaveCount(0);
       const overlay = page.locator('.target-celebration');
       await expect(overlay).toBeVisible();
       await expect(overlay).toContainText('anak');
       await expect(overlay).toContainText('Hebat');
     });
 
-    await Then('the congratulation TTS is personalized with the username', async () => {
+    await Then('a new card appears and the congratulation TTS is personalized with the username', async () => {
+      await expect.poll(
+        async () => page.locator('.card-pop.target-card img').isVisible(),
+        { timeout: 13000 }
+      ).toBe(true);
       await expect.poll(
         () => page.evaluate(() => window.__spoken.some((t) => /Selamat anak.*kamu hebat/.test(t))),
         { timeout: 8000 }
