@@ -1,4 +1,4 @@
-// Top-level Game Picker: shows the installed games (TepuQ Gambar, TepuQ Kata)
+// Top-level Game Picker: shows the installed games (TepuQ Gambar, TariQ Kata)
 // and routes the player into the chosen game. This is the first menu level;
 // TepuQ Gambar then shows its existing Bebas/Target sub-picker (mode-manager.js).
 // See ADR 0002.
