@@ -4,8 +4,11 @@
 }
 
 #modePicker h1 {
-  font-size: 9vmin;
-  text-shadow: 0 0.4vmin 1vmin rgba(0,0,0,0.3);
+  font-size: clamp(28px, 7vmin, 56px);
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  margin: 0;
   animation: titleFloat 3s ease-in-out infinite;
 }
 
@@ -200,10 +203,6 @@
 }
 
 @media (max-width: 760px) {
-  #modePicker h1 {
-    font-size: 14vmin;
-  }
-
   .mode-subtitle {
     font-size: 4.2vmin;
   }
@@ -245,6 +244,57 @@
     bottom: 6vmin;
     font-size: 2.6vmin;
   }
+}
+
+.target-celebration {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2vmin;
+  z-index: 24;
+  pointer-events: none;
+  text-align: center;
+  animation: celebrationIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.target-celebration__text {
+  font-size: clamp(32px, 8vmin, 72px);
+  font-weight: 900;
+  color: #fff;
+  text-shadow:
+    0 2px 0 #ff6b6b,
+    0 4px 0 #ffd93d,
+    0 6px 0 #4ecdc4,
+    0 8px 16px rgba(0,0,0,0.35);
+  animation: celebrateText 0.8s ease-in-out infinite alternate;
+}
+
+.target-celebration__line {
+  display: inline-block;
+}
+
+.target-celebration__emoji {
+  font-size: clamp(48px, 12vmin, 120px);
+  animation: emojiBounce 0.7s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0.4vmin 1vmin rgba(0,0,0,0.25));
+}
+
+@keyframes celebrationIn {
+  from { opacity: 0; transform: scale(0.6); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes celebrateText {
+  from { transform: scale(1) rotate(-2deg); }
+  to { transform: scale(1.08) rotate(2deg); }
+}
+
+@keyframes emojiBounce {
+  from { transform: translateY(0) rotate(-10deg); }
+  to { transform: translateY(-3vmin) rotate(10deg); }
 }
 
 .bg-gradient {
