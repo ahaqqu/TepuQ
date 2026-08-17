@@ -14,23 +14,69 @@ export { getState, setState, resetGameState } from './game-state.js';
 // (letters take a toddler time), but a target tap is one gesture — 5 keeps
 // the celebration special.
 const TARGET_CELEBRATION_EVERY = 5;
+const TARGET_CELEBRATION_PAUSE_MS = 5000;
 
-// Non-blocking Kata-style milestone: 3 confetti waves (the per-tap burst plus
-// two follow-ups) over the stage, then the congratulations TTS (after the
-// card-name speech) and the fanfare once the TTS finishes. The game keeps
-// running underneath.
-function celebrateTargetMilestone(settings, point) {
+// Non-blocking Kata-style milestone: confetti bursts over the stage, then the
+// congratulations TTS and the fanfare once the TTS finishes. When a username is
+// known, the message is personalized.
+function celebrateTargetMilestone(settings, point, user) {
   [400, 800].forEach((ms) => {
     setTimeout(() => { try { fireConfetti(point?.x, point?.y); } catch {} }, ms);
   });
   setTimeout(() => {
-    fetchCurrentUser()
-      .then((user) => {
-        const text = user ? `Selamat ${user}, kamu hebat!` : 'Selamat, kamu hebat!';
-        speak(text, settings, () => { try { playVictoryChime(); } catch {} });
-      })
-      .catch(() => { try { playVictoryChime(); } catch {} });
+    const text = user ? `Selamat ${user}, kamu hebat!` : 'Selamat, kamu hebat!';
+    speak(text, settings, () => { try { playVictoryChime(); } catch {} });
   }, 1600);
+}
+
+// On every 5th successful target tap, freeze the game for ~5 seconds and show
+// a big, playful username celebration before advancing to the next card.
+function showTargetCelebrationPause(objects, settings, elParticles, point) {
+  const state = getState();
+  state.targetCelebration = true;
+  stopAutoSmash();
+  if (state.targetTransitionTimer) {
+    clearTimeout(state.targetTransitionTimer);
+    state.targetTransitionTimer = null;
+  }
+
+  // Initial burst from the tap point plus two full-screen follow-ups.
+  try { fireConfetti(point?.x, point?.y); } catch {}
+  [700, 1400].forEach((ms) => {
+    setTimeout(() => { try { fireConfetti(); } catch {} }, ms);
+  });
+
+  const game = document.getElementById('game');
+  const overlay = document.createElement('div');
+  overlay.className = 'target-celebration';
+  overlay.innerHTML = `
+    <div class="target-celebration__emoji">🎉</div>
+    <div class="target-celebration__text"><span class="target-celebration__line">Hebat!</span></div>
+  `;
+  game.appendChild(overlay);
+
+  fetchCurrentUser()
+    .then((user) => {
+      if (!user) return;
+      const line = overlay.querySelector('.target-celebration__line');
+      if (line) line.textContent = `Hebat, ${user}!`;
+    })
+    .catch(() => {});
+
+  // Keep the Kata-style audio celebration running during the pause.
+  fetchCurrentUser()
+    .then((user) => {
+      celebrateTargetMilestone(settings, point, user);
+    })
+    .catch(() => {
+      celebrateTargetMilestone(settings, point, null);
+    });
+
+  state.targetTransitionTimer = setTimeout(() => {
+    overlay.remove();
+    state.targetCelebration = false;
+    advanceTargetCard(objects, settings, elParticles, null);
+  }, TARGET_CELEBRATION_PAUSE_MS);
 }
 
 export function chooseNext(active, current, playMode, shufflePool) {
@@ -81,11 +127,20 @@ function advanceTargetCard(objects, settings, elParticles, point) {
   resetAutoSmash(objects, settings);
 }
 
-export function handleTargetSuccess(objects, settings, elParticles, point) {
+export function handleTargetSuccess(objects, settings, elParticles, point, source = 'touch') {
   const state = getState();
-  const now = Date.now();
-  if (now - state.lastInteractionTime < settings.debounceMs) return;
-  state.lastInteractionTime = now;
+
+  const isChildTap = source && source !== 'mode-start';
+  if (isChildTap) {
+    state.targetStreak = (state.targetStreak || 0) + 1;
+    // Burst from the tap/click point; keyboard actions have no point and
+    // burst from the center.
+    try { fireConfetti(point?.x, point?.y); } catch {}
+    if (state.targetStreak % TARGET_CELEBRATION_EVERY === 0) {
+      showTargetCelebrationPause(objects, settings, elParticles, point);
+      return;
+    }
+  }
   advanceTargetCard(objects, settings, elParticles, point);
 }
 
@@ -93,25 +148,14 @@ export async function handleSuccess(source, objects, settings, elParticles, key,
   const state = getState();
   const debounceMs = Number(settings.debounceMs) > 0 ? Number(settings.debounceMs) : 0;
   const now = Date.now();
-  if (now - state.lastInteractionTime < debounceMs) return;
+  if (now - state.lastInteractionTime < debounceMs || state.targetCelebration) return;
   state.lastInteractionTime = now;
 
   const active = objects.filter((o) => o.active);
   if (active.length === 0) return;
 
   if (state.currentMode === 'target') {
-    advanceTargetCard(objects, settings, elParticles, point);
-    // Count only the child's own taps, not the mode-start card. Every
-    // successful tap bursts full-screen confetti like Kata does per word.
-    if (source && source !== 'mode-start') {
-      state.targetStreak = (state.targetStreak || 0) + 1;
-      // Burst from the tap/click point; keyboard actions have no point and
-      // burst from the center.
-      try { fireConfetti(point?.x, point?.y); } catch {}
-      if (state.targetStreak % TARGET_CELEBRATION_EVERY === 0) {
-        celebrateTargetMilestone(settings, point);
-      }
-    }
+    handleTargetSuccess(objects, settings, elParticles, point, source);
     return;
   }
 

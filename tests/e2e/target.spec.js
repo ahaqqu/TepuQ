@@ -187,6 +187,111 @@ test.describe('TepuQ Gambar — Target mode', () => {
         { timeout: 8000 }
       ).toBe(true);
     });
+
+    await Then('the card stays on the 5th tap object during the ~5s pause, then advances', async () => {
+      const srcDuringPause = await page.locator('.card-pop.target-card img').getAttribute('src');
+      // A visible celebration overlay confirms the milestone pause is active.
+      await expect(page.locator('.target-celebration')).toBeVisible();
+      // The next card appears only after the pause finishes.
+      await expect.poll(
+        async () => {
+          const src = await page.locator('.card-pop.target-card img').getAttribute('src');
+          return src !== srcDuringPause;
+        },
+        { timeout: 8000 }
+      ).toBe(true);
+    });
+  });
+
+  test('five target taps show a personalized username celebration when logged in', async ({ page }) => {
+    let loggedIn = false;
+
+    await Given('the browser mocks the cloud sync endpoints', async () => {
+      await page.addInitScript(() => {
+        window.__spoken = [];
+        const fakeSynth = {
+          speaking: false,
+          pending: false,
+          paused: false,
+          getVoices: () => [],
+          cancel: () => {},
+          resume: () => {},
+          speak: (u) => { window.__spoken.push(u.text); if (typeof u.onend === 'function') u.onend(); },
+        };
+        Object.defineProperty(window, 'speechSynthesis', { value: fakeSynth, configurable: true });
+        Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+          value: function (text) { this.text = text; },
+          configurable: true,
+        });
+      });
+
+      await page.route('/api/login', async (route, request) => {
+        const body = await request.postDataJSON();
+        if (body?.user === 'anak' && body?.pass === 'rahasia') {
+          loggedIn = true;
+          await route.fulfill({
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              'Set-Cookie': 'tepuq_session=dummy-token; Path=/; Max-Age=31536000; Secure; SameSite=Strict; HttpOnly',
+            },
+            body: JSON.stringify({ ok: true }),
+          });
+        } else {
+          await route.fulfill({ status: 401, body: JSON.stringify({ ok: false }) });
+        }
+      });
+      await page.route('/api/me', async (route) => {
+        if (!loggedIn) {
+          await route.fulfill({ status: 401, body: 'Unauthorized' });
+          return;
+        }
+        await route.fulfill({
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ok: true, user: 'anak' }),
+        });
+      });
+      await page.route('/api/sync', async (route) => {
+        await route.fulfill({ status: loggedIn ? 204 : 401 });
+      });
+    });
+
+    await Given('a family user logs in on the main page', async () => {
+      await page.goto('/');
+      await expect(page.locator('html')).not.toHaveClass(/bootstrapping/);
+      await page.locator('#mainSyncUser').fill('anak');
+      await page.locator('#mainSyncPass').fill('rahasia');
+      await page.locator('#mainSyncForm button[type="submit"]').click({ force: true });
+      await expect(page.locator('#mainSyncInfo')).toContainText('anak');
+    });
+
+    await When('the user starts TepuQ Target mode and taps the card five times', async () => {
+      await page.locator('#btnGameGambar').click({ force: true });
+      await expect(page.locator('#modePicker')).toBeVisible();
+      await page.locator('#btnTarget').click({ force: true });
+      await expect(page.locator('#modePicker')).toHaveClass(/hidden/);
+      await expect(page.locator('.card-pop.target-card')).toBeVisible();
+      for (let i = 0; i < 5; i++) {
+        await page.waitForTimeout(400);
+        await page.locator('.card-pop.target-card').click({ force: true });
+        await expect(page.locator('.card-pop.target-card img')).toBeVisible();
+      }
+    });
+
+    await Then('a big celebration overlay shows the logged-in username', async () => {
+      const overlay = page.locator('.target-celebration');
+      await expect(overlay).toBeVisible();
+      await expect(overlay).toContainText('anak');
+      await expect(overlay).toContainText('Hebat');
+    });
+
+    await Then('the congratulation TTS is personalized with the username', async () => {
+      await expect.poll(
+        () => page.evaluate(() => window.__spoken.some((t) => /Selamat anak.*kamu hebat/.test(t))),
+        { timeout: 8000 }
+      ).toBe(true);
+    });
   });
 
   test('long-pressing the top-left corner exits Target gameplay back to the Gambar menu', async ({ page }) => {
