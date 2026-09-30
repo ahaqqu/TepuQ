@@ -234,9 +234,20 @@ For cloud sync, also set these repository secrets:
 - `TEPUQ_PASS` — shared family sync password.
 - `TEPUQ_JWT_SECRET` — JWT signing secret (long random string).
 
-The GitHub Action creates the `TEPUQ_SYNC` KV namespace automatically if it is missing and writes its ID into `wrangler.jsonc` before deploying. The deploy step strips JSONC comments before parsing `wrangler.jsonc` so inline comments do not break the workflow. No manual Wrangler or Cloudflare dashboard setup is required.
+The GitHub Action creates the `TEPUQ_SYNC` KV namespace automatically if it is missing and writes its ID into `wrangler.jsonc` before deploying. The deploy step strips JSONC comments before parsing `wrangler.jsonc` so inline comments do not break the workflow. No manual Wrangler setup is required.
 
 Wrangler is a pinned dev dependency (`wrangler` in `package.json`). Local data stays in the browser; the cloud deployment serves static files plus the optional sync API.
+
+### Custom domain
+
+The family-facing URL is **`https://tepuq.ahaqqu.com`**, attached to the `tepuq` Pages project as a custom domain. `https://tepuq.pages.dev` keeps working as the underlying origin, and the post-deploy smoke workflow targets it.
+
+`ahaqqu.com` is **not** a Cloudflare zone (DNS lives at Digital Registra), so the custom domain is a one-time manual setup that no workflow performs:
+
+1. Add the domain in the Cloudflare dashboard: Workers & Pages → `tepuq` → **Custom domains** → **Set up a domain** → `tepuq.ahaqqu.com`.
+2. Add a `CNAME` record at the DNS provider: name `tepuq`, target `tepuq.pages.dev`. Do the dashboard step **first** — a CNAME pointing at Pages before the domain association exists returns `522`.
+
+The app is hostname-agnostic (relative asset paths, same-origin `/api/*` calls), so a root-level custom domain needs no `base` path, manifest, or API changes.
 
 ## Starter Assets
 

@@ -202,3 +202,5 @@ Push to `main` triggers `.github/workflows/deploy.yml`:
 4. `wrangler pages deploy dist` publishes to `https://tepuq.pages.dev`.
 
 Afterwards `.github/workflows/deploy-smoke.yml` runs Playwright smoke tests (Gambar + Kata) against the live site and opens a GitHub issue on failure.
+
+The Pages project additionally serves the family-facing custom domain **`https://tepuq.ahaqqu.com`**, which always resolves to the current production deployment. `ahaqqu.com` is hosted outside Cloudflare (Digital Registra), so that domain depends on a manually managed `CNAME` record (`tepuq` → `tepuq.pages.dev`) plus certificate issuance in the Cloudflare dashboard. No workflow creates it, and the app itself is hostname-agnostic — no `base` path, manifest, or API changes are involved.
