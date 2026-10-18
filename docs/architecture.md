@@ -108,7 +108,7 @@ TepuQ/
 ├── CONTEXT.md                    # Domain glossary (English)
 └── .github/workflows/
     ├── deploy.yml                # unit tests → build → KV provision → Pages deploy
-    └── deploy-smoke.yml          # Playwright smoke against the live pages.dev
+    └── deploy-smoke.yml          # Playwright smoke against https://tepuq.ahaqqu.com
 ```
 
 ### Key design points
@@ -201,8 +201,8 @@ Push to `main` triggers `.github/workflows/deploy.yml`:
 1. `bun install` → unit tests (`bun run test:unit`) → build (`bun run build`).
 2. Wrangler provisions the `TEPUQ_SYNC` KV namespace if missing and writes its ID into `wrangler.jsonc`.
 3. Wrangler sets the three sync secrets on the Pages project.
-4. `wrangler pages deploy dist` publishes to `https://tepuq.pages.dev`.
+4. `wrangler pages deploy dist` publishes the build; the family-facing URL is **`https://tepuq.ahaqqu.com`** (the `tepuq.pages.dev` origin still exists as the underlying Pages host).
 
-Afterwards `.github/workflows/deploy-smoke.yml` runs Playwright smoke tests (Gambar + Kata) against the live site and opens a GitHub issue on failure.
+Afterwards `.github/workflows/deploy-smoke.yml` runs Playwright smoke tests (Gambar + Kata + Tembak) against `https://tepuq.ahaqqu.com` and opens a GitHub issue on failure.
 
-The Pages project additionally serves the family-facing custom domain **`https://tepuq.ahaqqu.com`**, which always resolves to the current production deployment. `ahaqqu.com` is hosted outside Cloudflare (Digital Registra), so that domain depends on a manually managed `CNAME` record (`tepuq` → `tepuq.pages.dev`) plus certificate issuance in the Cloudflare dashboard. No workflow creates it, and the app itself is hostname-agnostic — no `base` path, manifest, or API changes are involved.
+The Pages project serves the family-facing custom domain **`https://tepuq.ahaqqu.com`**, which always resolves to the current production deployment. `ahaqqu.com` is hosted outside Cloudflare (Digital Registra), so that domain depends on a manually managed `CNAME` record (`tepuq` → `tepuq.pages.dev`) plus certificate issuance in the Cloudflare dashboard. No workflow creates it, and the app itself is hostname-agnostic — no `base` path, manifest, or API changes are involved.

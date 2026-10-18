@@ -101,7 +101,7 @@ TepuQ/
 ├── wrangler.jsonc          # Cloudflare Pages config
 └── .github/workflows/
     ├── deploy.yml          # unit tests -> build -> KV provision -> Pages deploy
-    └── deploy-smoke.yml    # Playwright smoke against the live pages.dev
+    └── deploy-smoke.yml    # Playwright smoke against https://tepuq.ahaqqu.com
 ```
 
 ---
@@ -230,7 +230,7 @@ Current correct behavior lives in `onTouchStart` in `src/gambar-game/input.js`. 
 
 ## Cloudflare Deployment Notes
 
-The GitHub Action in `.github/workflows/deploy.yml` deploys the `dist/` folder to Cloudflare Pages. It will create the Pages project automatically if it does not already exist. After a successful deploy, `.github/workflows/deploy-smoke.yml` runs Playwright smoke tests (Gambar + Kata) against the live `pages.dev` site and opens a GitHub issue on failure. Required repository secrets:
+The GitHub Action in `.github/workflows/deploy.yml` deploys the `dist/` folder to Cloudflare Pages. It will create the Pages project automatically if it does not already exist. After a successful deploy, `.github/workflows/deploy-smoke.yml` runs Playwright smoke tests (Gambar + Kata + Tembak) against the live **`https://tepuq.ahaqqu.com`** site and opens a GitHub issue on failure. Required repository secrets:
 
 - `CLOUDFLARE_API_TOKEN` — with `Cloudflare Pages:Edit` permission.
 - `CLOUDFLARE_ACCOUNT_ID` — from Cloudflare dashboard.
@@ -248,7 +248,7 @@ Wrangler is a pinned dev dependency (`wrangler` in `package.json`). Local data s
 
 ### Custom domain
 
-The family-facing URL is **`https://tepuq.ahaqqu.com`**, attached to the `tepuq` Pages project as a custom domain. `https://tepuq.pages.dev` keeps working as the underlying origin, and the post-deploy smoke workflow targets it.
+The project URL is **`https://tepuq.ahaqqu.com`** (the family-facing custom domain on the `tepuq` Pages project). `https://tepuq.pages.dev` remains the underlying Pages origin; post-deploy smoke tests target **`https://tepuq.ahaqqu.com`**.
 
 `ahaqqu.com` is **not** a Cloudflare zone (DNS lives at Digital Registra), so the custom domain is a one-time manual setup that no workflow performs:
 
