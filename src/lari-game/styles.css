@@ -107,7 +107,9 @@
     }
 #lariStage #loading.hidden { display: none; }
 
-    /* Comic hit popup — big silly word over the bunny */
+    /* Comic hit popup — big silly word over the bunny
+       NOTE: modifier classes are fx-* so they never collide with the shell's
+       decorative .balloon / .sparkle theme.css classes. */
 #lariStage #hit-popup {
       position: absolute; left: 50%; top: 38%;
       transform: translate(-50%, -50%) scale(0);
@@ -123,6 +125,9 @@
         0 8px 0 rgba(0,0,0,0.15);
       opacity: 0;
       white-space: nowrap;
+      width: auto; height: auto; min-width: 0; min-height: 0;
+      background: none; border: 0; border-radius: 0;
+      padding: 0; margin: 0;
     }
 #lariStage #hit-popup.show {
       animation: hitPop 0.9s ease-out forwards;
@@ -134,10 +139,10 @@
       75%  { opacity: 1; transform: translate(-50%, -60%) scale(1.05) rotate(2deg); }
       100% { opacity: 0; transform: translate(-50%, -80%) scale(0.85) rotate(0deg); }
     }
-#lariStage #hit-popup.puddle { color: #9be7ff; }
-#lariStage #hit-popup.block { color: #ffd66b; }
-#lariStage #hit-popup.balloon { color: #ff9ec8; }
-#lariStage #hit-popup.cart { color: #ff8a6b; }
+#lariStage #hit-popup.fx-puddle { color: #9be7ff; }
+#lariStage #hit-popup.fx-block { color: #ffd66b; }
+#lariStage #hit-popup.fx-balloon { color: #ff9ec8; }
+#lariStage #hit-popup.fx-cart { color: #ff8a6b; }
 
     /* Screen flash tint per hit type */
 #lariStage #hit-flash {

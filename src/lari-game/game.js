@@ -25,7 +25,8 @@ export function createLariGame() {
    *   • Obstacles spawn far ahead (negative Z) and move toward
    *     the camera (positive Z) every frame.
    *   • They pass the bunny at z≈0 and KEEP GOING until they
-   *     are behind the camera (z > DESPAWN_Z), then dispose.
+   *     keep going until they pass the player (z > DESPAWN_Z), then dispose
+   *     before they can clip through the camera.
    *   • Nothing freezes on the character.
    *
    * Collision is also world-space: only when |z| is inside a
@@ -40,7 +41,7 @@ export function createLariGame() {
     LANE_X: [-3.2, 0, 3.2],
     PLAYER_Z: 0,
     SPAWN_Z: -110,
-    DESPAWN_Z: 22,          // past the camera → recycle
+    DESPAWN_Z: 9,           // past the player, but BEFORE the camera — never clip through the lens
     Z_HIT_AHEAD: 2.8,
     Z_HIT_BEHIND: 2.2,
     Z_COLLECT: 3.2,
@@ -360,7 +361,6 @@ export function createLariGame() {
     pickupSpark: new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false }),
     // OBSTACLES: warm warning base — clearly "avoid me"
     warnRing: new THREE.MeshBasicMaterial({ color: 0xff6b4a, transparent: true, opacity: 0.4, depthWrite: false }),
-    warnStripe: new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.55, depthWrite: false }),
     leafFly: new THREE.MeshBasicMaterial({ color: 0x7ecf5e, transparent: true, opacity: 0.85 }),
     rain: new THREE.MeshBasicMaterial({ color: 0x9ec9ff, transparent: true, opacity: 0.55 }),
     starNight: new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }),
@@ -1391,7 +1391,7 @@ export function createLariGame() {
   /**
    * Visual language for toddlers:
    *  PICKUPS  = float, spin, green/gold glow ring, sparkles
-   *  OBSTACLES = sit on the ground, orange/red warning base, no float
+   *  OBSTACLES = sit on the ground, no float
    */
   function decoratePickup(group) {
     // Soft green pedestal ring
@@ -1426,18 +1426,6 @@ export function createLariGame() {
   }
 
   function decorateObstacle(group) {
-    // Orange/red "avoid me" base
-    const warn = new THREE.Mesh(new THREE.RingGeometry(1.15, 1.55, 28), MAT.warnRing);
-    warn.rotation.x = -Math.PI / 2;
-    warn.position.y = 0.04;
-    group.add(warn);
-
-    // Inner warning pad
-    const pad = new THREE.Mesh(new THREE.CircleGeometry(1.2, 24), MAT.warnStripe);
-    pad.rotation.x = -Math.PI / 2;
-    pad.position.y = 0.035;
-    group.add(pad);
-
     // Short posts / bars so it reads as a blocker
     for (const side of [-1, 1]) {
       const bar = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.35, 0.12), MAT.warnRing);
@@ -1523,18 +1511,19 @@ export function createLariGame() {
     const count = opts.count || 14;
     const up = opts.up ?? 1;
     const flat = opts.flat ?? false;
+    const scale = opts.scale ?? 1;
     for (let i = 0; i < count; i++) {
       const m = new THREE.Mesh(
         flat
-          ? new THREE.BoxGeometry(rand(0.12, 0.28), rand(0.08, 0.16), rand(0.12, 0.28))
-          : new THREE.SphereGeometry(rand(0.1, 0.22), 6, 6),
+          ? new THREE.BoxGeometry(rand(0.12, 0.28) * scale, rand(0.08, 0.16) * scale, rand(0.12, 0.28) * scale)
+          : new THREE.SphereGeometry(rand(0.1, 0.22) * scale, 6, 6),
         new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.95 })
       );
-      m.position.set(x + rand(-0.4, 0.4), y + rand(-0.2, 0.6), z + rand(-0.3, 0.3));
+      m.position.set(x + rand(-0.4, 0.4) * scale, y + rand(-0.2, 0.6) * scale, z + rand(-0.3, 0.3) * scale);
       scene.add(m);
       particles.push({
         mesh: m,
-        vx: rand(-5, 5), vy: rand(1, 8) * up, vz: rand(-3, 3),
+        vx: rand(-5, 5) * (0.55 + 0.45 * scale), vy: rand(1, 8) * up * (0.55 + 0.45 * scale), vz: rand(-3, 3) * (0.55 + 0.45 * scale),
         life: rand(0.45, 0.95), max: 0.95,
         gravity: opts.gravity ?? 12,
         spin: rand(-8, 8),
@@ -1596,7 +1585,7 @@ export function createLariGame() {
       const flash = document.getElementById("hit-flash");
 
       // Reset popup animation
-      popup.classList.remove("show", "puddle", "block", "balloon", "cart");
+      popup.classList.remove("show", "fx-puddle", "fx-block", "fx-balloon", "fx-cart");
       void popup.offsetWidth; // reflow so animation restarts
 
       if (obstacleType === "puddle") {
@@ -1608,7 +1597,7 @@ export function createLariGame() {
         spray(px, 0.25, pz, 0x7ec8ff, { count: 18, up: 1.4, flat: true, gravity: 16 });
         spray(px, 0.2, pz, 0xb8e6ff, { count: 10, up: 2.2, gravity: 14 });
         popup.textContent = pick(["SPLAT!", "WHOOPS!", "SPLOOSH!"]);
-        popup.classList.add("show", "puddle");
+        popup.classList.add("show", "fx-puddle");
         flash.style.background = "rgba(120,200,255,0.55)";
         AudioFX.splat();
       } else if (obstacleType === "block") {
@@ -1620,21 +1609,22 @@ export function createLariGame() {
         spray(px, py + 0.6, pz, 0xffd66b, { count: 12, up: 1.2 });
         spray(px, py + 0.8, pz, 0xff8fab, { count: 8, up: 1.5 });
         popup.textContent = pick(["BONK!", "OOPS!", "TRIP!"]);
-        popup.classList.add("show", "block");
+        popup.classList.add("show", "fx-block");
         flash.style.background = "rgba(255,210,100,0.5)";
         AudioFX.bonk();
       } else if (obstacleType === "balloon") {
-        // Tangled in balloons: float & bob gently
-        this.duration = 1.15;
-        this.floatUp = 1.6;
-        this.spinVel = rand(2.5, 4);
-        this.tilt = 0.25;
-        this.bounceVel = 1.2;
-        spray(px, py + 1.2, pz, 0xff6b9d, { count: 10, up: 0.6, gravity: 2 });
-        spray(px, py + 1.4, pz, 0xffd60a, { count: 8, up: 0.5, gravity: 2 });
-        spray(px, py + 1.3, pz, 0x7bdff2, { count: 8, up: 0.7, gravity: 2 });
+        // Tangled in balloons: one smooth float arc (no spin, no jitter)
+        this.duration = 1.2;
+        this.floatUp = 1.15;
+        this.spinVel = 0;
+        this.tilt = 0.12;
+        this.bounceVel = 0;
+        // Small balloon-pop confetti (kept subtle so it never covers the bunny)
+        spray(px, py + 1.1, pz, 0xff6b9d, { count: 5, up: 0.5, gravity: 2, scale: 0.4 });
+        spray(px, py + 1.25, pz, 0xffd60a, { count: 4, up: 0.45, gravity: 2, scale: 0.4 });
+        spray(px, py + 1.15, pz, 0x7bdff2, { count: 4, up: 0.55, gravity: 2, scale: 0.4 });
         popup.textContent = pick(["WHEEE!", "POP!", "UH-OH!"]);
-        popup.classList.add("show", "balloon");
+        popup.classList.add("show", "fx-balloon");
         flash.style.background = "rgba(255,150,200,0.5)";
         AudioFX.wheee();
       } else {
@@ -1659,7 +1649,7 @@ export function createLariGame() {
           grow: 2.2,
         });
         popup.textContent = pick(["POW!", "BAM!", "CRASH!"]);
-        popup.classList.add("show", "cart");
+        popup.classList.add("show", "fx-cart");
         flash.style.background = "rgba(255,120,80,0.55)";
         AudioFX.pow();
       }
@@ -1691,10 +1681,9 @@ export function createLariGame() {
         if (Math.abs(this.bounceVel) < 0.4) this.bounceVel = 0;
       }
 
-      // Balloon float
+      // Balloon float — smooth sine arc handled in applyPose (no jitter here)
       if (this.type === "balloon") {
-        this.floatUp *= Math.exp(-1.4 * dt);
-        this.bounceY += Math.sin(this.timer * 8) * dt * 0.8;
+        this.floatUp *= Math.exp(-0.8 * dt);
       }
 
       // Squash pulse (cart)
@@ -1708,7 +1697,7 @@ export function createLariGame() {
         // Soft land
         this.active = false;
         this.spin *= 0.2;
-        player.squash = 1.2;
+        player.squash = this.type === "balloon" ? 0.55 : 1.2;
         return false;
       }
       return true;
@@ -1726,8 +1715,13 @@ export function createLariGame() {
       bunny.root.rotation.x = this.tilt * easeOut * (this.type === "block" || this.type === "cart" ? 1 : 0.35);
       bunny.root.rotation.y = this.spin * 0.15 * easeOut;
 
-      // Hop / float
-      bunny.root.position.y = player.y + this.bounceY + (this.type === "balloon" ? this.floatUp * Math.min(1, this.timer * 2) * easeOut : 0);
+      // Hop / float — balloon uses a full smooth sine arc (0 → peak → 0)
+      let floatY = 0;
+      if (this.type === "balloon") {
+        const u = Math.min(1, Math.max(0, t));
+        floatY = Math.sin(u * Math.PI) * this.floatUp;
+      }
+      bunny.root.position.y = player.y + this.bounceY + floatY;
 
       // Squash-stretch comedy
       const sq = 1 + this.squashPulse * 0.55 * Math.sin(this.timer * 28);
@@ -1829,7 +1823,7 @@ export function createLariGame() {
   }
 
   // ---------------------------------------------------------
-  // WORLD UPDATE — objects always move forward past the camera
+  // WORLD UPDATE — objects always move forward past the player
   // ---------------------------------------------------------
   const GameState = {
     speed: CONFIG.BASE_SPEED,
@@ -2079,7 +2073,7 @@ export function createLariGame() {
 
     // ===== OBSTACLES: keep moving until OFF SCREEN =====
     // This is the key behaviour: z increases toward the camera and
-    // continues PAST the player (z=0) and PAST the camera (z≈22)
+    // continues PAST the player (z=0) and is disposed before the camera (z≈14.5)
     // before the object is removed.
     let hitEvent = null;
     for (const o of obstacles) {
@@ -2116,7 +2110,7 @@ export function createLariGame() {
         o.passed = true;
       }
 
-      // Fully past the camera → dispose (off screen)
+      // Past the player and clear of the camera → dispose
       if (o.z > CONFIG.DESPAWN_Z) {
         o.alive = false;
         scene.remove(o.mesh);
