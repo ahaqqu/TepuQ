@@ -40,6 +40,11 @@
           <span>TariQ Kata</span>
           <small style="font-size:2.2vmin;font-weight:400;opacity:.9">Susun huruf jadi kata</small>
         </button>
+        <button class="mode-btn" id="btnGameLari" aria-label="TepuQ Lari">
+          <span class="mode-icon">🏃</span>
+          <span>TepuQ Lari</span>
+          <small style="font-size:2.2vmin;font-weight:400;opacity:.9">Lari &amp; kumpulkan bintang</small>
+        </button>
       </div>
       <div id="mainSync" class="main-sync">
         <form id="mainSyncForm" class="main-sync__form">
@@ -90,6 +95,9 @@
 
     <!-- KATA GAME STAGE: spelling game renders here -->
     <div id="kataStage" class="hidden"></div>
+
+    <!-- LARI GAME STAGE: TepuQ Lari 3D runner renders here -->
+    <div id="lariStage" class="hidden"></div>
     <canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
 
     <div id="emptyState" class="hidden">

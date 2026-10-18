@@ -1,6 +1,6 @@
 # TepuQ & TariQ — Architecture
 
-TepuQ & TariQ is a browser-first toddler game shell. "TepuQ" means *tap* and "TariQ" means *drag*. One page hosts two games (TepuQ Gambar and TariQ Kata), a shared admin mode, and an optional family cloud sync. All gameplay data lives in the browser's IndexedDB; the cloud is only a backup/sync store for custom objects and settings.
+TepuQ & TariQ is a browser-first toddler game shell. "TepuQ" means *tap* and "TariQ" means *drag*. One page hosts three games (TepuQ Gambar, TariQ Kata, and TepuQ Lari), a shared admin mode, and an optional family cloud sync. All gameplay data lives in the browser's IndexedDB; the cloud is only a backup/sync store for custom objects and settings.
 
 ## 1. Architecture Diagram
 
@@ -81,6 +81,11 @@ TepuQ/
 │   │   ├── drag-engine.js        # Touch + mouse drag with magnetic snap
 │   │   ├── renderer.js           # DOM: slots, tiles, photo, confetti, win screen
 │   │   └── audio.js              # TTS letters/word + success chime
+│   ├── lari-game/                # TepuQ Lari (3D runner, lazy-loaded Three.js)
+│   │   ├── index.js              # initLari/destroyLari for the Game Picker
+│   │   ├── markup.js             # Stage HTML template (TepuQ Lari branding)
+│   │   ├── game.js               # createLariGame() Three.js runner + destroy
+│   │   └── styles.css            # Styles scoped under #lariStage
 │   ├── admin/                    # SHARED admin chrome (one page, per-game tabs)
 │   │   ├── index.js              # Admin shell: Objek/Sinkron + editor tabs
 │   │   ├── editor.js             # Shared object editor ("Aktif di TariQ Kata" toggle)

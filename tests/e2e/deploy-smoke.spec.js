@@ -130,4 +130,22 @@ test.describe('Post-deploy smoke tests', () => {
       expect(tileCount).toEqual(slotCount);
     });
   });
+
+  test('TepuQ Lari boots the 3D runner start overlay from the Game Picker', async ({ page }) => {
+    await Given('the game is opened on the deployed site', async () => {
+      await page.goto('/');
+      await expect(page.locator('#gamePicker')).toBeVisible();
+    });
+
+    await When('the user picks TepuQ Lari', async () => {
+      await page.locator('#btnGameLari').click({ force: true });
+    });
+
+    await Then('the Lari stage shows its start overlay and canvas', async () => {
+      await expect(page.locator('#lariStage')).toBeVisible();
+      await expect(page.locator('#start-overlay')).toBeVisible();
+      await expect(page.locator('#start-btn')).toBeVisible();
+      await expect(page.locator('#game-canvas')).toBeVisible();
+    });
+  });
 });

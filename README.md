@@ -2,12 +2,13 @@
 
 TepuQ & TariQ adalah permainan browser sederhana untuk anak 15 bulan ke atas yang belajar mengenal objek, suara, kata, dan koordinasi tangan–penglihatan. "TepuQ" berarti *tap* (ketuk) dan "TariQ" berarti *drag* (tarik).
 
-Halaman utama menampilkan **Game Picker** — menu untuk memilih salah satu dari dua game:
+Halaman utama menampilkan **Game Picker** — menu untuk memilih salah satu dari tiga game:
 
 - **TepuQ Gambar** — permainan kartu foto dengan dua mode bermain:
   - **TepuQ Bebas** — anak menekan tombol keyboard atau mengetuk layar mana saja. Kartu foto muncul dengan suara.
   - **TepuQ Target** — anak harus mengetuk kartu fotonya untuk melanjutkan ke objek berikutnya.
 - **TariQ Kata** — permainan mengeja: sebuah kata tampil sebagai kotak-kotak huruf kosong dengan fotonya, dan anak menyeret huruf-huruf yang tersebar ke kotak yang tepat. Huruf yang benar menempel dan berubah hijau; menyelesaikan sesi menampilkan layar kemenangan.
+- **TepuQ Lari** — permainan lari 3D: anak berlari sebagai kelinci, mengumpulkan bintang dan benda (kucing, susu, pisang…), serta menghindari rintangan. Bisa dimainkan terus-menerus atau dengan 3 hati.
 
 ## Cara Menjalankan di Lokal
 
@@ -51,6 +52,7 @@ Sinkron cloud menggunakan Cloudflare Pages Functions + KV. Lihat `AGENTS.md` unt
 
 - Vite untuk build dan dev server.
 - Vanilla JavaScript + HTML + CSS, tanpa framework eksternal.
+- Three.js untuk TepuQ Lari (game lari 3D).
 - IndexedDB untuk penyimpanan lokal browser.
 - JSZip dan FileSaver untuk export/import.
 - Web Speech API untuk suara Bahasa Indonesia (`id-ID`).
