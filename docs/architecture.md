@@ -1,13 +1,13 @@
 # TepuQ & TariQ — Architecture
 
-TepuQ & TariQ is a browser-first toddler game shell. "TepuQ" means *tap* and "TariQ" means *drag*. One page hosts three games (TepuQ Gambar, TariQ Kata, and TepuQ Lari), a shared admin mode, and an optional family cloud sync. All gameplay data lives in the browser's IndexedDB; the cloud is only a backup/sync store for custom objects and settings.
+TepuQ & TariQ is a browser-first toddler game shell. "TepuQ" means *tap* and "TariQ" means *drag*. One page hosts four games (TepuQ Gambar, TariQ Kata, TepuQ Lari, and TepuQ Tembak), a shared admin mode, and an optional family cloud sync. All gameplay data lives in the browser's IndexedDB; the cloud is only a backup/sync store for custom objects and settings.
 
 ## 1. Architecture Diagram
 
 ```mermaid
 flowchart LR
     subgraph B ["Browser"]
-        App["TepuQ & TariQ App (index.html)<br/>Gambar · Kata · Admin"]
+        App["TepuQ & TariQ App (index.html)<br/>Gambar · Kata · Lari · Tembak · Admin"]
         DB[(IndexedDB<br/>tepuq_db v7)]
     end
 
@@ -46,7 +46,7 @@ flowchart LR
 
 ```
 TepuQ/
-├── index.html                    # Single-page shell: Game Picker + both games + admin
+├── index.html                    # Single-page shell: Game Picker + Gambar + Kata + Lari + admin
 ├── functions/api/                # Cloudflare Pages Functions (sync backend)
 │   ├── _utils.js                 # JWT sign/verify, cookies, KV keys, JSON helpers
 │   ├── login.js                  # Family credential check → JWT cookie (rate-limited)
@@ -56,7 +56,7 @@ TepuQ/
 ├── scripts/run-e2e.js            # Dynamic-port E2E runner
 ├── src/
 │   ├── main.js                   # Bootstrap: admin vs game; seeds, speech init, boot storm
-│   ├── game-picker.js            # Top-level menu; routes into Gambar or Kata (ADR 0002)
+│   ├── game-picker.js            # Top-level menu; routes into Gambar, Kata, Lari, or Tembak (ADR 0002)
 │   ├── config.js                 # Defaults + constants; DB_VERSION (cache-busting)
 │   ├── db.js                     # IndexedDB: stores, seeding, Kata adapter, migrations
 │   ├── utils.js                  # Shared helpers (toast, resize, blob utils)
@@ -100,10 +100,11 @@ TepuQ/
 │   │   └── settings-form.js      # Letter/slot/snap/session settings
 │   └── styles/                   # base / gameplay / theme / admin / kata CSS
 ├── public/
-│   └── assets/                   # Bundled CC0 starter images (WebP) + SFX (cache-busted by DB_VERSION)
+│   ├── assets/                   # Bundled CC0 starter images (WebP) + SFX (cache-busted by DB_VERSION)
+│   └── tembak/                   # TepuQ Tembak standalone Three.js marble shooter (own HTML/JS/CSS + vendored Three.js)
 ├── tests/
 │   ├── unit/                     # Vitest (logic, slots, sync, serializers, settings…)
-│   └── e2e/                      # Playwright (game, kata, admin, sync, deploy smoke)
+│   └── e2e/                      # Playwright (game, kata, tembak, admin, sync, deploy smoke)
 ├── docs/
 │   ├── architecture.md           # This document
 │   ├── adr/                      # Architecture Decision Records (0001–0005)
@@ -112,7 +113,7 @@ TepuQ/
 ├── CONTEXT.md                    # Domain glossary (English)
 └── .github/workflows/
     ├── deploy.yml                # unit tests → build → KV provision → Pages deploy
-    └── deploy-smoke.yml          # Playwright smoke against the live pages.dev
+    └── deploy-smoke.yml          # Playwright smoke against https://tepuq.ahaqqu.com
 ```
 
 ### Key design points
@@ -121,6 +122,7 @@ TepuQ/
 - **Browser-first.** Everything works offline with zero configuration. Cloud sync is an add-on, never a requirement.
 - **Starter media is cache-busted by `DB_VERSION`.** Starter images are served as plain URLs (`?v=<DB_VERSION>`); bumping the version in `src/config.js` invalidates stale caches for every browser on the next load.
 - **Mobile-safe input.** `src/gambar-game/input.js` only calls `preventDefault()` during actual gameplay; the mode picker and all native UI (forms, links, inputs) keep native click behavior (see AGENTS.md "Tap / Click Must Work on Mobile").
+- **TepuQ Tembak is a standalone static page.** `public/tembak/` is a self-contained Three.js marble shooter (own canvas, HUD, audio, vendored Three.js). The Game Picker links to `/tembak/` as a real `<a>` so mobile taps navigate natively; the game's **‹ Menu** button returns to `/`. It does not use IndexedDB, speech, or the shared admin — keep that boundary.
 
 ## 4. Sync Mechanism
 
@@ -204,8 +206,8 @@ Push to `main` triggers `.github/workflows/deploy.yml`:
 1. `bun install` → unit tests (`bun run test:unit`) → build (`bun run build`).
 2. Wrangler provisions the `TEPUQ_SYNC` KV namespace if missing and writes its ID into `wrangler.jsonc`.
 3. Wrangler sets the three sync secrets on the Pages project.
-4. `wrangler pages deploy dist` publishes to `https://tepuq.pages.dev`.
+4. `wrangler pages deploy dist` publishes the build; the family-facing URL is **`https://tepuq.ahaqqu.com`** (the `tepuq.pages.dev` origin still exists as the underlying Pages host).
 
-Afterwards `.github/workflows/deploy-smoke.yml` runs Playwright smoke tests (Gambar + Kata) against the live site and opens a GitHub issue on failure.
+Afterwards `.github/workflows/deploy-smoke.yml` runs Playwright smoke tests (Gambar + Kata + Lari + Tembak) against `https://tepuq.ahaqqu.com` and opens a GitHub issue on failure.
 
-The Pages project additionally serves the family-facing custom domain **`https://tepuq.ahaqqu.com`**, which always resolves to the current production deployment. `ahaqqu.com` is hosted outside Cloudflare (Digital Registra), so that domain depends on a manually managed `CNAME` record (`tepuq` → `tepuq.pages.dev`) plus certificate issuance in the Cloudflare dashboard. No workflow creates it, and the app itself is hostname-agnostic — no `base` path, manifest, or API changes are involved.
+The Pages project serves the family-facing custom domain **`https://tepuq.ahaqqu.com`**, which always resolves to the current production deployment. `ahaqqu.com` is hosted outside Cloudflare (Digital Registra), so that domain depends on a manually managed `CNAME` record (`tepuq` → `tepuq.pages.dev`) plus certificate issuance in the Cloudflare dashboard. No workflow creates it, and the app itself is hostname-agnostic — no `base` path, manifest, or API changes are involved.

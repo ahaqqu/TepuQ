@@ -3,10 +3,10 @@
 ## Core Concepts
 
 ### TepuQ & TariQ
-The household app shell that hosts three games and a shared admin/sync layer. "TepuQ" means *tap* and "TariQ" means *drag*; together they are the product name. A player picks one game from the Game Picker, then plays that game.
+The household app shell that hosts four games and a shared admin/sync layer. "TepuQ" means *tap* and "TariQ" means *drag*; together they are the product name. A player picks one game from the Game Picker, then plays that game.
 
 ### Game Picker
-The top-level menu on the main page. Lists the installed games: TepuQ Gambar, TariQ Kata, and TepuQ Lari. Choosing a game routes the player into that game; it is not a play-style.
+The top-level menu on the main page. Lists the installed games: TepuQ Gambar, TariQ Kata, TepuQ Lari, and TepuQ Tembak. Choosing a game routes the player into that game; it is not a play-style.
 
 ### TepuQ Gambar
 The original TepuQ card game: shows photo cards and speaks Indonesian names when the child taps or presses keys. Has two play modes, Bebas and Target, selected on the Gambar sub-picker. Formerly called just "TepuQ."
@@ -16,6 +16,9 @@ The spelling game: a word is shown as empty letter slots and the child drags sca
 
 ### TepuQ Lari
 The 3D endless runner: the child runs as a bunny down three lanes, collecting stars and named objects (kucing, susu, pisang…) while dodging or clearing obstacles. Two play styles on its start overlay: **Main Terus** (no game over) and **3 Hati**. Lives in `src/lari-game/`; uses Three.js and is lazy-loaded from the Game Picker. No IndexedDB stores — Lari is self-contained.
+
+### TepuQ Tembak
+The marble shooter: a toy-diorama Zuma-like game where the player aims a tarsius guardian, fires colored seed-shots, and matches 3+ marbles to pop them before they reach the Skull Cave. Lives as a standalone Three.js page at `public/tembak/` (own HTML/CSS/JS, vendored Three.js) and is launched from the Game Picker. "Tembak" means *shoot*.
 
 ### Play Mode
 A variant *within* a game. TepuQ Gambar has Bebas and Target. TariQ Kata currently has one play mode (spell the word); the concept exists so future Kata variants can hang off the same Game → Play Mode structure.
@@ -75,4 +78,4 @@ One playthrough of the session-length number of Words (default 10). Completing a
 ## Deployment
 
 ### Pages Project
-The single Cloudflare Pages project (`tepuq`) that serves the whole TepuQ & TariQ shell — TepuQ Gambar, TariQ Kata, and TepuQ Lari — from one build. It answers on the family-facing custom domain `https://tepuq.ahaqqu.com`, and on the underlying `https://tepuq.pages.dev` origin. There is one deploy per push to `main`; all games ship together.
+The single Cloudflare Pages project (`tepuq`) that serves the whole TepuQ & TariQ shell — TepuQ Gambar, TariQ Kata, TepuQ Lari, and TepuQ Tembak — from one build. The project URL is the family-facing custom domain **`https://tepuq.ahaqqu.com`**; `https://tepuq.pages.dev` is the underlying Pages origin. There is one deploy per push to `main`; all games ship together.

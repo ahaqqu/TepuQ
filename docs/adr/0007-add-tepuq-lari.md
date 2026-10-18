@@ -1,4 +1,4 @@
-# ADR 0006 — Add TepuQ Lari as a Third Game via the Game Picker
+# ADR 0007 — Add TepuQ Lari as a Game via the Game Picker
 
 **Status:** Accepted
 

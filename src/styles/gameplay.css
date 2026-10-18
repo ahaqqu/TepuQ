@@ -58,6 +58,9 @@ html, body {
   font-size: 4vmin;
   font-weight: 700;
   cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  box-sizing: border-box;
 }
 
 .mode-btn:active { transform: scale(0.95); }

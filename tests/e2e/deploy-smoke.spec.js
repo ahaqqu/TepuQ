@@ -148,4 +148,33 @@ test.describe('Post-deploy smoke tests', () => {
       await expect(page.locator('#game-canvas')).toBeVisible();
     });
   });
+
+  test('TepuQ Tembak loads from the Game Picker and returns to the menu', async ({ page }) => {
+    await Given('the game is opened on the deployed site', async () => {
+      await page.goto('/');
+      await expect(page.locator('#gamePicker')).toBeVisible();
+    });
+
+    await When('the user picks TepuQ Tembak', async () => {
+      await Promise.all([
+        page.waitForURL(/\/tembak\/?/, { waitUntil: 'commit', timeout: 15000 }),
+        page.locator('#btnGameTembak').click({ force: true }),
+      ]);
+    });
+
+    await Then('the marble shooter shows its start overlay', async () => {
+      await expect(page.locator('#start-btn')).toBeVisible({ timeout: 15000 });
+      await expect(page.locator('#scene')).toBeVisible();
+      await expect(page.locator('#logo')).toContainText('TEPUQ');
+    });
+
+    await When('the player taps Menu', async () => {
+      await page.locator('#menu-btn').click();
+    });
+
+    await Then('the Game Picker is visible again', async () => {
+      await expect(page).toHaveURL(/\/$/);
+      await expect(page.locator('#gamePicker')).toBeVisible();
+    });
+  });
 });
