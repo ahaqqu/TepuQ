@@ -2,7 +2,7 @@
 
 ## Project Purpose
 
-TepuQ & TariQ is a fun and simple browser game for toddlers (15+ months) and their parents. "TepuQ" means *tap* and "TariQ" means *drag*. It is a multi-game shell: **TepuQ Gambar** (the original photo-card game), **TariQ Kata** (a drag-and-drop spelling game), and **TepuQ Tembak** (a toy-diorama marble shooter). The main page shows a Game Picker; picking a game routes into it. Parents configure everything through a shared admin mode with per-game tabs. An optional cloud-sync feature lets a family share custom objects, settings, and Kata words across devices.
+TepuQ & TariQ is a fun and simple browser game for toddlers (15+ months) and their parents. "TepuQ" means *tap* and "TariQ" means *drag*. It is a multi-game shell: **TepuQ Gambar** (the original photo-card game), **TariQ Kata** (a drag-and-drop spelling game), **TepuQ Lari** (a 3D endless runner), and **TepuQ Tembak** (a toy-diorama marble shooter). The main page shows a Game Picker; picking a game routes into it. Parents configure everything through a shared admin mode with per-game tabs. An optional cloud-sync feature lets a family share custom objects, settings, and Kata words across devices.
 
 **Core principles (do not break):**
 - **Fun and simple** — keep the experience joyful and easy.
@@ -18,6 +18,7 @@ TepuQ & TariQ is a fun and simple browser game for toddlers (15+ months) and the
 - **Build tool:** Vite
 - **Package manager:** Bun
 - **Frontend:** Vanilla JavaScript + HTML + CSS (no frameworks)
+- **3D (Lari / Tembak):** Three.js — lazy-loaded npm chunk for TepuQ Lari (ADR 0007); vendored copy for TepuQ Tembak
 - **Local storage:** IndexedDB in the browser
 - **Cloud sync:** Cloudflare Pages Functions + KV
 - **Tests:** Vitest (unit) + Playwright (E2E)
@@ -29,13 +30,13 @@ TepuQ & TariQ is a fun and simple browser game for toddlers (15+ months) and the
 
 ```
 TepuQ/
-├── index.html              # Vite shell (Game Picker + Gambar + Kata + Admin)
+├── index.html              # Vite shell (Game Picker + Gambar + Kata + Lari + Admin)
 ├── functions/              # Cloudflare Pages Functions
 │   └── api/                # /api/login, /api/logout, /api/me, /api/sync
 ├── scripts/                # helper scripts (e.g. dynamic E2E port runner run-e2e.js)
 ├── src/
 │   ├── main.js             # bootstrap (admin vs game; game -> Game Picker)
-│   ├── game-picker.js      # top-level Game Picker (TepuQ Gambar / TariQ Kata / TepuQ Tembak)
+│   ├── game-picker.js      # top-level Game Picker (Gambar / Kata / Lari / Tembak)
 │   ├── config.js           # defaults + constants (Gambar + Kata)
 │   ├── db.js               # IndexedDB (objects + settings + meta + kata_settings/kata_progress)
 │   ├── utils.js            # helpers
@@ -59,6 +60,11 @@ TepuQ/
 │   │   ├── drag-engine.js  # touch+mouse drag with magnetic snap
 │   │   ├── renderer.js     # DOM: slots, tiles, photo, confetti, win screen
 │   │   └── audio.js        # TTS letters/word + success chime
+│   ├── lari-game/          # TepuQ Lari (3D runner) modules (Lari-only)
+│   │   ├── index.js        # initLari/destroyLari for the Game Picker router
+│   │   ├── markup.js       # stage HTML template (TepuQ Lari branding)
+│   │   ├── game.js         # Three.js runner (createLariGame + destroy)
+│   │   └── styles.css      # styles scoped under #lariStage
 │   ├── admin/              # SHARED admin: main admin page + shared word/photo library
 │   │   ├── index.js        # admin shell (tabs: Objek, Sinkron; editor tabs wiring)
 │   │   ├── editor.js       # shared object editor (incl. "Aktif di TariQ Kata" toggle)
@@ -134,17 +140,18 @@ After any change, verify at least these default-setting flows:
 
 1. `bun run dev`
 2. Open `http://localhost:5173`
-3. See the **Game Picker** with TepuQ Gambar, TariQ Kata, and TepuQ Tembak buttons.
+3. See the **Game Picker** with TepuQ Gambar, TariQ Kata, TepuQ Lari, and TepuQ Tembak buttons.
 4. Click **TepuQ Gambar** → see the Bebas/Target sub-picker → click **TepuQ Bebas** → press any key → a card appears and audio speaks.
 5. Long-press top-left corner → return to mode picker; "Pilih Game" returns to the Game Picker.
 6. Click **TariQ Kata** → a word appears with its shared photo, empty slots, and scattered letter tiles → drag a letter into its slot → it snaps and turns green.
-7. Click **TepuQ Tembak** → the marble shooter loads at `/tembak/` with its start overlay → **‹ Menu** returns to the Game Picker.
-8. Open `http://localhost:5173?mode=admin` → see the object list (shared library) with the Objek/Sinkron tabs and the Editor Objek / Pengaturan Game / Pengaturan Kata editor tabs.
-9. Add a new object, save it, and see it in the list; with a single-word name it is also a Kata word (🔤 badge); multi-word names are Kata-excluded automatically.
-10. Export ZIP and confirm `config.json` only contains custom objects/recordings and carries the `kataEnabled` toggle per object. Import merges with defaults.
-11. Open admin, log in with the shared family credentials, push, then pull; custom objects, settings, and the kataEnabled toggles round-trip across Devices.
-12. Build passes: `bun run build`.
-13. Unit tests pass: `bun run test:unit`.
+7. Click **TepuQ Lari** → the 3D runner start overlay appears → **MULAI!** starts a run with the HUD → **‹ Pilih Game** returns to the Game Picker.
+8. Click **TepuQ Tembak** → the marble shooter loads at `/tembak/` with its start overlay → **‹ Menu** returns to the Game Picker.
+9. Open `http://localhost:5173?mode=admin` → see the object list (shared library) with the Objek/Sinkron tabs and the Editor Objek / Pengaturan Game / Pengaturan Kata editor tabs.
+10. Add a new object, save it, and see it in the list; with a single-word name it is also a Kata word (🔤 badge); multi-word names are Kata-excluded automatically.
+11. Export ZIP and confirm `config.json` only contains custom objects/recordings and carries the `kataEnabled` toggle per object. Import merges with defaults.
+12. Open admin, log in with the shared family credentials, push, then pull; custom objects, settings, and the kataEnabled toggles round-trip across Devices.
+13. Build passes: `bun run build`.
+14. Unit tests pass: `bun run test:unit`.
 
 ---
 
@@ -152,9 +159,10 @@ After any change, verify at least these default-setting flows:
 
 - Default settings in `src/config.js` (Gambar + Kata).
 - Starter objects list and seeding in `src/db.js`; each starter object's `kataEnabled` toggle.
-- Game Picker: all three games (TepuQ Gambar, TariQ Kata, TepuQ Tembak) must launch from the main page.
+- Game Picker: all four games must launch from the main page.
 - TepuQ Gambar: Bebas and Target must both work.
 - TariQ Kata: drag a letter into the correct slot snaps it; wrong slot bounces back; completing the session shows the win screen; each word shows its shared library photo.
+- TepuQ Lari: the 3D runner starts from the Game Picker, MULAI begins a run, and "‹ Pilih Game" returns to the Game Picker. The Three.js bundle is lazy-loaded so the shell's first paint stays light.
 - TepuQ Tembak: `/tembak/` loads the marble shooter start overlay; **‹ Menu** returns to the Game Picker.
 - Admin mode: add/edit/delete object, settings, export/import ZIP. The object editor is the single shared library editor — the "Aktif di TariQ Kata" toggle decides which objects are Kata words.
 - Import/export of images and recorded audio (shared objects).
@@ -230,7 +238,7 @@ Current correct behavior lives in `onTouchStart` in `src/gambar-game/input.js`. 
 
 ## Cloudflare Deployment Notes
 
-The GitHub Action in `.github/workflows/deploy.yml` deploys the `dist/` folder to Cloudflare Pages. It will create the Pages project automatically if it does not already exist. After a successful deploy, `.github/workflows/deploy-smoke.yml` runs Playwright smoke tests (Gambar + Kata + Tembak) against the live **`https://tepuq.ahaqqu.com`** site and opens a GitHub issue on failure. Required repository secrets:
+The GitHub Action in `.github/workflows/deploy.yml` deploys the `dist/` folder to Cloudflare Pages. It will create the Pages project automatically if it does not already exist. After a successful deploy, `.github/workflows/deploy-smoke.yml` runs Playwright smoke tests (Gambar + Kata + Lari + Tembak) against the live **`https://tepuq.ahaqqu.com`** site and opens a GitHub issue on failure. Required repository secrets:
 
 - `CLOUDFLARE_API_TOKEN` — with `Cloudflare Pages:Edit` permission.
 - `CLOUDFLARE_ACCOUNT_ID` — from Cloudflare dashboard.
@@ -283,6 +291,7 @@ Styles live in `src/styles/` and are imported through `src/styles/main.css`:
 - `theme.css` — visual styling: colors, gradients, decorative background effects, mode picker look, hover/focus states. Safe to override or swap without breaking gameplay.
 - `admin.css` — admin UI layout and components (shared admin + per-game tabs).
 - `kata.css` — TariQ Kata gameplay styling (stage, slots, tiles, photo, win screen).
+- `src/lari-game/styles.css` — TepuQ Lari gameplay styling, scoped under `#lariStage` so it cannot leak into the shared shell. Imported by `src/lari-game/index.js`.
 
 When changing styling, prefer editing `theme.css`. When changing game behavior that relies on layout or animations, edit `gameplay.css`.
 
@@ -302,6 +311,8 @@ When changing styling, prefer editing `theme.css`. When changing game behavior t
 - Kata game loop: `src/kata-game/index.js`
 - Kata photo/slot rendering: `src/kata-game/renderer.js`
 - Objects → Kata words adapter: `loadKataWordsFromObjects()` in `src/db.js`
+- TepuQ Lari entry (init/destroy): `src/lari-game/index.js`
+- TepuQ Lari Three.js runner: `src/lari-game/game.js`
 - Import/export ZIP: `src/admin/import-export.js`
 - Import/sync merge strategy: `src/admin/merge-objects.js`
 - Cloud sync: `src/sync-client.js`, `src/admin/sync.js`, `functions/api/login.js`, `functions/api/me.js`, `functions/api/sync.js`, `functions/api/logout.js`

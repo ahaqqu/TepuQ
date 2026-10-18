@@ -1,13 +1,13 @@
 # TepuQ & TariQ — Architecture
 
-TepuQ & TariQ is a browser-first toddler game shell. "TepuQ" means *tap* and "TariQ" means *drag*. One page hosts three games (TepuQ Gambar, TariQ Kata, and TepuQ Tembak), a shared admin mode, and an optional family cloud sync. All gameplay data lives in the browser's IndexedDB; the cloud is only a backup/sync store for custom objects and settings.
+TepuQ & TariQ is a browser-first toddler game shell. "TepuQ" means *tap* and "TariQ" means *drag*. One page hosts four games (TepuQ Gambar, TariQ Kata, TepuQ Lari, and TepuQ Tembak), a shared admin mode, and an optional family cloud sync. All gameplay data lives in the browser's IndexedDB; the cloud is only a backup/sync store for custom objects and settings.
 
 ## 1. Architecture Diagram
 
 ```mermaid
 flowchart LR
     subgraph B ["Browser"]
-        App["TepuQ & TariQ App (index.html)<br/>Gambar · Kata · Tembak · Admin"]
+        App["TepuQ & TariQ App (index.html)<br/>Gambar · Kata · Lari · Tembak · Admin"]
         DB[(IndexedDB<br/>tepuq_db v7)]
     end
 
@@ -46,7 +46,7 @@ flowchart LR
 
 ```
 TepuQ/
-├── index.html                    # Single-page shell: Game Picker + Gambar + Kata + admin
+├── index.html                    # Single-page shell: Game Picker + Gambar + Kata + Lari + admin
 ├── functions/api/                # Cloudflare Pages Functions (sync backend)
 │   ├── _utils.js                 # JWT sign/verify, cookies, KV keys, JSON helpers
 │   ├── login.js                  # Family credential check → JWT cookie (rate-limited)
@@ -56,7 +56,7 @@ TepuQ/
 ├── scripts/run-e2e.js            # Dynamic-port E2E runner
 ├── src/
 │   ├── main.js                   # Bootstrap: admin vs game; seeds, speech init, boot storm
-│   ├── game-picker.js            # Top-level menu; routes into Gambar, Kata, or Tembak (ADR 0002)
+│   ├── game-picker.js            # Top-level menu; routes into Gambar, Kata, Lari, or Tembak (ADR 0002)
 │   ├── config.js                 # Defaults + constants; DB_VERSION (cache-busting)
 │   ├── db.js                     # IndexedDB: stores, seeding, Kata adapter, migrations
 │   ├── utils.js                  # Shared helpers (toast, resize, blob utils)
@@ -81,6 +81,11 @@ TepuQ/
 │   │   ├── drag-engine.js        # Touch + mouse drag with magnetic snap
 │   │   ├── renderer.js           # DOM: slots, tiles, photo, confetti, win screen
 │   │   └── audio.js              # TTS letters/word + success chime
+│   ├── lari-game/                # TepuQ Lari (3D runner, lazy-loaded Three.js)
+│   │   ├── index.js              # initLari/destroyLari for the Game Picker
+│   │   ├── markup.js             # Stage HTML template (TepuQ Lari branding)
+│   │   ├── game.js               # createLariGame() Three.js runner + destroy
+│   │   └── styles.css            # Styles scoped under #lariStage
 │   ├── admin/                    # SHARED admin chrome (one page, per-game tabs)
 │   │   ├── index.js              # Admin shell: Objek/Sinkron + editor tabs
 │   │   ├── editor.js             # Shared object editor ("Aktif di TariQ Kata" toggle)
@@ -203,6 +208,6 @@ Push to `main` triggers `.github/workflows/deploy.yml`:
 3. Wrangler sets the three sync secrets on the Pages project.
 4. `wrangler pages deploy dist` publishes the build; the family-facing URL is **`https://tepuq.ahaqqu.com`** (the `tepuq.pages.dev` origin still exists as the underlying Pages host).
 
-Afterwards `.github/workflows/deploy-smoke.yml` runs Playwright smoke tests (Gambar + Kata + Tembak) against `https://tepuq.ahaqqu.com` and opens a GitHub issue on failure.
+Afterwards `.github/workflows/deploy-smoke.yml` runs Playwright smoke tests (Gambar + Kata + Lari + Tembak) against `https://tepuq.ahaqqu.com` and opens a GitHub issue on failure.
 
 The Pages project serves the family-facing custom domain **`https://tepuq.ahaqqu.com`**, which always resolves to the current production deployment. `ahaqqu.com` is hosted outside Cloudflare (Digital Registra), so that domain depends on a manually managed `CNAME` record (`tepuq` → `tepuq.pages.dev`) plus certificate issuance in the Cloudflare dashboard. No workflow creates it, and the app itself is hostname-agnostic — no `base` path, manifest, or API changes are involved.

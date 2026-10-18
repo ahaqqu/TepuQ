@@ -3,16 +3,19 @@
 ## Core Concepts
 
 ### TepuQ & TariQ
-The household app shell that hosts two games and a shared admin/sync layer. "TepuQ" means *tap* and "TariQ" means *drag*; together they are the product name. A player picks one game from the Game Picker, then plays that game.
+The household app shell that hosts four games and a shared admin/sync layer. "TepuQ" means *tap* and "TariQ" means *drag*; together they are the product name. A player picks one game from the Game Picker, then plays that game.
 
 ### Game Picker
-The top-level menu on the main page. Lists the installed games: TepuQ Gambar and TariQ Kata. Choosing a game routes the player into that game; it is not a play-style.
+The top-level menu on the main page. Lists the installed games: TepuQ Gambar, TariQ Kata, TepuQ Lari, and TepuQ Tembak. Choosing a game routes the player into that game; it is not a play-style.
 
 ### TepuQ Gambar
 The original TepuQ card game: shows photo cards and speaks Indonesian names when the child taps or presses keys. Has two play modes, Bebas and Target, selected on the Gambar sub-picker. Formerly called just "TepuQ."
 
 ### TariQ Kata
 The spelling game: a word is shown as empty letter slots and the child drags scattered letter tiles into the correct slots. Distinct from TepuQ Gambar — different gameplay, different data, different code folder (`src/kata-game/`). The name "TariQ" means *drag*.
+
+### TepuQ Lari
+The 3D endless runner: the child runs as a bunny down three lanes, collecting stars and named objects (kucing, susu, pisang…) while dodging or clearing obstacles. Two play styles on its start overlay: **Main Terus** (no game over) and **3 Hati**. Lives in `src/lari-game/`; uses Three.js and is lazy-loaded from the Game Picker. No IndexedDB stores — Lari is self-contained.
 
 ### TepuQ Tembak
 The marble shooter: a toy-diorama Zuma-like game where the player aims a tarsius guardian, fires colored seed-shots, and matches 3+ marbles to pop them before they reach the Skull Cave. Lives as a standalone Three.js page at `public/tembak/` (own HTML/CSS/JS, vendored Three.js) and is launched from the Game Picker. "Tembak" means *shoot*.
@@ -75,4 +78,4 @@ One playthrough of the session-length number of Words (default 10). Completing a
 ## Deployment
 
 ### Pages Project
-The single Cloudflare Pages project (`tepuq`) that serves the whole TepuQ & TariQ shell — TepuQ Gambar, TariQ Kata, and TepuQ Tembak — from one build. The project URL is the family-facing custom domain **`https://tepuq.ahaqqu.com`**; `https://tepuq.pages.dev` is the underlying Pages origin. There is one deploy per push to `main`; all games ship together.
+The single Cloudflare Pages project (`tepuq`) that serves the whole TepuQ & TariQ shell — TepuQ Gambar, TariQ Kata, TepuQ Lari, and TepuQ Tembak — from one build. The project URL is the family-facing custom domain **`https://tepuq.ahaqqu.com`**; `https://tepuq.pages.dev` is the underlying Pages origin. There is one deploy per push to `main`; all games ship together.

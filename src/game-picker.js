@@ -1,8 +1,8 @@
 // Top-level Game Picker: shows the installed games (TepuQ Gambar, TariQ Kata,
-// TepuQ Tembak) and routes the player into the chosen game. This is the first
-// menu level; TepuQ Gambar then shows its existing Bebas/Target sub-picker
-// (mode-manager.js). TepuQ Tembak is a standalone page at /tembak/ (Three.js).
-// See ADR 0002.
+// TepuQ Lari, TepuQ Tembak) and routes the player into the chosen game. This
+// is the first menu level; TepuQ Gambar then shows its existing Bebas/Target
+// sub-picker (mode-manager.js). TepuQ Tembak is a standalone page at /tembak/
+// (Three.js). See ADR 0002.
 
 import { initGame, destroyGame } from './gambar-game/mode-manager.js';
 import { bindGameInput, unbindGameInput } from './gambar-game/input.js';
@@ -10,18 +10,22 @@ import { initKata, destroyKata } from './kata-game/index.js';
 import { loadKataData } from './db.js';
 import { playSfx } from './speech.js';
 
-let currentGame = null; // 'gambar' | 'kata' | null
+let currentGame = null; // 'gambar' | 'kata' | 'lari' | null
 let gambarInputCleanup = null;
+// Lari is lazy-loaded (Three.js) so the shell's first paint stays light.
+let destroyLariFn = null;
 
 export function initGamePicker(appState) {
   const picker = document.getElementById('gamePicker');
   const btnGambar = document.getElementById('btnGameGambar');
   const btnKata = document.getElementById('btnGameKata');
+  const btnLari = document.getElementById('btnGameLari');
   const btnTembak = document.getElementById('btnGameTembak');
   if (!picker || !btnGambar || !btnKata) return;
 
   btnGambar.onclick = () => startGambar(appState);
   btnKata.onclick = () => startKata(appState);
+  if (btnLari) btnLari.onclick = () => startLari();
   // Tembak is a real link (native mobile tap); only play the pick sound.
   if (btnTembak) {
     btnTembak.addEventListener('click', () => {
@@ -34,6 +38,12 @@ export function initGamePicker(appState) {
     playSfx('assets/sfx/back-menu.mp3', 0.7);
     showGamePicker();
   });
+
+  // TepuQ Lari's "‹ Pilih Game" buttons dispatch this event (same pattern as Kata).
+  window.addEventListener('tepuq:lari-back-to-menu', () => {
+    playSfx('assets/sfx/back-menu.mp3', 0.7);
+    showGamePicker();
+  });
 }
 
 export function showGamePicker() {
@@ -41,9 +51,11 @@ export function showGamePicker() {
   const picker = document.getElementById('gamePicker');
   const modePicker = document.getElementById('modePicker');
   const kataStage = document.getElementById('kataStage');
+  const lariStage = document.getElementById('lariStage');
   if (picker) picker.classList.remove('hidden');
   if (modePicker) modePicker.classList.add('hidden');
   if (kataStage) kataStage.classList.add('hidden');
+  if (lariStage) lariStage.classList.add('hidden');
   currentGame = null;
 }
 
@@ -69,9 +81,26 @@ async function startKata(appState) {
   await initKata(words, settings, appState.settings);
 }
 
+async function startLari() {
+  playSfx('assets/sfx/select-game.mp3');
+  const picker = document.getElementById('gamePicker');
+  if (picker) picker.classList.add('hidden');
+  const lariStage = document.getElementById('lariStage');
+  if (lariStage) lariStage.classList.remove('hidden');
+  currentGame = 'lari';
+  // Lazy-load so Three.js only downloads when the child picks the runner.
+  const lari = await import('./lari-game/index.js');
+  destroyLariFn = lari.destroyLari;
+  lari.initLari();
+}
+
 function destroyCurrentGame() {
   if (currentGame === 'kata') {
     destroyKata();
+  }
+  if (currentGame === 'lari' && destroyLariFn) {
+    destroyLariFn();
+    destroyLariFn = null;
   }
   if (currentGame === 'gambar') {
     unbindGameInput();
