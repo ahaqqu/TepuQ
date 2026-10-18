@@ -75,4 +75,4 @@ One playthrough of the session-length number of Words (default 10). Completing a
 ## Deployment
 
 ### Pages Project
-The single Cloudflare Pages project (`tepuq`) that serves the whole TepuQ & TariQ shell — both TepuQ Gambar and TariQ Kata — from one build. It answers on the family-facing custom domain `https://tepuq.ahaqqu.com`, and on the underlying `https://tepuq.pages.dev` origin. There is one deploy per push to `main`; both games ship together.
+The single Cloudflare Pages project (`tepuq`) that serves the whole TepuQ & TariQ shell — TepuQ Gambar, TariQ Kata, and TepuQ Tembak — from one build. The project URL is the family-facing custom domain **`https://tepuq.ahaqqu.com`**; `https://tepuq.pages.dev` is the underlying Pages origin. There is one deploy per push to `main`; all games ship together.
