@@ -908,10 +908,9 @@ const nearPath = createNearPathChecker(LEVEL, curve, SHOOTER_POS);
    hit-cylinder so tapping the tree (mouse or touch) orders a leap. */
 const perchRings = [], perchHit = [];
 {
-  // Tall climbable pine: thick trunk the tarsius hugs + high canopy that
-  // crowns well above his straw hat (he reads as clinging, not standing).
+  // Tall climbable pine: thick trunk the tarsius hugs. No canopy/leaves —
+  // a top-down camera needs a clear view of tarsius and the ball he holds.
   const trunkM = new THREE.MeshPhysicalMaterial({ flatShading: true, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.1, color: 0x7f4f24, roughness: 0.2 });
-  const canopyCols = [0x37b24d, 0x4cc96f, 0x6fdc73];
   function perchTree(x, z) {
     const g = new THREE.Group();
     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 1.0, 6.4, 16), trunkM);
@@ -927,23 +926,6 @@ const perchRings = [], perchHit = [];
       b.position.set(Math.cos(a) * 0.9, 0.9 + i * 0.65, Math.sin(a) * 0.9);
       b.scale.set(1, 0.7, 1); g.add(b);
     }
-    // high compact umbrella canopy, lifted well clear of the straw hat and
-    // pulled to the back so the south face where he clings stays open
-    [[0, 7.6, -1.5, 1.0], [-1.35, 6.9, -1.3, 0.9], [1.4, 7.0, -1.35, 0.95], [0.1, 6.5, -2.1, 0.8]].forEach(([ox, oy, oz, r], i) => {
-      const f = new THREE.Mesh(sculpt(new THREE.IcosahedronGeometry(r, 1), 0.12),
-        new THREE.MeshPhysicalMaterial({ flatShading: true, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.1, color: canopyCols[i % 3], roughness: 0.2 }));
-      f.position.set(ox, oy, oz); f.castShadow = true;
-      g.add(f);
-    });
-    // hanging vines with leaf tufts (tarsier playground dressing)
-    const vineM = new THREE.MeshPhysicalMaterial({ flatShading: true, color: 0x2f9e44, roughness: 0.2, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.1 });
-    [[1.0, 0.3], [-1.0, -0.35]].forEach(([vx, vz], vi) => {
-      const v = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1.8 - vi * 0.3, 8), vineM);
-      v.position.set(vx, 4.7, vz); g.add(v);
-      const tuft = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), vineM);
-      tuft.position.set(vx, 3.75 - vi * 0.3, vz); tuft.scale.set(1.2, 0.8, 1.2); tuft.castShadow = true;
-      g.add(tuft);
-    });
     g.position.set(x, 0.5, z);
     g.rotation.y = Math.random() * 6;
     g.rotation.x = -0.07; // faint organic lean so no two perches match
