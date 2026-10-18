@@ -2,7 +2,7 @@
 
 ## Project Purpose
 
-TepuQ & TariQ is a fun and simple browser game for toddlers (15+ months) and their parents. "TepuQ" means *tap* and "TariQ" means *drag*. It is a multi-game shell: **TepuQ Gambar** (the original photo-card game) and **TariQ Kata** (a drag-and-drop spelling game). The main page shows a Game Picker; picking a game routes into it. Parents configure everything through a shared admin mode with per-game tabs. An optional cloud-sync feature lets a family share custom objects, settings, and Kata words across devices.
+TepuQ & TariQ is a fun and simple browser game for toddlers (15+ months) and their parents. "TepuQ" means *tap* and "TariQ" means *drag*. It is a multi-game shell: **TepuQ Gambar** (the original photo-card game), **TariQ Kata** (a drag-and-drop spelling game), and **TepuQ Tembak** (a toy-diorama marble shooter). The main page shows a Game Picker; picking a game routes into it. Parents configure everything through a shared admin mode with per-game tabs. An optional cloud-sync feature lets a family share custom objects, settings, and Kata words across devices.
 
 **Core principles (do not break):**
 - **Fun and simple** — keep the experience joyful and easy.
@@ -35,7 +35,7 @@ TepuQ/
 ├── scripts/                # helper scripts (e.g. dynamic E2E port runner run-e2e.js)
 ├── src/
 │   ├── main.js             # bootstrap (admin vs game; game -> Game Picker)
-│   ├── game-picker.js      # top-level Game Picker (TepuQ Gambar / TariQ Kata)
+│   ├── game-picker.js      # top-level Game Picker (TepuQ Gambar / TariQ Kata / TepuQ Tembak)
 │   ├── config.js           # defaults + constants (Gambar + Kata)
 │   ├── db.js               # IndexedDB (objects + settings + meta + kata_settings/kata_progress)
 │   ├── utils.js            # helpers
@@ -78,6 +78,12 @@ TepuQ/
 ├── public/
 │   ├── assets/             # bundled CC0 starter images (WebP) + SFX
 │   ├── icons/              # PWA icons
+│   ├── tembak/             # TepuQ Tembak (standalone Three.js marble shooter)
+│   │   ├── index.html      # game shell (own canvas/HUD/overlays)
+│   │   ├── game.js         # composition root (renderer, loop, input, HUD)
+│   │   ├── style.css       # Tembak-only styles (scoped to its page)
+│   │   ├── src/            # assets / mechanics / powers / levels / environment
+│   │   └── vendor/         # vendored Three.js (MIT)
 │   └── manifest.json       # web app manifest
 ├── tests/
 │   ├── unit/               # Vitest tests
@@ -128,16 +134,17 @@ After any change, verify at least these default-setting flows:
 
 1. `bun run dev`
 2. Open `http://localhost:5173`
-3. See the **Game Picker** with TepuQ Gambar and TariQ Kata buttons.
+3. See the **Game Picker** with TepuQ Gambar, TariQ Kata, and TepuQ Tembak buttons.
 4. Click **TepuQ Gambar** → see the Bebas/Target sub-picker → click **TepuQ Bebas** → press any key → a card appears and audio speaks.
 5. Long-press top-left corner → return to mode picker; "Pilih Game" returns to the Game Picker.
 6. Click **TariQ Kata** → a word appears with its shared photo, empty slots, and scattered letter tiles → drag a letter into its slot → it snaps and turns green.
-7. Open `http://localhost:5173?mode=admin` → see the object list (shared library) with the Objek/Sinkron tabs and the Editor Objek / Pengaturan Game / Pengaturan Kata editor tabs.
-8. Add a new object, save it, and see it in the list; with a single-word name it is also a Kata word (🔤 badge); multi-word names are Kata-excluded automatically.
-9. Export ZIP and confirm `config.json` only contains custom objects/recordings and carries the `kataEnabled` toggle per object. Import merges with defaults.
-10. Open admin, log in with the shared family credentials, push, then pull; custom objects, settings, and the kataEnabled toggles round-trip across Devices.
-11. Build passes: `bun run build`.
-12. Unit tests pass: `bun run test:unit`.
+7. Click **TepuQ Tembak** → the marble shooter loads at `/tembak/` with its start overlay → **‹ Menu** returns to the Game Picker.
+8. Open `http://localhost:5173?mode=admin` → see the object list (shared library) with the Objek/Sinkron tabs and the Editor Objek / Pengaturan Game / Pengaturan Kata editor tabs.
+9. Add a new object, save it, and see it in the list; with a single-word name it is also a Kata word (🔤 badge); multi-word names are Kata-excluded automatically.
+10. Export ZIP and confirm `config.json` only contains custom objects/recordings and carries the `kataEnabled` toggle per object. Import merges with defaults.
+11. Open admin, log in with the shared family credentials, push, then pull; custom objects, settings, and the kataEnabled toggles round-trip across Devices.
+12. Build passes: `bun run build`.
+13. Unit tests pass: `bun run test:unit`.
 
 ---
 
@@ -145,9 +152,10 @@ After any change, verify at least these default-setting flows:
 
 - Default settings in `src/config.js` (Gambar + Kata).
 - Starter objects list and seeding in `src/db.js`; each starter object's `kataEnabled` toggle.
-- Game Picker: both games must launch from the main page.
+- Game Picker: all three games (TepuQ Gambar, TariQ Kata, TepuQ Tembak) must launch from the main page.
 - TepuQ Gambar: Bebas and Target must both work.
 - TariQ Kata: drag a letter into the correct slot snaps it; wrong slot bounces back; completing the session shows the win screen; each word shows its shared library photo.
+- TepuQ Tembak: `/tembak/` loads the marble shooter start overlay; **‹ Menu** returns to the Game Picker.
 - Admin mode: add/edit/delete object, settings, export/import ZIP. The object editor is the single shared library editor — the "Aktif di TariQ Kata" toggle decides which objects are Kata words.
 - Import/export of images and recorded audio (shared objects).
 - Key bindings (case-insensitive, Gambar).
