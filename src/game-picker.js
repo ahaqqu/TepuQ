@@ -1,6 +1,7 @@
-// Top-level Game Picker: shows the installed games (TepuQ Gambar, TariQ Kata)
-// and routes the player into the chosen game. This is the first menu level;
-// TepuQ Gambar then shows its existing Bebas/Target sub-picker (mode-manager.js).
+// Top-level Game Picker: shows the installed games (TepuQ Gambar, TariQ Kata,
+// TepuQ Tembak) and routes the player into the chosen game. This is the first
+// menu level; TepuQ Gambar then shows its existing Bebas/Target sub-picker
+// (mode-manager.js). TepuQ Tembak is a standalone page at /tembak/ (Three.js).
 // See ADR 0002.
 
 import { initGame, destroyGame } from './gambar-game/mode-manager.js';
@@ -16,10 +17,17 @@ export function initGamePicker(appState) {
   const picker = document.getElementById('gamePicker');
   const btnGambar = document.getElementById('btnGameGambar');
   const btnKata = document.getElementById('btnGameKata');
+  const btnTembak = document.getElementById('btnGameTembak');
   if (!picker || !btnGambar || !btnKata) return;
 
   btnGambar.onclick = () => startGambar(appState);
   btnKata.onclick = () => startKata(appState);
+  // Tembak is a real link (native mobile tap); only play the pick sound.
+  if (btnTembak) {
+    btnTembak.addEventListener('click', () => {
+      playSfx('assets/sfx/select-game.mp3');
+    });
+  }
 
   // Kata's in-game back button dispatches this event to avoid a circular import.
   window.addEventListener('tepuq:kata-back-to-menu', () => {

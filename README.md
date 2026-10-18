@@ -2,12 +2,13 @@
 
 TepuQ & TariQ adalah permainan browser sederhana untuk anak 15 bulan ke atas yang belajar mengenal objek, suara, kata, dan koordinasi tangan–penglihatan. "TepuQ" berarti *tap* (ketuk) dan "TariQ" berarti *drag* (tarik).
 
-Halaman utama menampilkan **Game Picker** — menu untuk memilih salah satu dari dua game:
+Halaman utama menampilkan **Game Picker** — menu untuk memilih salah satu dari tiga game:
 
 - **TepuQ Gambar** — permainan kartu foto dengan dua mode bermain:
   - **TepuQ Bebas** — anak menekan tombol keyboard atau mengetuk layar mana saja. Kartu foto muncul dengan suara.
   - **TepuQ Target** — anak harus mengetuk kartu fotonya untuk melanjutkan ke objek berikutnya.
 - **TariQ Kata** — permainan mengeja: sebuah kata tampil sebagai kotak-kotak huruf kosong dengan fotonya, dan anak menyeret huruf-huruf yang tersebar ke kotak yang tepat. Huruf yang benar menempel dan berubah hijau; menyelesaikan sesi menampilkan layar kemenangan.
+- **TepuQ Tembak** — permainan marble shooter 3D: bidik penjaga tarsius, tembak bola berwarna, cocokkan 3+ untuk meledak, dan jaga agar marbles tidak sampai ke Skull Cave. Berjalan di halaman tersendiri (`/tembak/`).
 
 ## Cara Menjalankan di Lokal
 

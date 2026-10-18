@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>TepuQ Tembak — Toy-Diorama Marble Shooter</title>
+<meta name="description" content="TepuQ Tembak: a toy-diorama marble shooter. Guide a tiny tarsius guardian, blast power seeds, and stop the marbles from reaching the Skull Cave. Do your best!" />
+<meta name="theme-color" content="#2d6a4f" />
+<meta property="og:title" content="TepuQ Tembak" />
+<meta property="og:description" content="A tiny guardian. A hungry skull. 40 marbles. Ganbatte — do your best! Match 3+ to pop in this toy-diorama marble shooter!" />
+<meta property="og:type" content="website" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='29' fill='%23e63946'/%3E%3Cellipse cx='23' cy='22' rx='9' ry='6' fill='white' opacity='.5'/%3E%3Ctext x='32' y='45' font-size='34' font-family='Verdana,sans-serif' font-weight='900' text-anchor='middle' fill='%23fffdf4'%3ET%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="style.css" />
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="scene"></canvas>
+
+  <div id="vignette"></div>
+  <div id="danger"></div>
+
+  <div id="hud">
+    <div class="hud-left">
+      <div id="logo">◉ TEPUQ <span>TEMBAK</span></div>
+      <div id="subtitle">Koholint Island • Lv 1</div>
+      <div id="combo" class="hidden">COMBO <b>×2</b></div>
+    </div>
+    <div class="hud-center">
+      <div id="progress-wrap"><div id="progress-bar"></div><span id="progress-text">0 marbles</span></div>
+      <div id="badges">
+        <div id="badge-slow" class="badge hidden">✋ HOLD<div class="bar"><div></div></div></div>
+      </div>
+    </div>
+    <div class="hud-right">
+      <div class="score-box">SCORE<div id="score">0</div></div>
+      <div class="shooter-box" id="shooter-box" title="Tap to swap seeds">
+        <div class="ammo"><span class="lbl">NOW</span><div id="cur-ball" class="mini-ball"></div></div>
+        <div class="ammo"><span class="lbl">NEXT</span><div id="next-ball" class="mini-ball small"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="floaters"></div>
+
+  <div id="banner" class="hidden">
+    <div id="banner-main">READY</div>
+    <div id="banner-sub">Koholint Island</div>
+  </div>
+
+  <div id="hint">Move to aim • Click to shoot • Click a treasure, Jalak fetches it • Right-click / hold a marble for Jalak power • Eagles steal balls — shoot them down! • Eagle ×3 = REWIND the march • Right-click / hold a tree to leap • <b>P</b> pause</div>
+
+  <div id="corner-btns">
+    <a id="menu-btn" class="corner-link" href="/" title="Kembali ke Pilih Game">‹ Menu</a>
+    <button id="swap-btn" title="Swap seeds (Space)">⇄</button>
+    <button id="pause-btn" title="Pause (P)">⏸</button>
+    <button id="mute-btn" title="Sound (M)">♪</button>
+  </div>
+
+  <div id="overlay">
+    <div class="card">
+      <div class="card-ribbon">● GANBATTE! DO YOUR BEST ●</div>
+      <h1>TEPUQ<br/><em>TEMBAK</em></h1>
+      <p class="story">A tiny <b>tarsius</b> and its <b>jalak</b> starling guard a toy-box island.<br/>Marble spirits roll toward the <b>Skull Cave</b> — while <b>elang</b> steal them away…<br/>snatch drifting <b>treasure</b> for Jalak powers, shoot the thieves down. Match <b>3+</b> to pop!</p>
+      <div class="seeds-legend">
+        <div><span class="seed bomb">B</span><b>Boomseed</b><i>right-click / hold any marble</i></div>
+        <div><span class="seed stop">H</span><b>Holdseed</b><i>right-click / hold any marble</i></div>
+        <div><span class="seed frenzy">F</span><b>Frenzyseed</b><i>right-click / hold any marble</i></div>
+      </div>
+      <div class="controls-row">
+        <div><b>Aim</b><span>move / drag</span></div>
+        <div><b>Shoot</b><span>click / release</span></div>
+        <div><b>Fetch</b><span>click a seed</span></div>
+        <div><b>Power</b><span>right-click / hold</span></div>
+        <div><b>Leap</b><span>r-click / hold tree / tab</span></div>
+        <div><b>Swap</b><span>space / ⇄</span></div>
+      </div>
+      <div class="diff-row" id="level-row">
+        <button class="diff-btn sel" data-level="koholint"><b>KOHOLINT</b><span>bomb • hold • frenzy</span></button>
+        <button class="diff-btn" data-level="sunset-cove"><b>SUNSET</b><span>bomb • hold • frenzy</span></button>
+      </div>
+      <div class="diff-row">
+        <button class="diff-btn" data-diff="chill"><b>CHILL</b><span>gentle march</span></button>
+        <button class="diff-btn sel" data-diff="normal"><b>NORMAL</b><span>the real deal</span></button>
+        <button class="diff-btn" data-diff="spicy"><b>SPICY</b><span>skull is starving</span></button>
+      </div>
+      <button id="start-btn">▶ &nbsp;START ADVENTURE</button>
+      <p class="tiny">two islands • 40 marbles • 3 difficulties • <span id="best-line">best: 0</span></p>
+    </div>
+  </div>
+
+  <div id="end-overlay" class="hidden">
+    <div class="card">
+      <h1 id="end-title">★ YOU WIN! ★</h1>
+      <div id="end-stars">★★★</div>
+      <p id="end-text" class="story"></p>
+      <div id="end-stats"></div>
+      <button id="restart-btn">↺ &nbsp;PLAY AGAIN</button>
+    </div>
+  </div>
+
+  <div id="pause-overlay" class="hidden">
+    <div class="card slim">
+      <h1 class="pause-h">⏸ PAUSED</h1>
+      <p class="story">The marbles hold their breath…</p>
+      <button id="resume-btn">▶ &nbsp;RESUME</button><br/><br/>
+      <button id="restart-btn2" class="ghost">↺ RESTART LEVEL</button>
+    </div>
+  </div>
+</div>
+<script type="module" src="game.js"></script>
+</body>
+</html>

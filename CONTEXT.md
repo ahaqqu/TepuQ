@@ -14,6 +14,9 @@ The original TepuQ card game: shows photo cards and speaks Indonesian names when
 ### TariQ Kata
 The spelling game: a word is shown as empty letter slots and the child drags scattered letter tiles into the correct slots. Distinct from TepuQ Gambar — different gameplay, different data, different code folder (`src/kata-game/`). The name "TariQ" means *drag*.
 
+### TepuQ Tembak
+The marble shooter: a toy-diorama Zuma-like game where the player aims a tarsius guardian, fires colored seed-shots, and matches 3+ marbles to pop them before they reach the Skull Cave. Lives as a standalone Three.js page at `public/tembak/` (own HTML/CSS/JS, vendored Three.js) and is launched from the Game Picker. "Tembak" means *shoot*.
+
 ### Play Mode
 A variant *within* a game. TepuQ Gambar has Bebas and Target. TariQ Kata currently has one play mode (spell the word); the concept exists so future Kata variants can hang off the same Game → Play Mode structure.
 
